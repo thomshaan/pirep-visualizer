@@ -79,8 +79,15 @@ body::after{content:'';position:fixed;inset:0;z-index:9;pointer-events:none;
 .pchip.active{background:rgba(249,148,32,.12);border-color:var(--orange);color:var(--orange);}
 .pchip:hover:not(.active){border-color:var(--border-hi);color:var(--text);}
 
+/* Stats bar */
+#statsBar{padding:5px 14px;font-family:var(--fm);font-size:8px;letter-spacing:.1em;
+  color:rgba(245,230,218,.35);border-bottom:1px solid rgba(249,148,32,.06);flex-shrink:0;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+#statsBar span{color:var(--orange);}
+
 /* Flight list */
-.flight-list{flex:1;overflow-y:auto;padding:8px 10px;display:flex;flex-direction:column;gap:5px;min-height:0;}
+.flight-list{flex:1;overflow-y:auto;padding:8px 10px;display:flex;flex-direction:column;gap:5px;min-height:0;transition:opacity .15s;}
+.flight-list.fading{opacity:0;}
 .flight-list::-webkit-scrollbar{width:3px;}
 .flight-list::-webkit-scrollbar-thumb{background:rgba(249,148,32,.2);border-radius:2px;}
 .no-flights{text-align:center;padding:32px 16px;color:var(--dim);font-size:11px;letter-spacing:.1em;}
@@ -281,6 +288,9 @@ body::after{content:'';position:fixed;inset:0;z-index:9;pointer-events:none;
     </div>
     <div class="pilot-chips" id="pilotChips"></div>
   </div>
+
+  <!-- Stats summary bar -->
+  <div id="statsBar"></div>
 
   <!-- Flight list view -->
   <div class="flight-list" id="flightList"></div>
@@ -509,9 +519,10 @@ function parseRow(row, idx) {
     dest:     { icao: destICAO,   name: cleanAirportName(row['Arrival Airport'])   || destC.name,   lat: destC.lat,  lon: destC.lon  },
     dep:      fmtTime(row['Departure Time (UTC)']),
     arr:      fmtTime(row['Arrival Time (UTC)']),
-    airtime:  fmtAirtime(row['Block Time (min)']),
-    date:     fmtDate(row['Log Timestamp']),
-    eval:     row['Self Evaluation'] || '',
+    airtime:        fmtAirtime(row['Block Time (min)']),
+    date:           fmtDate(row['Log Timestamp']),
+    eval:           row['Self Evaluation'] || '',
+    _rawTimestamp:  row['Log Timestamp'] || '',
   };
 }
 
@@ -526,13 +537,15 @@ async function fetchPIREPs() {
     _dbgLastFetch = new Date().toISOString();
     if (!parsed.length) throw new Error(`0/${rows.length} rows parsed — column mismatch? Keys: ${_dbgRawKeys.join(', ')}`);
     PIREPS = parsed;
+    PIREPS.sort((a,b)=>new Date(b._rawTimestamp)-new Date(a._rawTimestamp));
     _dbgPireps = parsed.length; _dbgFallback = false; _dbgErr = null;
-    lastFetched = Date.now();
+    lastFetched = Date.now(); _nextRefreshAt = Date.now()+60000;
     console.info('[PIREP API] Loaded', parsed.length, 'flights');
   } catch(err) {
     _dbgErr = err.message; _dbgFallback = true;
     console.warn('[PIREP API] Using fallback data:', err.message);
     PIREPS = [...FALLBACK_PIREPS];
+    _nextRefreshAt = Date.now()+60000;
   }
 }
 
@@ -558,6 +571,8 @@ let rotX=0.12, rotY=2.83, trgX=0.12, trgY=2.83;
 let isDrag=false, px=0, py=0;
 let camZ=2.8, trgZ=2.8;
 const CAM_MIN=1.4, CAM_MAX=5.5;
+let selectedPIREP=null, _savedAutoRot=0.00015, _lastBuildZ=2.8;
+let _nextRefreshAt=Date.now()+60000;
 
 function setTrails(on){
   trailsOn=on;
@@ -745,14 +760,15 @@ function buildAirports(){
     const v=ll2v(ap.lat,ap.lon,1.009);
     const c=new THREE.Color('#F99420');
 
-    const dot=new THREE.Mesh(new THREE.SphereGeometry(0.011,10,10),new THREE.MeshBasicMaterial({color:c,blending:THREE.AdditiveBlending,depthWrite:false}));
+    const zR=Math.max(0.35,camZ/2.8);
+    const dot=new THREE.Mesh(new THREE.SphereGeometry(0.011*zR,10,10),new THREE.MeshBasicMaterial({color:c,blending:THREE.AdditiveBlending,depthWrite:false}));
     dot.position.copy(v);globe.add(dot);
 
-    const halo=new THREE.Mesh(new THREE.SphereGeometry(0.022,10,10),new THREE.MeshBasicMaterial({color:c,transparent:true,opacity:0.2,blending:THREE.AdditiveBlending,depthWrite:false}));
+    const halo=new THREE.Mesh(new THREE.SphereGeometry(0.022*zR,10,10),new THREE.MeshBasicMaterial({color:c,transparent:true,opacity:0.2,blending:THREE.AdditiveBlending,depthWrite:false}));
     halo.position.copy(v);globe.add(halo);
 
     const rmat=new THREE.MeshBasicMaterial({color:c,transparent:true,opacity:0.6,side:THREE.DoubleSide,blending:THREE.AdditiveBlending,depthWrite:false});
-    const ring=new THREE.Mesh(new THREE.RingGeometry(0.015,0.021,32),rmat);
+    const ring=new THREE.Mesh(new THREE.RingGeometry(0.015*zR,0.021*zR,32),rmat);
     ring.position.copy(v);ring.lookAt(new THREE.Vector3(0,0,0));
     ring.userData={t:Math.random(),mat:rmat};
     globe.add(ring);pulseRings.push(ring);
@@ -782,14 +798,16 @@ function buildFlights(){
   const seenRoutes=new Set();
   PIREPS.forEach((p,i)=>{
     const curve=buildCurve(p.origin.lat,p.origin.lon,p.dest.lat,p.dest.lon,arcH);
-    const arcMesh=new THREE.Mesh(new THREE.TubeGeometry(curve,100,0.003,6,false),new THREE.MeshBasicMaterial({color:new THREE.Color(p.color),transparent:true,opacity:0.85,blending:THREE.AdditiveBlending,depthWrite:false}));
+    const tubeRad=0.003*Math.max(0.35,camZ/2.8);
+    const mat=new THREE.MeshBasicMaterial({color:new THREE.Color(p.color),transparent:true,opacity:0.85,blending:THREE.AdditiveBlending,depthWrite:false});
+    const arcMesh=new THREE.Mesh(new THREE.TubeGeometry(curve,100,tubeRad,6,false),mat);
     globe.add(arcMesh);
     const routeKey=p.origin.icao+'-'+p.dest.icao;
     const isNew=!seenRoutes.has(routeKey);
     if(isNew) seenRoutes.add(routeKey);
     const plane=isNew?makePlane(p.color):null; if(plane) globe.add(plane);
     const trail=isNew?new Trail(p.color,60):null; if(trail) globe.add(trail.line);
-    flights.push({curve,arcMesh,plane,trail,t:Math.random(),speed:0.007+Math.random()*0.004,color:p.color});
+    flights.push({curve,arcMesh,plane,trail,t:Math.random(),speed:0.007+Math.random()*0.004,color:p.color,mat});
   });
 }
 
@@ -874,16 +892,34 @@ const clock=new THREE.Clock();
 function animate(){
   requestAnimationFrame(animate);
   const dt=clock.getDelta(),t=clock.getElapsedTime();
-  if(!isDrag){trgY+=autoRot;rotX+=(trgX-rotX)*.04;rotY+=(trgY-rotY)*.04;}
+  // Camera rotation — lock to selected flight midpoint or normal auto-rotate
+  if(selectedPIREP&&!isDrag){
+    const mLat=(selectedPIREP.origin.lat+selectedPIREP.dest.lat)/2;
+    const mLon=(selectedPIREP.origin.lon+selectedPIREP.dest.lon)/2;
+    const sv=ll2v(mLat,mLon);
+    trgY=Math.atan2(-sv.x,sv.z); trgX=-(mLat*Math.PI/180)*0.46;
+  } else if(!isDrag){ trgY+=autoRot; }
+  rotX+=(trgX-rotX)*.04; rotY+=(trgY-rotY)*.04;
   camZ+=(trgZ-camZ)*.08; camera.position.z=camZ;
   if(globe){globe.rotation.x=rotX;globe.rotation.y=rotY;}
+  // Throttled zoom-based rebuild
+  if(Math.abs(camZ-_lastBuildZ)>0.28&&globe){ buildFlights(); buildAirports(); _lastBuildZ=camZ; }
   if(window._cloudMesh) window._cloudMesh.rotation.y+=dt*.008;
   if(window._earthMat&&window._earthMat.userData.shader){
     const sl=sunLight.position.clone().normalize().applyMatrix4(new THREE.Matrix4().extractRotation(globe.matrixWorld).invert());
     window._earthMat.userData.shader.uniforms.sunDir.value.copy(sl);
   }
-  pulseRings.forEach(r=>{r.userData.t=(r.userData.t+dt*.42)%1;const pt=r.userData.t;r.scale.setScalar(1+pt*3.5);r.userData.mat.opacity=(1-pt)*.5;});
-  airportMarkers.forEach((mk,i)=>{mk.halo.scale.setScalar(1+.3*Math.abs(Math.sin(t*1.5+i)));});
+  // Zoom scale for effects
+  const zS=Math.min(Math.max(camZ/2.8,0.35),1.4);
+  pulseRings.forEach(r=>{r.userData.t=(r.userData.t+dt*.42)%1;const pt=r.userData.t;r.scale.setScalar((1+pt*3.5*zS)*zS);r.userData.mat.opacity=(1-pt)*.5*Math.min(1,zS);});
+  airportMarkers.forEach((mk,i)=>{mk.halo.scale.setScalar((1+.3*Math.abs(Math.sin(t*1.5+i)))*zS);mk.dot.scale.setScalar(zS);});
+  // Arc highlight for selected flight
+  if(selectedPIREP){
+    flights.forEach((fl,i)=>{
+      if(!fl.mat) return;
+      fl.mat.opacity=PIREPS[i]===selectedPIREP?1.0:0.12;
+    });
+  }
   flights.forEach((fl,i)=>{
     fl.t=(fl.t+dt*fl.speed)%1;
     if(!fl.plane) return;
@@ -931,7 +967,7 @@ function updateZulu(){
     n.toUTCString().match(/\d{1,2} \w{3} \d{4}/)[0].toUpperCase();
 }
 updateZulu();
-setInterval(updateZulu,1000);
+setInterval(()=>{updateZulu();renderBottomBar();},1000);
 
 // ═══════════════════════════════════════════════════════
 // HEADER STATS
@@ -943,13 +979,28 @@ function updateStats(){
   document.getElementById('statAirtime').textContent=minutesToHM(totalMins);
   const nets=[...new Set(PIREPS.map(p=>p.network))];
   document.getElementById('statNetwork').textContent=nets.length===1?nets[0]:'MULTI';
+  renderStatsBar();
+}
+
+function renderStatsBar(){
+  const set=activeFilter?PIREPS.filter(p=>p.pilot.toLowerCase().includes(activeFilter.toLowerCase())):PIREPS;
+  const el=document.getElementById('statsBar');
+  if(!el||!set.length){if(el)el.textContent='';return;}
+  const totalMins=set.reduce((s,p)=>s+airtimeToMinutes(p.airtime),0);
+  const avgMins=Math.round(totalMins/set.length);
+  const routes=new Set(set.map(p=>p.origin.icao+'-'+p.dest.icao)).size;
+  const apCount={};
+  set.forEach(p=>{apCount[p.dest.icao]=(apCount[p.dest.icao]||0)+1;});
+  const busiest=Object.entries(apCount).sort((a,b)=>b[1]-a[1])[0]?.[0]||'–';
+  const h=Math.floor(avgMins/60),m=avgMins%60;
+  el.innerHTML=`AVG <span>${h}H ${String(m).padStart(2,'0')}M</span> · <span>${routes}</span> ROUTES · BUSIEST: <span>${busiest}</span>`;
 }
 
 function renderBottomBar(){
   const el=document.getElementById('footerUpdate');
-  if(!el||!_dbgLastFetch) return;
-  const secs=Math.round((Date.now()-new Date(_dbgLastFetch))/1000);
-  el.textContent=_dbgFallback?'SAMPLE DATA · API UNAVAILABLE':`UPDATED ${secs}S AGO · LIVE DATA`;
+  if(!el) return;
+  const secs=Math.max(0,Math.round((_nextRefreshAt-Date.now())/1000));
+  el.textContent=_dbgFallback?`SAMPLE DATA · REFRESH IN ${secs}S`:`LIVE DATA · REFRESH IN ${secs}S`;
 }
 
 // ═══════════════════════════════════════════════════════
@@ -965,6 +1016,25 @@ function renderPilotChips(){
          title="${name}" onclick="setPilotFilter('${name==='All'?'':name}')">${label}</div>`;
   }).join('');
 }
+function applyFlightVisibility(){
+  const q=activeFilter.toLowerCase();
+  const activeAirports=new Set();
+  if(q){
+    PIREPS.filter(p=>p.pilot.toLowerCase().includes(q))
+          .forEach(p=>{activeAirports.add(p.origin.icao);activeAirports.add(p.dest.icao);});
+  }
+  flights.forEach((fl,i)=>{
+    const vis=!q||PIREPS[i].pilot.toLowerCase().includes(q);
+    fl.arcMesh.visible=vis;
+    if(fl.plane) fl.plane.visible=vis;
+    if(fl.trail) fl.trail.line.visible=vis;
+  });
+  airportMarkers.forEach(mk=>{
+    const vis=!q||activeAirports.has(mk.icao);
+    mk.dot.visible=mk.halo.visible=mk.ring.visible=vis;
+    if(!vis) mk.lbl.classList.remove('show');
+  });
+}
 function setPilotFilter(name){
   activeFilter=name;
   currentPage=0;
@@ -972,6 +1042,10 @@ function setPilotFilter(name){
   renderPilotChips();
   renderFlightList(name);
   updateStats();
+  renderStatsBar();
+  applyFlightVisibility();
+  if(name) history.replaceState(null,'','?pilot='+encodeURIComponent(name));
+  else history.replaceState(null,'',location.pathname);
 }
 
 // ═══════════════════════════════════════════════════════
@@ -987,14 +1061,25 @@ function changePage(dir){
   renderFlightList();
 }
 
+function hoverCard(i){
+  if(selectedPIREP) return;
+  if(flights[i]?.mat) flights[i].mat.opacity=1.0;
+}
+function unhoverCard(i){
+  if(selectedPIREP) return;
+  if(flights[i]?.mat) flights[i].mat.opacity=0.85;
+}
+
 function renderFlightList(filter){
   if(filter!==undefined) currentPage=0;
   const q=(filter!==undefined?filter:activeFilter).toLowerCase();
   _filtered=PIREPS.filter(p=>!q||p.pilot.toLowerCase().includes(q));
   const list=document.getElementById('flightList');
+  list.classList.add('fading');
   if(!_filtered.length){
     list.innerHTML='<div class="no-flights">No flights match this filter.</div>';
     document.getElementById('pagBar').style.display='none';
+    requestAnimationFrame(()=>list.classList.remove('fading'));
     return;
   }
   const total=Math.ceil(_filtered.length/PAGE_SIZE);
@@ -1002,7 +1087,8 @@ function renderFlightList(filter){
   const page=_filtered.slice(currentPage*PAGE_SIZE,(currentPage+1)*PAGE_SIZE);
   list.innerHTML=page.map(p=>{
     const i=PIREPS.indexOf(p);
-    return `<div class="pcard" id="card${i}" style="--cc:${p.color}" onclick="openDetail(${i})">
+    return `<div class="pcard" id="card${i}" style="--cc:${p.color}" data-idx="${i}"
+      onclick="openDetail(${i})" onmouseover="hoverCard(${i})" onmouseleave="unhoverCard(${i})">
       <div class="card-top">
         <div class="cf">${p.flight}</div>
         <div class="ctime">${p.airtime}</div>
@@ -1011,6 +1097,7 @@ function renderFlightList(filter){
       <div class="cinfo">${shortName(p.pilot)}${p.aircraft?' · '+p.aircraft:''} · ${p.date}</div>
     </div>`;
   }).join('');
+  requestAnimationFrame(()=>list.classList.remove('fading'));
   // Pagination bar
   const bar=document.getElementById('pagBar');
   bar.style.display=total>1?'flex':'none';
@@ -1027,6 +1114,8 @@ document.getElementById('pilotFilter').addEventListener('input',function(){
   renderPilotChips();
   renderFlightList(this.value);
   updateStats();
+  renderStatsBar();
+  applyFlightVisibility();
 });
 
 // ═══════════════════════════════════════════════════════
@@ -1056,11 +1145,12 @@ function openDetail(i){
   document.getElementById('pagBar').style.display='none';
   document.getElementById('detailView').classList.add('vis');
   document.querySelectorAll('.pcard').forEach((c,j)=>c.classList.toggle('active',j===i));
-  // Focus globe on origin airport
-  if(globe){
-    focusGlobe(p.origin.lat,p.origin.lon);
-  }
   document.getElementById('apPopup').classList.remove('vis');
+  if(globe){
+    _savedAutoRot=autoRot; autoRot=0;
+    selectedPIREP=p;
+    focusGlobe((p.origin.lat+p.dest.lat)/2,(p.origin.lon+p.dest.lon)/2);
+  }
 }
 
 function closeDetail(){
@@ -1068,6 +1158,8 @@ function closeDetail(){
   document.getElementById('flightList').style.display='flex';
   document.getElementById('pagBar').style.display=_filtered.length>PAGE_SIZE?'flex':'none';
   document.querySelectorAll('.pcard').forEach(c=>c.classList.remove('active'));
+  autoRot=_savedAutoRot; selectedPIREP=null;
+  flights.forEach(fl=>{if(fl.mat) fl.mat.opacity=0.85;});
 }
 
 // ═══════════════════════════════════════════════════════
@@ -1109,12 +1201,18 @@ function handleLabelClick(icao,lblEl){
 // ═══════════════════════════════════════════════════════
 // REBUILD UI (called after data refresh)
 // ═══════════════════════════════════════════════════════
+let _urlPilotApplied=false;
 rebuildUI=function(){
   renderFlightList();
   renderBottomBar();
   updateStats();
-  if(globe){ buildAirports(); buildFlights(); }
+  if(globe){ buildAirports(); buildFlights(); applyFlightVisibility(); }
   closeDetail();
+  if(!_urlPilotApplied){
+    _urlPilotApplied=true;
+    const pilot=new URLSearchParams(location.search).get('pilot');
+    if(pilot) setPilotFilter(pilot);
+  }
 };
 
 // ═══════════════════════════════════════════════════════
