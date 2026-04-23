@@ -9,14 +9,12 @@
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
 :root{
-  /* Abel Jets Virtual Group brand palette */
   --plum-dk:#3E1530;--plum:#5A1F3D;--wine:#7A1F4A;
   --magenta:#B8195A;--pink:#E63862;--coral:#F55D5D;--salmon:#ED7B5E;
   --orange:#F99420;--gold:#F5C624;
   --bg:#1A0A15;--bg2:#2A0F22;
   --surf:rgba(58,20,44,0.82);--surf2:rgba(90,31,61,0.55);
   --border:rgba(249,148,32,0.18);--border-hi:rgba(249,148,32,0.45);
-  --cyan:#F99420;--amber:#E63862; /* legacy aliases — mapped to brand */
   --text:#F5E6DA;--dim:rgba(245,230,218,0.45);
   --fd:'Unbounded',sans-serif;--fb:'Plus Jakarta Sans',sans-serif;--fm:'JetBrains Mono',monospace;
 }
@@ -34,22 +32,55 @@ body::after{content:'';position:fixed;inset:0;z-index:9;pointer-events:none;
 .hdr-logo img{width:100%;height:100%;object-fit:contain;}
 .hdr-title{font-family:var(--fd);font-size:14px;font-weight:700;letter-spacing:.18em;
   color:var(--gold);text-transform:uppercase;}
-.hdr-sub{font-size:10px;letter-spacing:.18em;color:var(--dim);margin-top:3px;text-transform:uppercase;
-  font-weight:500;}
+.hdr-sub{font-size:10px;letter-spacing:.18em;color:var(--dim);margin-top:3px;text-transform:uppercase;font-weight:500;}
 .hdr-stats{display:flex;gap:32px;}
 .stat{text-align:right;}
-.stat-val{font-family:var(--fd);font-size:19px;color:var(--orange);font-weight:700;line-height:1;
-  letter-spacing:.04em;}
-.stat-lbl{font-size:9px;letter-spacing:.18em;color:var(--dim);text-transform:uppercase;margin-top:3px;
-  font-weight:600;}
+.stat-val{font-family:var(--fd);font-size:19px;color:var(--orange);font-weight:700;line-height:1;letter-spacing:.04em;}
+.stat-lbl{font-size:9px;letter-spacing:.18em;color:var(--dim);text-transform:uppercase;margin-top:3px;font-weight:600;}
 
-/* SIDEBAR */
-.sidebar{position:fixed;top:90px;left:0;bottom:60px;width:290px;z-index:20;
-  padding:10px;overflow-y:auto;display:flex;flex-direction:column;gap:10px;pointer-events:auto;}
-.sidebar::-webkit-scrollbar{width:3px;}
-.sidebar::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px;}
+/* ZULU CLOCK */
+.zulu-clock{position:fixed;top:16px;left:50%;transform:translateX(-50%);z-index:18;pointer-events:none;
+  font-family:var(--fm);font-size:11px;font-weight:700;letter-spacing:.18em;
+  color:var(--gold);text-shadow:0 0 14px rgba(245,198,36,.5);
+  padding:8px 18px;border:1px solid rgba(245,198,36,.3);border-radius:20px;
+  background:rgba(62,21,48,.4);backdrop-filter:blur(8px);
+  display:flex;align-items:center;gap:10px;white-space:nowrap;}
+.zc-dot{width:6px;height:6px;border-radius:50%;background:var(--orange);
+  box-shadow:0 0 6px var(--orange);animation:blink 1s step-end infinite;}
+@keyframes blink{0%,100%{opacity:1;}50%{opacity:.3;}}
+
+/* RIGHT PANEL */
+.rpanel{position:fixed;top:90px;right:0;bottom:60px;width:310px;z-index:20;
+  display:flex;flex-direction:column;pointer-events:auto;}
+
+/* Pilot filter header */
+.rf-head{padding:0 10px 8px;flex-shrink:0;}
 .slbl{font-family:var(--fd);font-size:9px;letter-spacing:.3em;color:var(--dim);
-  text-transform:uppercase;padding:0 6px;margin-bottom:2px;}
+  text-transform:uppercase;padding:0 6px;margin-bottom:8px;display:block;}
+.pf-input-wrap{position:relative;margin-bottom:8px;}
+.pf-input{width:100%;background:rgba(58,20,44,0.7);border:1px solid var(--border);
+  border-radius:8px;padding:8px 12px 8px 32px;color:var(--text);font-family:var(--fb);
+  font-size:11px;outline:none;transition:border-color .2s;}
+.pf-input::placeholder{color:var(--dim);}
+.pf-input:focus{border-color:var(--border-hi);}
+.pf-icon{position:absolute;left:10px;top:50%;transform:translateY(-50%);
+  font-size:12px;color:var(--dim);pointer-events:none;}
+.pilot-chips{display:flex;gap:5px;overflow-x:auto;padding-bottom:4px;}
+.pilot-chips::-webkit-scrollbar{height:2px;}
+.pilot-chips::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px;}
+.pchip{flex-shrink:0;padding:4px 10px;border-radius:12px;border:1px solid var(--border);
+  background:transparent;color:var(--dim);font-family:var(--fm);font-size:9px;
+  cursor:pointer;transition:all .2s;letter-spacing:.08em;}
+.pchip.active{background:rgba(249,148,32,.12);border-color:var(--orange);color:var(--orange);}
+.pchip:hover:not(.active){border-color:var(--border-hi);color:var(--text);}
+
+/* Flight list */
+.flight-list{flex:1;overflow-y:auto;padding:0 10px 10px;display:flex;flex-direction:column;gap:8px;}
+.flight-list::-webkit-scrollbar{width:3px;}
+.flight-list::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px;}
+.no-flights{text-align:center;padding:32px 16px;color:var(--dim);font-size:11px;letter-spacing:.1em;}
+
+/* FLIGHT CARDS */
 .pcard{background:var(--surf);border:1px solid var(--border);border-radius:10px;
   padding:14px 14px 14px 18px;cursor:pointer;
   transition:all .3s cubic-bezier(.23,1,.32,1);backdrop-filter:blur(14px);
@@ -57,7 +88,7 @@ body::after{content:'';position:fixed;inset:0;z-index:9;pointer-events:none;
 .pcard::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;
   background:var(--cc,var(--orange));box-shadow:0 0 8px var(--cc,var(--orange));}
 .pcard:hover,.pcard.active{border-color:var(--border-hi);
-  box-shadow:0 0 24px rgba(249,148,32,.15),inset 0 0 30px rgba(249,148,32,.04);transform:translateX(5px);}
+  box-shadow:0 0 24px rgba(249,148,32,.15),inset 0 0 30px rgba(249,148,32,.04);transform:translateX(-5px);}
 .cf{font-family:var(--fd);font-size:17px;font-weight:700;color:var(--cc,var(--gold));
   text-shadow:0 0 10px var(--cc,var(--orange));margin-bottom:6px;letter-spacing:.04em;}
 .croute{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:500;margin-bottom:8px;}
@@ -67,44 +98,43 @@ body::after{content:'';position:fixed;inset:0;z-index:9;pointer-events:none;
 .cmv{color:var(--text);}
 .cdate{font-size:10px;color:var(--dim);margin-top:6px;font-family:var(--fm);}
 
-/* DETAIL PANEL */
-.det-wrap{position:fixed;top:90px;right:0;bottom:60px;display:flex;
-  align-items:flex-start;padding:16px;pointer-events:none;z-index:20;}
-.det{width:355px;background:rgba(3,8,20,.95);border:1px solid var(--border);
-  border-radius:12px;backdrop-filter:blur(24px);padding:24px;pointer-events:auto;
-  transform:translateX(400px);opacity:0;transition:all .5s cubic-bezier(.23,1,.32,1);
-  box-shadow:-16px 0 50px rgba(0,0,0,.7);overflow-y:auto;max-height:100%;}
-.det.vis{transform:translateX(0);opacity:1;}
+/* DETAIL VIEW (inside right panel) */
+.detail-view{flex:1;overflow-y:auto;padding:0 10px 10px;display:none;flex-direction:column;gap:0;}
+.detail-view::-webkit-scrollbar{width:3px;}
+.detail-view::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px;}
+.detail-view.vis{display:flex;}
+.dv-back{display:flex;align-items:center;gap:7px;padding:0 6px 10px;
+  color:var(--dim);font-size:10px;letter-spacing:.12em;cursor:pointer;
+  transition:color .2s;font-family:var(--fm);border:none;background:none;text-transform:uppercase;}
+.dv-back:hover{color:var(--orange);}
+.dv-card{background:rgba(26,10,21,.9);border:1px solid var(--border);border-radius:12px;
+  backdrop-filter:blur(24px);padding:20px;box-shadow:0 8px 32px rgba(0,0,0,.5);}
 .dh{display:flex;justify-content:space-between;align-items:flex-start;
-  margin-bottom:20px;padding-bottom:18px;border-bottom:1px solid var(--border);}
-.dfn{font-family:var(--fd);font-size:26px;font-weight:900;color:var(--dc,var(--cyan));
-  text-shadow:0 0 18px var(--dc,var(--cyan));line-height:1;}
+  margin-bottom:18px;padding-bottom:16px;border-bottom:1px solid var(--border);}
+.dfn{font-family:var(--fd);font-size:24px;font-weight:900;color:var(--dc,var(--orange));
+  text-shadow:0 0 18px var(--dc,var(--orange));line-height:1;}
 .dpilot{font-size:11px;color:var(--dim);margin-top:5px;letter-spacing:.1em;text-transform:uppercase;}
-.dbadge{background:rgba(0,212,255,.08);border:1px solid var(--dc,var(--cyan));
-  color:var(--dc,var(--cyan));font-family:var(--fm);font-size:9px;
+.dbadge{background:rgba(249,148,32,.08);border:1px solid var(--dc,var(--orange));
+  color:var(--dc,var(--orange));font-family:var(--fm);font-size:9px;
   padding:4px 9px;border-radius:4px;letter-spacing:.12em;white-space:nowrap;}
-.drte{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;
-  padding:14px;background:rgba(0,212,255,.03);border-radius:8px;border:1px solid rgba(0,212,255,.07);}
+.drte{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;
+  padding:12px;background:rgba(249,148,32,.03);border-radius:8px;border:1px solid rgba(249,148,32,.07);}
 .dap{text-align:center;}
-.dicao{font-family:var(--fd);font-size:18px;font-weight:700;color:var(--text);}
-.dtime{font-family:var(--fm);font-size:10px;color:var(--dc,var(--cyan));margin-top:3px;}
-.dname{font-size:9px;color:var(--dim);margin-top:3px;max-width:110px;line-height:1.3;}
-.dline{flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;padding:0 10px;}
+.dicao{font-family:var(--fd);font-size:16px;font-weight:700;color:var(--text);}
+.dtime{font-family:var(--fm);font-size:10px;color:var(--dc,var(--orange));margin-top:3px;}
+.dname{font-size:9px;color:var(--dim);margin-top:3px;max-width:90px;line-height:1.3;}
+.dline{flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;padding:0 8px;}
 .dair{font-family:var(--fm);font-size:10px;color:var(--dim);}
-.ddiv{width:100%;height:1px;background:linear-gradient(90deg,transparent,var(--dc,var(--cyan)),transparent);position:relative;}
+.ddiv{width:100%;height:1px;background:linear-gradient(90deg,transparent,var(--dc,var(--orange)),transparent);position:relative;}
 .ddiv::after{content:'✈';position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
-  font-size:11px;color:var(--dc,var(--cyan));background:rgba(3,8,20,.95);padding:0 5px;}
-.dgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;}
-.df{background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.05);border-radius:6px;padding:9px 11px;}
+  font-size:10px;color:var(--dc,var(--orange));background:rgba(26,10,21,.9);padding:0 4px;}
+.dgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;}
+.df{background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.05);border-radius:6px;padding:8px 10px;}
 .dfl{font-size:8px;letter-spacing:.2em;color:var(--dim);text-transform:uppercase;margin-bottom:3px;}
 .dfv{font-family:var(--fm);font-size:11px;color:var(--text);font-weight:700;}
-.deval{background:rgba(230,56,98,.06);border:1px solid rgba(230,56,98,.22);border-radius:8px;padding:13px;}
-.devlbl{font-size:8px;letter-spacing:.22em;color:rgba(245,198,36,.85);text-transform:uppercase;margin-bottom:7px;font-weight:700;}
+.deval{background:rgba(230,56,98,.06);border:1px solid rgba(230,56,98,.22);border-radius:8px;padding:12px;}
+.devlbl{font-size:8px;letter-spacing:.22em;color:rgba(245,198,36,.85);text-transform:uppercase;margin-bottom:6px;font-weight:700;}
 .devtxt{font-size:11px;line-height:1.65;color:rgba(245,230,218,.82);font-style:italic;}
-.cbtn{display:block;width:100%;margin-top:14px;padding:9px;background:transparent;
-  border:1px solid var(--border);border-radius:6px;color:var(--dim);font-family:var(--fd);
-  font-size:9px;letter-spacing:.22em;cursor:pointer;transition:all .2s;text-transform:uppercase;}
-.cbtn:hover{border-color:var(--orange);color:var(--orange);}
 
 /* BOTTOM BAR */
 .bot{position:fixed;bottom:0;left:0;right:0;z-index:20;padding:12px 28px;
@@ -112,24 +142,48 @@ body::after{content:'';position:fixed;inset:0;z-index:9;pointer-events:none;
   display:flex;align-items:center;justify-content:center;gap:28px;pointer-events:none;}
 .bi{display:flex;align-items:center;gap:7px;font-size:10px;color:var(--dim);font-weight:500;}
 .bd{width:8px;height:8px;border-radius:50%;background:var(--bc);box-shadow:0 0 7px var(--bc);}
-
-/* SLOGAN */
-.slogan{position:fixed;top:16px;left:50%;transform:translateX(-50%);z-index:18;
-  font-family:var(--fd);font-size:11px;font-weight:700;letter-spacing:.22em;
-  color:var(--gold);text-shadow:0 0 14px rgba(245,198,36,.6);pointer-events:none;
-  padding:8px 18px;border:1px solid rgba(245,198,36,.3);border-radius:20px;
-  background:rgba(62,21,48,.4);backdrop-filter:blur(8px);}
-.slogan .hash{color:var(--orange);}
+#botFlights{display:flex;align-items:center;gap:28px;flex-wrap:wrap;justify-content:center;}
 
 /* AIRPORT LABELS */
-.albl{position:fixed;z-index:15;pointer-events:none;font-family:var(--fd);font-size:9px;
+.albl{position:fixed;z-index:15;font-family:var(--fd);font-size:9px;
   letter-spacing:.15em;padding:3px 8px;border-radius:3px;
   background:rgba(26,10,21,.85);border:1px solid rgba(249,148,32,.35);
-  color:var(--gold);white-space:nowrap;transform:translate(-50%,-200%);opacity:0;transition:opacity .3s;
-  font-weight:700;}
+  color:var(--gold);white-space:nowrap;transform:translate(-50%,-200%);opacity:0;
+  transition:opacity .3s,border-color .2s;font-weight:700;
+  cursor:pointer;pointer-events:none;}
+.albl.show{opacity:1;pointer-events:auto;}
+.albl:hover{border-color:var(--border-hi);background:rgba(62,21,48,.95);}
+
+/* AIRPORT POPUP */
+.ap-popup{position:fixed;z-index:50;min-width:190px;
+  background:rgba(26,10,21,.97);border:1px solid var(--border-hi);
+  border-radius:10px;padding:10px;backdrop-filter:blur(20px);
+  box-shadow:0 8px 32px rgba(0,0,0,.6);display:none;pointer-events:auto;}
+.ap-popup.vis{display:block;}
+.ap-pop-title{font-family:var(--fd);font-size:9px;letter-spacing:.22em;
+  color:var(--gold);text-transform:uppercase;margin-bottom:8px;font-weight:700;
+  padding-bottom:6px;border-bottom:1px solid var(--border);}
+.ap-pop-item{padding:7px 8px;border-radius:6px;cursor:pointer;
+  display:flex;justify-content:space-between;align-items:center;gap:10px;
+  transition:background .2s;}
+.ap-pop-item:hover{background:rgba(249,148,32,.1);}
+.ap-fi{font-family:var(--fd);font-size:11px;font-weight:700;}
+.ap-fr{font-family:var(--fm);font-size:9px;color:var(--dim);}
+
+/* LOADING */
+#loading{position:fixed;inset:0;z-index:50;display:flex;align-items:center;justify-content:center;
+  background:linear-gradient(180deg,#1A0A15 0%,#3E1530 100%);flex-direction:column;gap:18px;transition:opacity .8s;}
+#loading.hide{opacity:0;pointer-events:none;}
+#loading img{width:80px;height:80px;filter:drop-shadow(0 0 24px rgba(249,148,32,.6));animation:pulse 2.2s ease-in-out infinite;}
+@keyframes pulse{0%,100%{opacity:.85;transform:scale(1);}50%{opacity:1;transform:scale(1.04);}}
+.ld-logo{font-family:var(--fd);font-size:12px;font-weight:700;color:var(--gold);
+  letter-spacing:.35em;text-shadow:0 0 18px rgba(245,198,36,.55);}
+.ld-bar{width:200px;height:2px;background:rgba(249,148,32,.12);border-radius:2px;}
+.ld-fill{height:100%;background:linear-gradient(90deg,var(--orange),var(--gold));border-radius:2px;width:0%;transition:width .4s;}
+.ld-txt{font-size:10px;color:var(--dim);letter-spacing:.2em;font-weight:500;}
 
 /* TWEAKS */
-.tweaks{position:fixed;bottom:72px;right:20px;width:215px;
+.tweaks{position:fixed;bottom:72px;right:320px;width:215px;
   background:rgba(26,10,21,.96);border:1px solid var(--border);border-radius:12px;
   padding:16px;z-index:100;backdrop-filter:blur(20px);display:none;}
 .tweaks.vis{display:block;}
@@ -142,17 +196,6 @@ body::after{content:'';position:fixed;inset:0;z-index:9;pointer-events:none;
 .tw-btn{flex:1;padding:5px 0;background:transparent;border:1px solid var(--border);border-radius:4px;
   color:var(--dim);font-size:9px;cursor:pointer;transition:all .2s;font-family:var(--fm);font-weight:700;}
 .tw-btn.on{background:rgba(249,148,32,.12);border-color:var(--orange);color:var(--orange);}
-
-#loading{position:fixed;inset:0;z-index:50;display:flex;align-items:center;justify-content:center;
-  background:linear-gradient(180deg,#1A0A15 0%,#3E1530 100%);flex-direction:column;gap:18px;transition:opacity .8s;}
-#loading.hide{opacity:0;pointer-events:none;}
-#loading img{width:80px;height:80px;filter:drop-shadow(0 0 24px rgba(249,148,32,.6));animation:pulse 2.2s ease-in-out infinite;}
-@keyframes pulse{0%,100%{opacity:.85;transform:scale(1);}50%{opacity:1;transform:scale(1.04);}}
-.ld-logo{font-family:var(--fd);font-size:12px;font-weight:700;color:var(--gold);
-  letter-spacing:.35em;text-shadow:0 0 18px rgba(245,198,36,.55);}
-.ld-bar{width:200px;height:2px;background:rgba(249,148,32,.12);border-radius:2px;}
-.ld-fill{height:100%;background:linear-gradient(90deg,var(--orange),var(--gold));border-radius:2px;width:0%;transition:width .4s;}
-.ld-txt{font-size:10px;color:var(--dim);letter-spacing:.2em;font-weight:500;}
 </style>
 </head>
 <body>
@@ -165,8 +208,13 @@ body::after{content:'';position:fixed;inset:0;z-index:9;pointer-events:none;
   <div class="ld-txt" id="ldTxt">LOADING EARTH TEXTURE…</div>
 </div>
 
-<!-- SLOGAN RIBBON -->
-<div class="slogan"><span class="hash">#</span>ProgressToDecade · 2026</div>
+<!-- ZULU CLOCK -->
+<div class="zulu-clock">
+  <div class="zc-dot"></div>
+  <span id="zuluTime">00:00:00 Z</span>
+  <span style="color:var(--dim);font-weight:400">|</span>
+  <span id="zuluDate" style="color:var(--dim);font-weight:400;font-size:10px;letter-spacing:.12em"></span>
+</div>
 
 <!-- HEADER -->
 <div class="hdr">
@@ -178,54 +226,41 @@ body::after{content:'';position:fixed;inset:0;z-index:9;pointer-events:none;
     </div>
   </div>
   <div class="hdr-stats">
-    <div class="stat"><div class="stat-val">02</div><div class="stat-lbl">Total Flights</div></div>
-    <div class="stat"><div class="stat-val">4:32</div><div class="stat-lbl">Total Airtime</div></div>
-    <div class="stat"><div class="stat-val">VATSIM</div><div class="stat-lbl">Network</div></div>
+    <div class="stat"><div class="stat-val" id="statFlights">–</div><div class="stat-lbl">Total Flights</div></div>
+    <div class="stat"><div class="stat-val" id="statAirtime">–</div><div class="stat-lbl">Total Airtime</div></div>
+    <div class="stat"><div class="stat-val" id="statNetwork">VATSIM</div><div class="stat-lbl">Network</div></div>
   </div>
 </div>
 
-<!-- SIDEBAR -->
-<div class="sidebar">
-  <div class="slbl">Flight Log</div>
-  <div class="pcard" id="card0" style="--cc:#F99420" onclick="openDetail(0)">
-    <div class="cf">AJV235</div>
-    <div class="croute"><span>WIHH</span><span class="carrow">──▶</span><span>VTBS</span></div>
-    <div class="cmeta">
-      <div class="cm">Aircraft</div><div class="cm cmv">A321-200</div>
-      <div class="cm">Reg</div><div class="cm cmv">PK-AJR</div>
-      <div class="cm">Dep</div><div class="cm cmv">12:30</div>
-      <div class="cm">Arr</div><div class="cm cmv">16:06</div>
+<!-- RIGHT PANEL -->
+<div class="rpanel">
+  <div class="rf-head">
+    <span class="slbl">Flight Log</span>
+    <div class="pf-input-wrap">
+      <span class="pf-icon">✦</span>
+      <input class="pf-input" id="pilotFilter" type="text" placeholder="Filter by pilot name…" autocomplete="off">
     </div>
-    <div class="cdate">24 MAY 2025 · 3h 08m air</div>
+    <div class="pilot-chips" id="pilotChips"></div>
   </div>
-  <div class="pcard" id="card1" style="--cc:#E63862" onclick="openDetail(1)">
-    <div class="cf">AJV155</div>
-    <div class="croute"><span>WAHS</span><span class="carrow">──▶</span><span>WIPP</span></div>
-    <div class="cmeta">
-      <div class="cm">Aircraft</div><div class="cm cmv">B727-200Adv</div>
-      <div class="cm">Reg</div><div class="cm cmv">F-AJAA</div>
-      <div class="cm">Dep</div><div class="cm cmv">08:40</div>
-      <div class="cm">Arr</div><div class="cm cmv">10:32</div>
-    </div>
-    <div class="cdate">25 MAY 2025 · 1h 24m air</div>
+
+  <!-- Flight list view -->
+  <div class="flight-list" id="flightList"></div>
+
+  <!-- Detail view (replaces list when a card is clicked) -->
+  <div class="detail-view" id="detailView">
+    <button class="dv-back" onclick="closeDetail()">◀ Back to flights</button>
+    <div class="dv-card" id="detContent"></div>
   </div>
 </div>
 
-<!-- DETAIL PANEL -->
-<div class="det-wrap"><div class="det" id="detpanel"></div></div>
+<!-- AIRPORT POPUP -->
+<div class="ap-popup" id="apPopup"></div>
 
 <!-- BOTTOM BAR -->
 <div class="bot">
-  <div class="bi"><div class="bd" style="--bc:#F99420"></div>AJV235 · Jakarta → Bangkok</div>
-  <div class="bi"><div class="bd" style="--bc:#E63862"></div>AJV155 · Semarang → Palembang</div>
+  <div id="botFlights"></div>
   <div class="bi" style="color:rgba(180,210,240,.18);">Drag globe · Click flight to inspect</div>
 </div>
-
-<!-- AIRPORT LABELS -->
-<div class="albl" id="lbl-WIHH">WIHH · Jakarta Halim</div>
-<div class="albl" id="lbl-VTBS">VTBS · Bangkok</div>
-<div class="albl" id="lbl-WAHS">WAHS · Semarang</div>
-<div class="albl" id="lbl-WIPP">WIPP · Palembang</div>
 
 <!-- TWEAKS -->
 <div class="tweaks" id="tweaksPanel">
@@ -263,9 +298,66 @@ body::after{content:'';position:fixed;inset:0;z-index:9;pointer-events:none;
 
 <script>
 // ═══════════════════════════════════════════════════════
-// PIREP DATA
+// AIRPORT COORDINATE LOOKUP
 // ═══════════════════════════════════════════════════════
-const PIREPS = [
+const AIRPORT_COORDS = {
+  'WIHH':{lat:-6.267,lon:106.891,name:'Jakarta Halim Perdanakusuma'},
+  'WIII':{lat:-6.127,lon:106.656,name:'Jakarta Soekarno-Hatta'},
+  'WADD':{lat:-8.748,lon:115.167,name:'Bali Ngurah Rai'},
+  'WARR':{lat:-7.380,lon:112.787,name:'Surabaya Juanda'},
+  'WAHS':{lat:-6.970,lon:110.374,name:'Semarang Ahmad Yani'},
+  'WAPP':{lat:-3.702,lon:128.085,name:'Ambon Pattimura'},
+  'WIPP':{lat:-2.898,lon:104.700,name:'Palembang SMB II'},
+  'WIDD':{lat:1.121,lon:104.118,name:'Batam Hang Nadim'},
+  'WAJJ':{lat:-2.577,lon:140.517,name:'Jayapura Sentani'},
+  'WABP':{lat:-3.868,lon:136.883,name:'Timika Moses Kilangin'},
+  'WAMM':{lat:1.549,lon:124.926,name:'Manado Sam Ratulangi'},
+  'WALL':{lat:-3.442,lon:114.762,name:'Banjarmasin Syamsudin Noor'},
+  'WALS':{lat:-8.559,lon:125.188,name:'Dili Presidente Nicolau Lobato'},
+  'WART':{lat:1.268,lon:116.894,name:'Balikpapan Sepinggan'},
+  'VTBS':{lat:13.681,lon:100.747,name:'Bangkok Suvarnabhumi'},
+  'VTBD':{lat:13.913,lon:100.607,name:'Bangkok Don Mueang'},
+  'VTSP':{lat:8.113,lon:98.317,name:'Phuket Int\'l'},
+  'VTSM':{lat:9.134,lon:99.464,name:'Samui'},
+  'WMKK':{lat:2.746,lon:101.710,name:'Kuala Lumpur KLIA'},
+  'WMSA':{lat:3.131,lon:101.699,name:'Kuala Lumpur KLIA2'},
+  'WBKK':{lat:5.937,lon:116.051,name:'Kota Kinabalu'},
+  'WBGG':{lat:1.484,lon:110.329,name:'Kuching'},
+  'WSSS':{lat:1.359,lon:103.989,name:'Singapore Changi'},
+  'RPLL':{lat:14.508,lon:121.019,name:'Manila Ninoy Aquino'},
+  'RPVV':{lat:11.827,lon:122.076,name:'Kalibo Int\'l'},
+  'RPLC':{lat:15.186,lon:120.560,name:'Clark Int\'l'},
+  'VVNB':{lat:21.221,lon:105.807,name:'Hanoi Noi Bai'},
+  'VVTS':{lat:10.819,lon:106.652,name:'Ho Chi Minh Tan Son Nhat'},
+  'VVDN':{lat:16.044,lon:108.199,name:'Da Nang'},
+  'VDPP':{lat:11.547,lon:104.844,name:'Phnom Penh'},
+  'VDSR':{lat:13.411,lon:103.813,name:'Siem Reap'},
+  'VYYY':{lat:16.907,lon:96.133,name:'Yangon'},
+  'VYMM':{lat:21.702,lon:96.133,name:'Mandalay'},
+  'VLVT':{lat:17.988,lon:102.563,name:'Vientiane Wattay'},
+  'WBSB':{lat:4.944,lon:114.928,name:'Bandar Seri Begawan'},
+  'VHHH':{lat:22.309,lon:113.915,name:'Hong Kong Int\'l'},
+  'RCTP':{lat:25.077,lon:121.233,name:'Taipei Taoyuan'},
+  'RKSI':{lat:37.469,lon:126.451,name:'Seoul Incheon'},
+  'RJTT':{lat:35.549,lon:139.780,name:'Tokyo Haneda'},
+  'RJAA':{lat:35.765,lon:140.387,name:'Tokyo Narita'},
+  'RJOO':{lat:34.786,lon:135.438,name:'Osaka Itami'},
+  'RJBB':{lat:34.432,lon:135.244,name:'Osaka Kansai'},
+  'ZBAA':{lat:40.080,lon:116.585,name:'Beijing Capital'},
+  'ZSPD':{lat:31.143,lon:121.805,name:'Shanghai Pudong'},
+  'ZGGG':{lat:23.392,lon:113.299,name:'Guangzhou Baiyun'},
+  'ZGSZ':{lat:22.639,lon:113.811,name:'Shenzhen Bao\'an'},
+  'VIDP':{lat:28.556,lon:77.100,name:'Delhi Indira Gandhi'},
+  'VABB':{lat:19.088,lon:72.868,name:'Mumbai CSMT'},
+  'OMDB':{lat:25.253,lon:55.364,name:'Dubai Int\'l'},
+  'YSSY':{lat:-33.946,lon:151.177,name:'Sydney Kingsford Smith'},
+  'YMML':{lat:-37.673,lon:144.843,name:'Melbourne Tullamarine'},
+};
+
+// ═══════════════════════════════════════════════════════
+// FALLBACK PIREP DATA (used if API is unavailable)
+// ═══════════════════════════════════════════════════════
+const FALLBACK_PIREPS = [
   { flight:'AJV235', color:'#F99420', pilot:'FreezingFalcon', sim:'MSFS 2020',
     aircraft:'Airbus A321-200', reg:'PK-AJR', network:'VATSIM',
     origin:{icao:'WIHH', name:'Jakarta Halim Perdanakusuma', lat:-6.267, lon:106.891},
@@ -280,568 +372,627 @@ const PIREPS = [
     eval:'Some autopilot issues during the climb phase. The IAS hold mode did put the aircraft in a descend for a brief moment before it went back climbing.' }
 ];
 
-// ═══════════════════════════════════════════════════════
-// GOOGLE APPS SCRIPT API HOOK (for future integration)
-// ═══════════════════════════════════════════════════════
-// Paste your Apps Script Web App URL here (or set via localStorage):
-//   localStorage.setItem('pirep_api_url', 'https://script.google.com/macros/s/XXXX/exec');
-//
-// Expected JSON response shape — an array of objects matching PIREPS:
-//   [{flight, color, pilot, sim, aircraft, reg, network,
-//     origin:{icao, name, lat, lon}, dest:{icao, name, lat, lon},
-//     dep, arr, airtime, date, eval}, ...]
-//
-// Apps Script template (paste in your Apps Script project):
-//   function doGet(e){
-//     const sheet = SpreadsheetApp.openById('YOUR_SHEET_ID').getSheetByName('PIREPS');
-//     const rows  = sheet.getDataRange().getValues();
-//     const headers = rows.shift();
-//     const data = rows.map(r => Object.fromEntries(headers.map((h,i)=>[h,r[i]])));
-//     return ContentService.createTextOutput(JSON.stringify(data))
-//       .setMimeType(ContentService.MimeType.JSON);
-//   }
-// Then: Deploy → New deployment → Web app → Execute as: Me → Access: Anyone.
+const BRAND_COLORS = ['#F99420','#E63862','#F5C624','#F55D5D','#ED7B5E','#B8195A','#7A1F4A'];
 
-async function loadPIREPsFromAPI(url){
-  const endpoint = url || localStorage.getItem('pirep_api_url');
-  if(!endpoint){ console.info('[PIREP API] No URL set. Skipping remote fetch.'); return; }
+let PIREPS = [...FALLBACK_PIREPS];
+
+// ═══════════════════════════════════════════════════════
+// OPENSHEET DATA PARSER
+// ═══════════════════════════════════════════════════════
+const API_URL = 'https://opensheet.elk.sh/1BeLTYOaEOn7o8h-VO6N80fe_C7H0z8fhB7nyksqmck4/VATSIM%20Auto%20PIREP';
+let lastFetched = 0;
+
+function extractICAO(str) {
+  if (!str) return null;
+  const m = str.match(/\(([A-Z]{4})[\/\)]/);
+  return m ? m[1] : null;
+}
+function cleanAirportName(str) {
+  if (!str) return str;
+  return str.replace(/\s*\([^)]+\)\s*$/, '').trim();
+}
+function fmtTime(str) {
+  if (!str) return '';
+  const m = str.match(/(\d+):(\d+)/);
+  if (!m) return str;
+  let h = parseInt(m[1]), min = m[2];
+  if (/pm/i.test(str) && h !== 12) h += 12;
+  if (/am/i.test(str) && h === 12) h = 0;
+  return String(h).padStart(2,'0') + ':' + min;
+}
+function fmtAirtime(str) {
+  if (!str) return '';
+  const m = str.match(/(\d+):(\d+)/);
+  if (!m) return str;
+  return `${parseInt(m[1])}h ${m[2]}m`;
+}
+function fmtDate(str) {
+  if (!str) return '';
+  const d = new Date(str);
+  if (isNaN(d)) return str;
+  return d.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}).toUpperCase();
+}
+function airtimeToMinutes(str) {
+  if (!str) return 0;
+  const m = str.match(/(\d+)h\s*(\d+)m/);
+  if (m) return parseInt(m[1])*60 + parseInt(m[2]);
+  const t = str.match(/(\d+):(\d+)/);
+  if (t) return parseInt(t[1])*60 + parseInt(t[2]);
+  return 0;
+}
+function minutesToHM(mins) {
+  const h = Math.floor(mins/60), m = mins%60;
+  return `${h}:${String(m).padStart(2,'0')}`;
+}
+
+function parseRow(row, idx) {
+  const originICAO = extractICAO(row['Origin Airport']);
+  const destICAO   = extractICAO(row['Destination Airport']);
+  const originC    = AIRPORT_COORDS[originICAO];
+  const destC      = AIRPORT_COORDS[destICAO];
+  if (!originC || !destC) {
+    console.warn('[PIREP] Unknown airport(s):', originICAO, destICAO, '— skipping');
+    return null;
+  }
+  const sim = (row['Simulator Name'] || '')
+    .replace('Microsoft Flight Simulator 2020','MSFS 2020')
+    .replace('Microsoft Flight Simulator','MSFS')
+    .replace('X-Plane 12','XP12').replace('X-Plane 11','XP11').trim();
+  return {
+    flight:   row['ICAO Flight Number'] || 'UNK',
+    color:    BRAND_COLORS[idx % BRAND_COLORS.length],
+    pilot:    row['Pilot Name/Username'] || 'Unknown',
+    sim,
+    aircraft: row['Aircraft Flown'] || '',
+    reg:      row['Aircraft Registration'] || '',
+    network:  row['Network Name'] || 'VATSIM',
+    origin:   { icao: originICAO, name: cleanAirportName(row['Origin Airport']) || originC.name, lat: originC.lat, lon: originC.lon },
+    dest:     { icao: destICAO,   name: cleanAirportName(row['Destination Airport']) || destC.name, lat: destC.lat, lon: destC.lon },
+    dep:      fmtTime(row['Off-Block Time']),
+    arr:      fmtTime(row['On-Block Time']),
+    airtime:  fmtAirtime(row['Air Time']),
+    date:     fmtDate(row['Timestamp']),
+    eval:     row['Self-Evaluation'] || '',
+  };
+}
+
+async function fetchPIREPs() {
   try {
-    const res = await fetch(endpoint);
-    const data = await res.json();
-    if(!Array.isArray(data) || !data.length) throw new Error('Empty response');
-    PIREPS.length = 0;
-    data.forEach(p => PIREPS.push(p));
-    console.info('[PIREP API] Loaded', data.length, 'flights from', endpoint);
-    // Rebuild UI (reload recommended for simplicity)
-    location.reload();
-  } catch(err){
-    console.error('[PIREP API] Fetch failed:', err);
+    setLdTxt('FETCHING FLIGHT DATA…');
+    const res  = await fetch(API_URL);
+    const rows = await res.json();
+    if (!Array.isArray(rows) || !rows.length) throw new Error('Empty response');
+    const parsed = rows.map(parseRow).filter(Boolean);
+    if (!parsed.length) throw new Error('No parseable flights');
+    PIREPS = parsed;
+    lastFetched = Date.now();
+    console.info('[PIREP API] Loaded', parsed.length, 'flights');
+  } catch(err) {
+    console.warn('[PIREP API] Using fallback data:', err.message);
+    PIREPS = [...FALLBACK_PIREPS];
   }
 }
-window.loadPIREPsFromAPI = loadPIREPsFromAPI;
-// Auto-load on boot if URL is cached:
-if(localStorage.getItem('pirep_api_url')) loadPIREPsFromAPI();
+
+// Auto-refresh every hour
+setInterval(() => { if (Date.now() - lastFetched > 3_600_000) fetchPIREPs().then(rebuildUI); }, 60_000);
 
 // ═══════════════════════════════════════════════════════
-// TWEAKS & GLOBALS (declared early for event handlers)
+// HELPER STUBS (filled in next steps)
 // ═══════════════════════════════════════════════════════
-let arcH = 0.18, autoRot = 0.00015, trailsOn = true, cloudsOn = true;
-let flights = [], pulseRings = [], markerList = [];
+function setLdTxt(msg) {
+  const el = document.getElementById('ldTxt');
+  if (el) el.textContent = msg;
+}
+function rebuildUI() {} // overridden later
+
+// ═══════════════════════════════════════════════════════
+// GLOBE GLOBALS
+// ═══════════════════════════════════════════════════════
+let arcH=0.18, autoRot=0.00015, trailsOn=true, cloudsOn=true;
+let flights=[], pulseRings=[], airportMarkers=[];
 let sunLight, globe, camera, renderer, scene;
-let rotX = 0.12, rotY = 2.83, trgX = 0.12, trgY = 2.83;
-let isDrag = false, px = 0, py = 0;
+let rotX=0.12, rotY=2.83, trgX=0.12, trgY=2.83;
+let isDrag=false, px=0, py=0;
 
 function setTrails(on){
-  trailsOn = on;
-  flights.forEach(f => f.trail.line.visible = on);
-  document.getElementById('twTrailOn').classList.toggle('on', on);
-  document.getElementById('twTrailOff').classList.toggle('on', !on);
+  trailsOn=on;
+  flights.forEach(f=>f.trail.line.visible=on);
+  document.getElementById('twTrailOn').classList.toggle('on',on);
+  document.getElementById('twTrailOff').classList.toggle('on',!on);
 }
 function setClouds(on){
-  cloudsOn = on;
-  if(window._cloudMesh) window._cloudMesh.visible = on;
-  document.getElementById('twCloudOn').classList.toggle('on', on);
-  document.getElementById('twCloudOff').classList.toggle('on', !on);
+  cloudsOn=on;
+  if(window._cloudMesh) window._cloudMesh.visible=on;
+  document.getElementById('twCloudOn').classList.toggle('on',on);
+  document.getElementById('twCloudOff').classList.toggle('on',!on);
 }
 function setSun(mode){
   if(!sunLight) return;
-  if(mode === 'se'){ sunLight.position.set(2, 1, 3); }
-  else { sunLight.position.set(-4, 2, 1); }
-  document.getElementById('twSunSE').classList.toggle('on', mode==='se');
-  document.getElementById('twSunSide').classList.toggle('on', mode==='side');
+  sunLight.position.set(mode==='se'?2:-4, mode==='se'?1:2, mode==='se'?3:1);
+  document.getElementById('twSunSE').classList.toggle('on',mode==='se');
+  document.getElementById('twSunSide').classList.toggle('on',mode==='side');
 }
-document.getElementById('twSpeed').addEventListener('input', e => { autoRot = e.target.value / 100 * 0.0006; });
-document.getElementById('twArc').addEventListener('input', e => { arcH = e.target.value / 100; if(globe) buildFlights(); });
-
-window.addEventListener('message', e => {
-  if(e.data.type === '__activate_edit_mode') document.getElementById('tweaksPanel').classList.add('vis');
-  if(e.data.type === '__deactivate_edit_mode') document.getElementById('tweaksPanel').classList.remove('vis');
+document.getElementById('twSpeed').addEventListener('input',e=>{autoRot=e.target.value/100*0.0006;});
+document.getElementById('twArc').addEventListener('input',e=>{arcH=e.target.value/100;if(globe)buildFlights();});
+window.addEventListener('message',e=>{
+  if(e.data.type==='__activate_edit_mode') document.getElementById('tweaksPanel').classList.add('vis');
+  if(e.data.type==='__deactivate_edit_mode') document.getElementById('tweaksPanel').classList.remove('vis');
 });
-window.parent.postMessage({type:'__edit_mode_available'}, '*');
+window.parent.postMessage({type:'__edit_mode_available'},'*');
 
 // ═══════════════════════════════════════════════════════
-// INIT (after window load to ensure Three.js is ready)
+// GEOMETRY HELPERS
 // ═══════════════════════════════════════════════════════
-window.addEventListener('load', function() {
-  setProgress(10, 'INITIALIZING 3D ENGINE…');
-
-  // ── Renderer ──
-  renderer = new THREE.WebGLRenderer({antialias: true, alpha: false});
-  renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
-  renderer.setSize(innerWidth, innerHeight);
-  renderer.setClearColor(0x060108, 1);
-  renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.05;
-  renderer.outputEncoding = THREE.sRGBEncoding;
-  const cvs = renderer.domElement;
-  cvs.style.cssText = 'position:fixed;top:0;left:0;width:100vw;height:100vh;z-index:1;display:block;';
-  document.body.insertBefore(cvs, document.body.firstChild);
-
-  // ── Scene & Camera ──
-  scene = new THREE.Scene();
-  camera = new THREE.PerspectiveCamera(45, innerWidth / innerHeight, 0.1, 1000);
-  camera.position.set(0, 0, 2.8);
-
-  // ── Lights (physically-based, high contrast) ──
-  scene.add(new THREE.AmbientLight(0x0a0614, 0.08));
-  sunLight = new THREE.DirectionalLight(0xfff4d6, 3.8);
-  sunLight.position.set(2, 1, 3);
-  scene.add(sunLight);
-
-  // ── Stars ──
-  const starPts = [];
-  for(let i = 0; i < 3000; i++){
-    const v = new THREE.Vector3((Math.random()-.5)*200,(Math.random()-.5)*200,(Math.random()-.5)*200);
-    if(v.length() > 30) starPts.push(v);
-  }
-  scene.add(new THREE.Points(
-    new THREE.BufferGeometry().setFromPoints(starPts),
-    new THREE.PointsMaterial({color:0x9aaabb, size:0.14, transparent:true, opacity:0.7})
-  ));
-
-  // ── Globe group ──
-  globe = new THREE.Group();
-  scene.add(globe);
-
-  setProgress(20, 'LOADING 4K EARTH TEXTURES…');
-
-  // ── Load high-res PBR Earth textures (turban/webgl-earth + three.js) ──
-  const loader = new THREE.TextureLoader();
-  loader.crossOrigin = 'anonymous';
-
-  const texSources = {
-    day:    'https://raw.githubusercontent.com/turban/webgl-earth/master/images/2_no_clouds_4k.jpg',
-    bump:   'https://raw.githubusercontent.com/turban/webgl-earth/master/images/elev_bump_4k.jpg',
-    spec:   'https://raw.githubusercontent.com/turban/webgl-earth/master/images/water_4k.png',
-    clouds: 'https://raw.githubusercontent.com/turban/webgl-earth/master/images/fair_clouds_4k.png',
-    night:  'https://unpkg.com/three-globe@2.24.13/example/img/earth-night.jpg'
-  };
-  const tex = {};
-  let pending = 0, ready = 0;
-
-  function loadTex(key, url, optional){
-    pending++;
-    tex[key] = loader.load(url,
-      () => { ready++; setProgress(20 + (ready/pending)*55, `LOADED ${key.toUpperCase()} MAP…`); checkReady(); },
-      undefined,
-      () => { if(optional){ tex[key] = null; ready++; checkReady(); } else { ready++; checkReady(); } }
-    );
-  }
-  function checkReady(){ if(ready >= pending) finishBuild(); }
-
-  loadTex('day', texSources.day, false);
-  loadTex('bump', texSources.bump, true);
-  loadTex('spec', texSources.spec, true);
-  loadTex('clouds', texSources.clouds, true);
-  loadTex('night', texSources.night, true);
-
-  function finishBuild(){
-    setProgress(80, 'BUILDING GLOBE…');
-
-    // ── Earth sphere with PBR material ──
-    const earthMat = new THREE.MeshStandardMaterial({
-      map: tex.day,
-      bumpMap: tex.bump || null,
-      bumpScale: 0.05,
-      roughnessMap: tex.spec || null,
-      roughness: 0.92,
-      metalness: 0.05,
-      emissiveMap: tex.night || null,
-      emissive: new THREE.Color(0xffb347),
-      emissiveIntensity: tex.night ? 1.4 : 0.0,
-    });
-    // Deepen ocean tone via color correction on the day map
-    if(tex.day){ tex.day.encoding = THREE.sRGBEncoding; }
-
-    // Night-lights shader patch: only show emissive on the dark side
-    if(tex.night){
-      earthMat.onBeforeCompile = (shader) => {
-        shader.uniforms.sunDir = { value: new THREE.Vector3(2, 1, 3).normalize() };
-        earthMat.userData.shader = shader;
-        shader.vertexShader = shader.vertexShader
-          .replace('#include <common>', '#include <common>\nvarying vec3 vWorldNormal;')
-          .replace('#include <worldpos_vertex>',
-            '#include <worldpos_vertex>\nvWorldNormal = normalize(mat3(modelMatrix) * normal);');
-        shader.fragmentShader = shader.fragmentShader
-          .replace('#include <common>',
-            '#include <common>\nuniform vec3 sunDir;\nvarying vec3 vWorldNormal;')
-          .replace('#include <emissivemap_fragment>',
-            `#include <emissivemap_fragment>
-             float nightFactor = smoothstep(0.05, -0.25, dot(vWorldNormal, sunDir));
-             totalEmissiveRadiance *= nightFactor;`);
-      };
-    }
-
-    const earthMesh = new THREE.Mesh(new THREE.SphereGeometry(1, 128, 128), earthMat);
-    globe.add(earthMesh);
-    window._earthMat = earthMat; // for sun direction updates
-
-    // ── Cloud layer ──
-    if(tex.clouds){
-      const cloudMat = new THREE.MeshStandardMaterial({
-        map: tex.clouds, alphaMap: tex.clouds, transparent: true,
-        opacity: 0.75, depthWrite: false, roughness: 1.0, metalness: 0.0
-      });
-      const cloudMesh = new THREE.Mesh(new THREE.SphereGeometry(1.008, 96, 96), cloudMat);
-      globe.add(cloudMesh);
-      window._cloudMesh = cloudMesh;
-    }
-
-    // ── Atmospheric scattering (Rayleigh-style fresnel shader) ──
-    const atmShader = new THREE.ShaderMaterial({
-      uniforms: { glowColor: {value: new THREE.Color(0x5a9eff)} },
-      vertexShader: `
-        varying vec3 vNormal;
-        varying vec3 vWorldPos;
-        void main() {
-          vNormal = normalize(normalMatrix * normal);
-          vec4 wp = modelMatrix * vec4(position, 1.0);
-          vWorldPos = wp.xyz;
-          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-        }`,
-      fragmentShader: `
-        uniform vec3 glowColor;
-        varying vec3 vNormal;
-        varying vec3 vWorldPos;
-        void main() {
-          // Fresnel (limb) intensity — strongest at horizon
-          float fres = pow(1.0 - abs(dot(vNormal, vec3(0.0, 0.0, 1.0))), 3.2);
-          // Rayleigh-style blue tint toward edges
-          vec3 col = mix(glowColor, vec3(0.8, 0.9, 1.0), fres * 0.6);
-          gl_FragColor = vec4(col, 1.0) * fres * 1.4;
-        }`,
-      side: THREE.BackSide, blending: THREE.AdditiveBlending, transparent: true, depthWrite: false
-    });
-    globe.add(new THREE.Mesh(new THREE.SphereGeometry(1.18, 96, 96), atmShader));
-
-    // Inner rim atmosphere
-    const rimMat = new THREE.MeshBasicMaterial({
-      color: 0x6ebaff, transparent: true, opacity: 0.08,
-      side: THREE.BackSide, blending: THREE.AdditiveBlending, depthWrite: false
-    });
-    globe.add(new THREE.Mesh(new THREE.SphereGeometry(1.035, 64, 64), rimMat));
-
-    // ── Lat/Lon grid ──
-    const gridMat = new THREE.LineBasicMaterial({color:0xffffff, transparent:true, opacity:0.06});
-    const ll2 = (lat,lon) => {
-      const phi=(90-lat)*Math.PI/180, t2=(lon+180)*Math.PI/180;
-      return new THREE.Vector3(-Math.sin(phi)*Math.cos(t2)*1.002,Math.cos(phi)*1.002,Math.sin(phi)*Math.sin(t2)*1.002);
-    };
-    for(let lat=-75;lat<=75;lat+=15){
-      const pts=[]; for(let lon=0;lon<=360;lon+=4) pts.push(ll2(lat,lon));
-      globe.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts),gridMat));
-    }
-    for(let lon=0;lon<360;lon+=15){
-      const pts=[]; for(let lat=-90;lat<=90;lat+=4) pts.push(ll2(lat,lon));
-      globe.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts),gridMat));
-    }
-
-    setProgress(80, 'PLOTTING ROUTES…');
-
-    // ── Airports ──
-    const apData=[
-      {lat:-6.267,lon:106.891,col:'#F99420'},
-      {lat:13.681,lon:100.747,col:'#F99420'},
-      {lat:-6.970,lon:110.374,col:'#E63862'},
-      {lat:-2.898,lon:104.700,col:'#E63862'}
-    ];
-    apData.forEach(ap => {
-      const v = ll2v(ap.lat, ap.lon, 1.009);
-      const c = new THREE.Color(ap.col);
-      const dot = new THREE.Mesh(new THREE.SphereGeometry(0.011,10,10),
-        new THREE.MeshBasicMaterial({color:c,blending:THREE.AdditiveBlending,depthWrite:false}));
-      dot.position.copy(v); globe.add(dot);
-      const halo = new THREE.Mesh(new THREE.SphereGeometry(0.022,10,10),
-        new THREE.MeshBasicMaterial({color:c,transparent:true,opacity:0.2,
-          blending:THREE.AdditiveBlending,depthWrite:false}));
-      halo.position.copy(v); globe.add(halo);
-      markerList.push({dot, halo, pos:v.clone()});
-
-      // Pulse ring
-      const rmat = new THREE.MeshBasicMaterial({color:c,transparent:true,opacity:0.6,
-        side:THREE.DoubleSide,blending:THREE.AdditiveBlending,depthWrite:false});
-      const ring = new THREE.Mesh(new THREE.RingGeometry(0.015,0.021,32), rmat);
-      ring.position.copy(v); ring.lookAt(new THREE.Vector3(0,0,0));
-      ring.userData = {t: Math.random(), mat: rmat};
-      globe.add(ring); pulseRings.push(ring);
-    });
-
-    buildFlights();
-
-    setProgress(100, 'READY');
-    setTimeout(() => {
-      document.getElementById('loading').classList.add('hide');
-      animate();
-    }, 600);
-  }
-}); // end window load
-
-// ═══════════════════════════════════════════════════════
-// HELPERS
-// ═══════════════════════════════════════════════════════
-function ll2v(lat, lon, r=1){
-  const phi=(90-lat)*Math.PI/180, theta=(lon+180)*Math.PI/180;
-  return new THREE.Vector3(-r*Math.sin(phi)*Math.cos(theta), r*Math.cos(phi), r*Math.sin(phi)*Math.sin(theta));
+function ll2v(lat,lon,r=1){
+  const phi=(90-lat)*Math.PI/180,theta=(lon+180)*Math.PI/180;
+  return new THREE.Vector3(-r*Math.sin(phi)*Math.cos(theta),r*Math.cos(phi),r*Math.sin(phi)*Math.sin(theta));
 }
 function slerp(a,b,t){
-  const na=a.clone().normalize(), nb=b.clone().normalize();
-  const d=Math.max(-1,Math.min(1,na.dot(nb)));
-  const o=Math.acos(d);
-  if(Math.abs(o)<1e-4) return na.clone().lerp(nb,t).normalize();
-  return na.clone().multiplyScalar(Math.sin((1-t)*o)).add(nb.clone().multiplyScalar(Math.sin(t*o))).divideScalar(Math.sin(o));
+  const na=a.clone().normalize(),nb=b.clone().normalize();
+  const d=Math.max(-1,Math.min(1,na.dot(nb))),o=Math.acos(d);
+  if(Math.abs(o)<1e-4) return na.lerp(nb,t).normalize();
+  return na.multiplyScalar(Math.sin((1-t)*o)).add(nb.multiplyScalar(Math.sin(t*o))).divideScalar(Math.sin(o));
 }
 function buildCurve(latA,lonA,latB,lonB,h){
-  const vA=ll2v(latA,lonA), vB=ll2v(latB,lonB), pts=[];
-  for(let i=0;i<=80;i++){
-    const t=i/80;
-    pts.push(slerp(vA,vB,t).multiplyScalar(1+h*Math.sin(t*Math.PI)));
-  }
+  const vA=ll2v(latA,lonA),vB=ll2v(latB,lonB),pts=[];
+  for(let i=0;i<=80;i++){const t=i/80;pts.push(slerp(vA.clone(),vB.clone(),t).multiplyScalar(1+h*Math.sin(t*Math.PI)));}
   return new THREE.CatmullRomCurve3(pts);
 }
-function setProgress(pct, msg){
-  document.getElementById('ldFill').style.width = pct+'%';
-  document.getElementById('ldTxt').textContent = msg;
+function setProgress(pct,msg){
+  document.getElementById('ldFill').style.width=pct+'%';
+  if(msg) setLdTxt(msg);
 }
 
 // ═══════════════════════════════════════════════════════
-// FLIGHT BUILDING
+// GLOBE INIT
+// ═══════════════════════════════════════════════════════
+window.addEventListener('load',async function(){
+  setProgress(5,'FETCHING FLIGHT DATA…');
+  await fetchPIREPs();
+  setProgress(15,'INITIALIZING 3D ENGINE…');
+
+  renderer=new THREE.WebGLRenderer({antialias:true,alpha:false});
+  renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+  renderer.setSize(innerWidth,innerHeight);
+  renderer.setClearColor(0x060108,1);
+  renderer.toneMapping=THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure=1.05;
+  renderer.outputEncoding=THREE.sRGBEncoding;
+  const cvs=renderer.domElement;
+  cvs.style.cssText='position:fixed;top:0;left:0;width:100vw;height:100vh;z-index:1;display:block;';
+  document.body.insertBefore(cvs,document.body.firstChild);
+
+  scene=new THREE.Scene();
+  camera=new THREE.PerspectiveCamera(45,innerWidth/innerHeight,0.1,1000);
+  camera.position.set(0,0,2.8);
+
+  scene.add(new THREE.AmbientLight(0x0a0614,0.08));
+  sunLight=new THREE.DirectionalLight(0xfff4d6,3.8);
+  sunLight.position.set(2,1,3);
+  scene.add(sunLight);
+
+  // Stars
+  const sp=[];
+  for(let i=0;i<3000;i++){const v=new THREE.Vector3((Math.random()-.5)*200,(Math.random()-.5)*200,(Math.random()-.5)*200);if(v.length()>30)sp.push(v);}
+  scene.add(new THREE.Points(new THREE.BufferGeometry().setFromPoints(sp),new THREE.PointsMaterial({color:0x9aaabb,size:0.14,transparent:true,opacity:0.7})));
+
+  globe=new THREE.Group();
+  scene.add(globe);
+  setProgress(25,'LOADING EARTH TEXTURES…');
+
+  const loader=new THREE.TextureLoader();
+  loader.crossOrigin='anonymous';
+  const SRC={
+    day:'https://raw.githubusercontent.com/turban/webgl-earth/master/images/2_no_clouds_4k.jpg',
+    bump:'https://raw.githubusercontent.com/turban/webgl-earth/master/images/elev_bump_4k.jpg',
+    spec:'https://raw.githubusercontent.com/turban/webgl-earth/master/images/water_4k.png',
+    clouds:'https://raw.githubusercontent.com/turban/webgl-earth/master/images/fair_clouds_4k.png',
+    night:'https://unpkg.com/three-globe@2.24.13/example/img/earth-night.jpg'
+  };
+  const tex={};let pending=0,ready=0;
+  function loadTex(k,url,opt){
+    pending++;
+    tex[k]=loader.load(url,()=>{ready++;setProgress(25+(ready/pending)*50,'LOADED '+k.toUpperCase()+'…');check();},undefined,()=>{tex[k]=null;ready++;check();});
+  }
+  function check(){if(ready>=pending)finishGlobe();}
+  loadTex('day',SRC.day);loadTex('bump',SRC.bump,true);loadTex('spec',SRC.spec,true);
+  loadTex('clouds',SRC.clouds,true);loadTex('night',SRC.night,true);
+
+  function finishGlobe(){
+    setProgress(80,'BUILDING GLOBE…');
+    const earthMat=new THREE.MeshStandardMaterial({
+      map:tex.day,bumpMap:tex.bump||null,bumpScale:0.05,
+      roughnessMap:tex.spec||null,roughness:0.92,metalness:0.05,
+      emissiveMap:tex.night||null,emissive:new THREE.Color(0xffb347),
+      emissiveIntensity:tex.night?1.4:0.0,
+    });
+    if(tex.day) tex.day.encoding=THREE.sRGBEncoding;
+    if(tex.night){
+      earthMat.onBeforeCompile=shader=>{
+        shader.uniforms.sunDir={value:new THREE.Vector3(2,1,3).normalize()};
+        earthMat.userData.shader=shader;
+        shader.vertexShader=shader.vertexShader
+          .replace('#include <common>','#include <common>\nvarying vec3 vWorldNormal;')
+          .replace('#include <worldpos_vertex>','#include <worldpos_vertex>\nvWorldNormal=normalize(mat3(modelMatrix)*normal);');
+        shader.fragmentShader=shader.fragmentShader
+          .replace('#include <common>','#include <common>\nuniform vec3 sunDir;\nvarying vec3 vWorldNormal;')
+          .replace('#include <emissivemap_fragment>',`#include <emissivemap_fragment>
+            float nf=smoothstep(0.05,-0.25,dot(vWorldNormal,sunDir));
+            totalEmissiveRadiance*=nf;`);
+      };
+    }
+    globe.add(new THREE.Mesh(new THREE.SphereGeometry(1,128,128),earthMat));
+    window._earthMat=earthMat;
+
+    if(tex.clouds){
+      const cm=new THREE.Mesh(new THREE.SphereGeometry(1.008,96,96),new THREE.MeshStandardMaterial({map:tex.clouds,alphaMap:tex.clouds,transparent:true,opacity:0.75,depthWrite:false,roughness:1,metalness:0}));
+      globe.add(cm);window._cloudMesh=cm;
+    }
+
+    // Atmosphere
+    globe.add(new THREE.Mesh(new THREE.SphereGeometry(1.18,96,96),new THREE.ShaderMaterial({
+      uniforms:{glowColor:{value:new THREE.Color(0x5a9eff)}},
+      vertexShader:`varying vec3 vN,vW;void main(){vN=normalize(normalMatrix*normal);vW=(modelMatrix*vec4(position,1.0)).xyz;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}`,
+      fragmentShader:`uniform vec3 glowColor;varying vec3 vN;void main(){float f=pow(1.0-abs(dot(vN,vec3(0,0,1))),3.2);gl_FragColor=vec4(mix(glowColor,vec3(.8,.9,1.),f*.6),1.)*f*1.4;}`,
+      side:THREE.BackSide,blending:THREE.AdditiveBlending,transparent:true,depthWrite:false
+    })));
+    globe.add(new THREE.Mesh(new THREE.SphereGeometry(1.035,64,64),new THREE.MeshBasicMaterial({color:0x6ebaff,transparent:true,opacity:0.08,side:THREE.BackSide,blending:THREE.AdditiveBlending,depthWrite:false})));
+
+    // Grid
+    const gm=new THREE.LineBasicMaterial({color:0xffffff,transparent:true,opacity:0.06});
+    for(let la=-75;la<=75;la+=15){const p=[];for(let lo=0;lo<=360;lo+=4)p.push(ll2v(la,lo,1.002));globe.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(p),gm));}
+    for(let lo=0;lo<360;lo+=15){const p=[];for(let la=-90;la<=90;la+=4)p.push(ll2v(la,lo,1.002));globe.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(p),gm));}
+
+    setProgress(90,'PLOTTING ROUTES…');
+    buildAirports();
+    buildFlights();
+    setProgress(100,'READY');
+    setTimeout(()=>{
+      document.getElementById('loading').classList.add('hide');
+      renderFlightList();
+      renderBottomBar();
+      updateStats();
+      animate();
+    },600);
+  }
+});
+
+// ═══════════════════════════════════════════════════════
+// DYNAMIC AIRPORT MARKERS
+// ═══════════════════════════════════════════════════════
+function buildAirports(){
+  // Remove old markers
+  airportMarkers.forEach(m=>{globe.remove(m.dot);globe.remove(m.halo);globe.remove(m.ring);});
+  airportMarkers=[];
+  document.querySelectorAll('.albl').forEach(el=>el.remove());
+
+  // Collect unique airports from current PIREPs
+  const seen={};
+  PIREPS.forEach(p=>{
+    [p.origin,p.dest].forEach(ap=>{
+      if(!seen[ap.icao]) seen[ap.icao]={...ap};
+    });
+  });
+
+  Object.values(seen).forEach(ap=>{
+    const v=ll2v(ap.lat,ap.lon,1.009);
+    const c=new THREE.Color('#F99420');
+
+    const dot=new THREE.Mesh(new THREE.SphereGeometry(0.011,10,10),new THREE.MeshBasicMaterial({color:c,blending:THREE.AdditiveBlending,depthWrite:false}));
+    dot.position.copy(v);globe.add(dot);
+
+    const halo=new THREE.Mesh(new THREE.SphereGeometry(0.022,10,10),new THREE.MeshBasicMaterial({color:c,transparent:true,opacity:0.2,blending:THREE.AdditiveBlending,depthWrite:false}));
+    halo.position.copy(v);globe.add(halo);
+
+    const rmat=new THREE.MeshBasicMaterial({color:c,transparent:true,opacity:0.6,side:THREE.DoubleSide,blending:THREE.AdditiveBlending,depthWrite:false});
+    const ring=new THREE.Mesh(new THREE.RingGeometry(0.015,0.021,32),rmat);
+    ring.position.copy(v);ring.lookAt(new THREE.Vector3(0,0,0));
+    ring.userData={t:Math.random(),mat:rmat};
+    globe.add(ring);pulseRings.push(ring);
+
+    // DOM label
+    const lbl=document.createElement('div');
+    lbl.className='albl';
+    lbl.id='lbl-'+ap.icao;
+    lbl.textContent=ap.icao+' · '+ap.name;
+    lbl.addEventListener('click',()=>handleLabelClick(ap.icao,lbl));
+    document.body.appendChild(lbl);
+
+    airportMarkers.push({icao:ap.icao,dot,halo,ring,pos:v.clone(),lbl});
+  });
+}
+
+// ═══════════════════════════════════════════════════════
+// FLIGHT ARC BUILDING
 // ═══════════════════════════════════════════════════════
 function buildFlights(){
-  flights.forEach(f => {
-    globe.remove(f.plane); globe.remove(f.trail.line); globe.remove(f.arcMesh);
-    f.arcMesh.geometry.dispose();
-  });
-  flights.length = 0;
-
-  PIREPS.forEach((p, i) => {
-    const curve = buildCurve(p.origin.lat, p.origin.lon, p.dest.lat, p.dest.lon, arcH);
-
-    // Arc tube
-    const arcGeo = new THREE.TubeGeometry(curve, 100, 0.003, 6, false);
-    const arcMat = new THREE.MeshBasicMaterial({color:new THREE.Color(p.color), transparent:true,
-      opacity:0.85, blending:THREE.AdditiveBlending, depthWrite:false});
-    const arcMesh = new THREE.Mesh(arcGeo, arcMat);
+  flights.forEach(f=>{globe.remove(f.plane);globe.remove(f.trail.line);globe.remove(f.arcMesh);f.arcMesh.geometry.dispose();});
+  flights=[];
+  PIREPS.forEach((p,i)=>{
+    const curve=buildCurve(p.origin.lat,p.origin.lon,p.dest.lat,p.dest.lon,arcH);
+    const arcMesh=new THREE.Mesh(new THREE.TubeGeometry(curve,100,0.003,6,false),new THREE.MeshBasicMaterial({color:new THREE.Color(p.color),transparent:true,opacity:0.85,blending:THREE.AdditiveBlending,depthWrite:false}));
     globe.add(arcMesh);
-
-    // Plane
-    const plane = makePlane(p.color);
-    globe.add(plane);
-
-    // Trail
-    const trail = new Trail(p.color, 60);
-    globe.add(trail.line);
-
-    flights.push({curve, arcMesh, plane, trail, t: i*0.42, speed: 0.038+i*0.025, color:p.color});
+    const plane=makePlane(p.color);globe.add(plane);
+    const trail=new Trail(p.color,60);globe.add(trail.line);
+    flights.push({curve,arcMesh,plane,trail,t:i*0.42,speed:0.038+i*0.025,color:p.color});
   });
 }
 
-// ── 3D Airplane ──
 function makePlane(color){
-  const g = new THREE.Group();
-  const c = new THREE.Color(color);
-  const mat = new THREE.MeshPhongMaterial({color:c, emissive:c, emissiveIntensity:0.4, shininess:60});
-  const gm = new THREE.MeshBasicMaterial({color:c, transparent:true, opacity:0.7,
-    blending:THREE.AdditiveBlending, depthWrite:false});
-  const s = 0.032;
-
-  // Fuselage
-  const f = new THREE.Mesh(new THREE.CylinderGeometry(s*.07,s*.055,s*1.2,8), mat);
-  f.rotation.z = Math.PI/2; g.add(f);
-  // Nose
-  const n = new THREE.Mesh(new THREE.ConeGeometry(s*.07,s*.25,8), mat);
-  n.rotation.z = -Math.PI/2; n.position.x = s*.7; g.add(n);
-  // Wings
-  const w = new THREE.Mesh(new THREE.BoxGeometry(s*.32,s*.025,s*1.05), mat);
-  w.position.x = s*.08; g.add(w);
-  // Winglets
-  [[s*.55],[- s*.55]].forEach(([z])=>{
-    const wl = new THREE.Mesh(new THREE.BoxGeometry(s*.06,s*.18,s*.025), mat);
-    wl.position.set(s*.08,s*.09,z); g.add(wl);
+  const g=new THREE.Group(),c=new THREE.Color(color);
+  const mat=new THREE.MeshPhongMaterial({color:c,emissive:c,emissiveIntensity:0.4,shininess:60});
+  const gm=new THREE.MeshBasicMaterial({color:c,transparent:true,opacity:0.7,blending:THREE.AdditiveBlending,depthWrite:false});
+  const s=0.032;
+  const f=new THREE.Mesh(new THREE.CylinderGeometry(s*.07,s*.055,s*1.2,8),mat);f.rotation.z=Math.PI/2;g.add(f);
+  const n=new THREE.Mesh(new THREE.ConeGeometry(s*.07,s*.25,8),mat);n.rotation.z=-Math.PI/2;n.position.x=s*.7;g.add(n);
+  const w=new THREE.Mesh(new THREE.BoxGeometry(s*.32,s*.025,s*1.05),mat);w.position.x=s*.08;g.add(w);
+  [[s*.55],[-s*.55]].forEach(([z])=>{const wl=new THREE.Mesh(new THREE.BoxGeometry(s*.06,s*.18,s*.025),mat);wl.position.set(s*.08,s*.09,z);g.add(wl);});
+  const hs=new THREE.Mesh(new THREE.BoxGeometry(s*.2,s*.02,s*.44),mat);hs.position.x=-s*.52;g.add(hs);
+  const vs=new THREE.Mesh(new THREE.BoxGeometry(s*.18,s*.28,s*.025),mat);vs.position.set(-s*.44,s*.14,0);g.add(vs);
+  [[s*.34],[-s*.34]].forEach(([z])=>{
+    const en=new THREE.Mesh(new THREE.CylinderGeometry(s*.09,s*.09,s*.28,8),mat);en.rotation.z=Math.PI/2;en.position.set(s*.09,-s*.05,z);g.add(en);
+    const eg=new THREE.Mesh(new THREE.CircleGeometry(s*.07,8),gm);eg.position.set(-s*.05,-s*.05,z);eg.rotation.y=Math.PI/2;g.add(eg);
   });
-  // H-stabilizer
-  const hs = new THREE.Mesh(new THREE.BoxGeometry(s*.2,s*.02,s*.44), mat);
-  hs.position.x = -s*.52; g.add(hs);
-  // V-stabilizer
-  const vs = new THREE.Mesh(new THREE.BoxGeometry(s*.18,s*.28,s*.025), mat);
-  vs.position.set(-s*.44, s*.14, 0); g.add(vs);
-  // Engines
-  [[s*.34],[- s*.34]].forEach(([z])=>{
-    const en = new THREE.Mesh(new THREE.CylinderGeometry(s*.09,s*.09,s*.28,8), mat);
-    en.rotation.z = Math.PI/2; en.position.set(s*.09,-s*.05,z); g.add(en);
-    const eg = new THREE.Mesh(new THREE.CircleGeometry(s*.07,8), gm);
-    eg.position.set(-s*.05,-s*.05,z); eg.rotation.y=Math.PI/2; g.add(eg);
-  });
-  // Nav lights
-  const mkNav = (col,pos) => {
-    const nm = new THREE.MeshBasicMaterial({color:new THREE.Color(col),transparent:true,
-      opacity:0.9, blending:THREE.AdditiveBlending, depthWrite:false});
-    const nl = new THREE.Mesh(new THREE.SphereGeometry(s*.06,6,6), nm);
-    nl.position.set(...pos); g.add(nl); return nm;
-  };
-  g.userData.navL   = mkNav('#ff2222',[s*.09,-s*.02, s*.55]);
-  g.userData.navR   = mkNav('#00ff66',[s*.09,-s*.02,-s*.55]);
-  g.userData.beacon = mkNav('#ffffff',[0, s*.12, 0]);
+  const mkN=(col,pos)=>{const nm=new THREE.MeshBasicMaterial({color:new THREE.Color(col),transparent:true,opacity:0.9,blending:THREE.AdditiveBlending,depthWrite:false});const nl=new THREE.Mesh(new THREE.SphereGeometry(s*.06,6,6),nm);nl.position.set(...pos);g.add(nl);return nm;};
+  g.userData.navL=mkN('#ff2222',[s*.09,-s*.02,s*.55]);
+  g.userData.navR=mkN('#00ff66',[s*.09,-s*.02,-s*.55]);
+  g.userData.beacon=mkN('#ffffff',[0,s*.12,0]);
   return g;
 }
 
-// ── Contrail trail ──
-class Trail {
-  constructor(color, n=60){
-    this.n=n; this.pts=[];
+class Trail{
+  constructor(color,n=60){
+    this.n=n;this.pts=[];
     this.geo=new THREE.BufferGeometry();
     const pa=new Float32Array(n*3);
     this.geo.setAttribute('position',new THREE.BufferAttribute(pa,3));
     this.geo.setDrawRange(0,0);
-    this.line=new THREE.Line(this.geo, new THREE.LineBasicMaterial({
-      color:new THREE.Color(color), transparent:true, opacity:0.3,
-      blending:THREE.AdditiveBlending, depthWrite:false
-    }));
+    this.line=new THREE.Line(this.geo,new THREE.LineBasicMaterial({color:new THREE.Color(color),transparent:true,opacity:0.3,blending:THREE.AdditiveBlending,depthWrite:false}));
   }
   push(p){
-    this.pts.unshift(p.clone());
-    if(this.pts.length>this.n) this.pts.pop();
+    this.pts.unshift(p.clone());if(this.pts.length>this.n)this.pts.pop();
     const a=this.geo.attributes.position;
     this.pts.forEach((v,i)=>a.setXYZ(i,v.x,v.y,v.z));
-    a.needsUpdate=true;
-    this.geo.setDrawRange(0,this.pts.length);
+    a.needsUpdate=true;this.geo.setDrawRange(0,this.pts.length);
   }
 }
 
 // ═══════════════════════════════════════════════════════
-// ORBIT CONTROLS
+// DRAG / ORBIT
 // ═══════════════════════════════════════════════════════
-window.addEventListener('mousedown', e=>{if(e.target.tagName==='CANVAS'){isDrag=true;px=e.clientX;py=e.clientY;}});
-window.addEventListener('mouseup',   ()=>isDrag=false);
-window.addEventListener('mousemove', e=>{
-  if(!isDrag) return;
-  rotX+=(e.clientY-py)*0.006; rotY+=(e.clientX-px)*0.006;
-  rotX=Math.max(-1.4,Math.min(1.4,rotX));
-  trgX=rotX; trgY=rotY; px=e.clientX; py=e.clientY;
+window.addEventListener('mousedown',e=>{if(e.target.tagName==='CANVAS'){isDrag=true;px=e.clientX;py=e.clientY;}});
+window.addEventListener('mouseup',()=>isDrag=false);
+window.addEventListener('mousemove',e=>{
+  if(!isDrag)return;
+  rotX+=(e.clientY-py)*0.006;rotY+=(e.clientX-px)*0.006;
+  rotX=Math.max(-1.4,Math.min(1.4,rotX));trgX=rotX;trgY=rotY;px=e.clientX;py=e.clientY;
+});
+
+// Close popup on outside click
+window.addEventListener('click',e=>{
+  const pop=document.getElementById('apPopup');
+  if(pop.classList.contains('vis')&&!pop.contains(e.target)&&!e.target.classList.contains('albl'))
+    pop.classList.remove('vis');
 });
 
 // ═══════════════════════════════════════════════════════
-// DETAIL PANEL
+// ANIMATION LOOP
+// ═══════════════════════════════════════════════════════
+const clock=new THREE.Clock();
+function animate(){
+  requestAnimationFrame(animate);
+  const dt=clock.getDelta(),t=clock.getElapsedTime();
+  if(!isDrag){trgY+=autoRot;rotX+=(trgX-rotX)*.04;rotY+=(trgY-rotY)*.04;}
+  if(globe){globe.rotation.x=rotX;globe.rotation.y=rotY;}
+  if(window._cloudMesh) window._cloudMesh.rotation.y+=dt*.008;
+  if(window._earthMat&&window._earthMat.userData.shader){
+    const sl=sunLight.position.clone().normalize().applyMatrix4(new THREE.Matrix4().extractRotation(globe.matrixWorld).invert());
+    window._earthMat.userData.shader.uniforms.sunDir.value.copy(sl);
+  }
+  pulseRings.forEach(r=>{r.userData.t=(r.userData.t+dt*.42)%1;const pt=r.userData.t;r.scale.setScalar(1+pt*3.5);r.userData.mat.opacity=(1-pt)*.5;});
+  airportMarkers.forEach((mk,i)=>{mk.halo.scale.setScalar(1+.3*Math.abs(Math.sin(t*1.5+i)));});
+  flights.forEach((fl,i)=>{
+    fl.t=(fl.t+dt*fl.speed)%1;
+    const pos=fl.curve.getPoint(fl.t),tan=fl.curve.getTangent(fl.t).normalize();
+    const up=pos.clone().normalize(),right=new THREE.Vector3().crossVectors(tan,up).normalize();
+    fl.plane.position.copy(pos);
+    fl.plane.quaternion.setFromRotationMatrix(new THREE.Matrix4().makeBasis(tan,new THREE.Vector3().crossVectors(right,tan),right));
+    if(trailsOn)fl.trail.push(pos);
+    if(fl.plane.userData.navL)   fl.plane.userData.navL.opacity  =.5+.5*Math.sin(t*5+i*2);
+    if(fl.plane.userData.navR)   fl.plane.userData.navR.opacity  =.5+.5*Math.sin(t*5+i*2+Math.PI);
+    if(fl.plane.userData.beacon) fl.plane.userData.beacon.opacity=.4+.6*(Math.sin(t*3+i)>.6?1:0);
+  });
+  renderer.render(scene,camera);
+  updateLabels();
+}
+
+function updateLabels(){
+  if(!globe||!camera)return;
+  airportMarkers.forEach(mk=>{
+    const world=mk.pos.clone().applyMatrix4(globe.matrixWorld);
+    const proj=world.clone().project(camera);
+    const visible=proj.z<1&&world.clone().normalize().dot(world.clone().sub(camera.position).normalize())<-0.12;
+    mk.lbl.style.left=((proj.x+1)/2*innerWidth)+'px';
+    mk.lbl.style.top=((-proj.y+1)/2*innerHeight)+'px';
+    mk.lbl.classList.toggle('show',visible);
+  });
+}
+
+window.addEventListener('resize',()=>{
+  if(!camera||!renderer)return;
+  camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth,innerHeight);
+});
+
+// ═══════════════════════════════════════════════════════
+// ZULU CLOCK
+// ═══════════════════════════════════════════════════════
+function updateZulu(){
+  const n=new Date();
+  document.getElementById('zuluTime').textContent=
+    String(n.getUTCHours()).padStart(2,'0')+':'+
+    String(n.getUTCMinutes()).padStart(2,'0')+':'+
+    String(n.getUTCSeconds()).padStart(2,'0')+' Z';
+  document.getElementById('zuluDate').textContent=
+    n.toUTCString().match(/\d{1,2} \w{3} \d{4}/)[0].toUpperCase();
+}
+updateZulu();
+setInterval(updateZulu,1000);
+
+// ═══════════════════════════════════════════════════════
+// HEADER STATS
+// ═══════════════════════════════════════════════════════
+function updateStats(){
+  document.getElementById('statFlights').textContent=String(PIREPS.length).padStart(2,'0');
+  const totalMins=PIREPS.reduce((s,p)=>s+airtimeToMinutes(p.airtime),0);
+  document.getElementById('statAirtime').textContent=minutesToHM(totalMins);
+  const nets=[...new Set(PIREPS.map(p=>p.network))];
+  document.getElementById('statNetwork').textContent=nets.length===1?nets[0]:'MULTI';
+}
+
+// ═══════════════════════════════════════════════════════
+// BOTTOM BAR
+// ═══════════════════════════════════════════════════════
+function renderBottomBar(){
+  const el=document.getElementById('botFlights');
+  el.innerHTML=PIREPS.map(p=>`
+    <div class="bi">
+      <div class="bd" style="--bc:${p.color}"></div>
+      ${p.flight} · ${p.origin.icao} → ${p.dest.icao}
+    </div>`).join('');
+}
+
+// ═══════════════════════════════════════════════════════
+// PILOT CHIPS
+// ═══════════════════════════════════════════════════════
+let activeFilter='';
+function renderPilotChips(){
+  const pilots=['All',...new Set(PIREPS.map(p=>p.pilot))];
+  document.getElementById('pilotChips').innerHTML=pilots.map(name=>`
+    <div class="pchip${name==='All'&&!activeFilter||activeFilter===name?' active':''}"
+         onclick="setPilotFilter('${name==='All'?'':name}')">${name}</div>`).join('');
+}
+function setPilotFilter(name){
+  activeFilter=name;
+  document.getElementById('pilotFilter').value=name;
+  renderPilotChips();
+  renderFlightList(name);
+}
+
+// ═══════════════════════════════════════════════════════
+// FLIGHT LIST
+// ═══════════════════════════════════════════════════════
+function renderFlightList(filter){
+  const q=(filter!==undefined?filter:activeFilter).toLowerCase();
+  const filtered=PIREPS.filter((_,i)=>!q||PIREPS[i].pilot.toLowerCase().includes(q));
+  const list=document.getElementById('flightList');
+  if(!filtered.length){
+    list.innerHTML='<div class="no-flights">No flights match this filter.</div>';
+    return;
+  }
+  list.innerHTML=filtered.map(p=>{
+    const i=PIREPS.indexOf(p);
+    return `<div class="pcard" id="card${i}" style="--cc:${p.color}" onclick="openDetail(${i})">
+      <div class="cf">${p.flight}</div>
+      <div class="croute"><span>${p.origin.icao}</span><span class="carrow">──▶</span><span>${p.dest.icao}</span></div>
+      <div class="cmeta">
+        <div class="cm">Pilot</div><div class="cm cmv">${p.pilot}</div>
+        <div class="cm">Aircraft</div><div class="cm cmv">${p.aircraft}</div>
+        <div class="cm">Dep</div><div class="cm cmv">${p.dep}</div>
+        <div class="cm">Arr</div><div class="cm cmv">${p.arr}</div>
+      </div>
+      <div class="cdate">${p.date} · ${p.airtime} air</div>
+    </div>`;
+  }).join('');
+  renderPilotChips();
+}
+
+document.getElementById('pilotFilter').addEventListener('input',function(){
+  activeFilter=this.value;
+  renderPilotChips();
+  renderFlightList(this.value);
+});
+
+// ═══════════════════════════════════════════════════════
+// DETAIL VIEW
 // ═══════════════════════════════════════════════════════
 function openDetail(i){
   const p=PIREPS[i];
-  const panel=document.getElementById('detpanel');
-  panel.style.setProperty('--dc',p.color);
-  panel.innerHTML=`
+  document.getElementById('detContent').style.setProperty('--dc',p.color);
+  document.getElementById('detContent').innerHTML=`
     <div class="dh">
       <div><div class="dfn">${p.flight}</div><div class="dpilot">✦ ${p.pilot}</div></div>
       <div class="dbadge">${p.network}</div>
     </div>
     <div class="drte">
-      <div class="dap"><div class="dicao">${p.origin.icao}</div><div class="dtime">${p.dep} LT</div><div class="dname">${p.origin.name}</div></div>
+      <div class="dap"><div class="dicao">${p.origin.icao}</div><div class="dtime">${p.dep}</div><div class="dname">${p.origin.name}</div></div>
       <div class="dline"><div class="dair">${p.airtime}</div><div class="ddiv"></div><div class="dair">${p.date}</div></div>
-      <div class="dap"><div class="dicao">${p.dest.icao}</div><div class="dtime">${p.arr} LT</div><div class="dname">${p.dest.name}</div></div>
+      <div class="dap"><div class="dicao">${p.dest.icao}</div><div class="dtime">${p.arr}</div><div class="dname">${p.dest.name}</div></div>
     </div>
     <div class="dgrid">
       <div class="df"><div class="dfl">Aircraft</div><div class="dfv">${p.aircraft}</div></div>
       <div class="df"><div class="dfl">Registration</div><div class="dfv">${p.reg}</div></div>
       <div class="df"><div class="dfl">Simulator</div><div class="dfv">${p.sim}</div></div>
-      <div class="df"><div class="dfl">Airline</div><div class="dfv">AJV MCC</div></div>
+      <div class="df"><div class="dfl">Network</div><div class="dfv">${p.network}</div></div>
     </div>
-    <div class="deval"><div class="devlbl">⚠ Self-Evaluation</div><div class="devtxt">"${p.eval}"</div></div>
-    <button class="cbtn" onclick="closeDetail()">Close Report</button>`;
-  setTimeout(()=>panel.classList.add('vis'),10);
+    <div class="deval"><div class="devlbl">⚠ Self-Evaluation</div><div class="devtxt">"${p.eval}"</div></div>`;
+  document.getElementById('flightList').style.display='none';
+  document.getElementById('detailView').classList.add('vis');
   document.querySelectorAll('.pcard').forEach((c,j)=>c.classList.toggle('active',j===i));
-  // Focus globe
-  const v=ll2v((p.origin.lat+p.dest.lat)/2,(p.origin.lon+p.dest.lon)/2);
-  trgY=Math.atan2(v.x,-v.z);
-  trgX=-((p.origin.lat+p.dest.lat)/2)*0.008;
+  // Focus globe on route midpoint
+  if(globe){
+    const v=ll2v((p.origin.lat+p.dest.lat)/2,(p.origin.lon+p.dest.lon)/2);
+    trgY=Math.atan2(v.x,-v.z);trgX=-((p.origin.lat+p.dest.lat)/2)*0.008;
+  }
+  document.getElementById('apPopup').classList.remove('vis');
 }
+
 function closeDetail(){
-  document.getElementById('detpanel').classList.remove('vis');
+  document.getElementById('detailView').classList.remove('vis');
+  document.getElementById('flightList').style.display='flex';
   document.querySelectorAll('.pcard').forEach(c=>c.classList.remove('active'));
 }
 
 // ═══════════════════════════════════════════════════════
-// AIRPORT LABEL PROJECTION
+// AIRPORT LABEL POPUP
 // ═══════════════════════════════════════════════════════
-const lblKeys=['WIHH','VTBS','WAHS','WIPP'];
-function updateLabels(){
-  if(!globe || !camera) return;
-  lblKeys.forEach((key,i)=>{
-    if(!markerList[i]) return;
-    const world=markerList[i].pos.clone().applyMatrix4(globe.matrixWorld);
-    const proj=world.clone().project(camera);
-    const el=document.getElementById('lbl-'+key);
-    if(!el) return;
-    el.style.left=((proj.x+1)/2*innerWidth)+'px';
-    el.style.top=((-proj.y+1)/2*innerHeight)+'px';
-    el.style.opacity=(proj.z<1 && world.clone().normalize().dot(world.clone().sub(camera.position).normalize())<-0.12)?1:0;
-  });
+function handleLabelClick(icao,lblEl){
+  const matches=PIREPS.filter(p=>p.origin.icao===icao||p.dest.icao===icao);
+  if(!matches.length) return;
+  if(matches.length===1){
+    openDetail(PIREPS.indexOf(matches[0]));
+    return;
+  }
+  // Multiple flights — show popup near the label
+  const rect=lblEl.getBoundingClientRect();
+  const pop=document.getElementById('apPopup');
+  pop.innerHTML=`<div class="ap-pop-title">${icao} · ${matches.length} flights</div>`+
+    matches.map(p=>{
+      const i=PIREPS.indexOf(p);
+      return `<div class="ap-pop-item" onclick="openDetail(${i});document.getElementById('apPopup').classList.remove('vis')">
+        <span class="ap-fi" style="color:${p.color}">${p.flight}</span>
+        <span class="ap-fr">${p.origin.icao} → ${p.dest.icao}</span>
+      </div>`;
+    }).join('');
+  // Position popup — keep inside viewport
+  let left=rect.left,top=rect.bottom+6;
+  if(left+200>innerWidth) left=innerWidth-210;
+  if(top+120>innerHeight) top=rect.top-130;
+  pop.style.left=left+'px';pop.style.top=top+'px';
+  pop.classList.add('vis');
 }
 
 // ═══════════════════════════════════════════════════════
-// ANIMATION LOOP
+// REBUILD UI (called after data refresh)
 // ═══════════════════════════════════════════════════════
-const clock = new THREE.Clock();
-function animate(){
-  requestAnimationFrame(animate);
-  const dt=clock.getDelta(), t=clock.getElapsedTime();
-
-  if(!isDrag){
-    trgY += autoRot;
-    rotX += (trgX-rotX)*0.04;
-    rotY += (trgY-rotY)*0.04;
-  }
-  if(globe){ globe.rotation.x=rotX; globe.rotation.y=rotY; }
-
-  // Rotate clouds slightly faster than Earth
-  if(window._cloudMesh){
-    window._cloudMesh.rotation.y += dt * 0.008;
-  }
-
-  // Update sun direction uniform for night-lights shader
-  if(window._earthMat && window._earthMat.userData.shader){
-    const sunWorld = sunLight.position.clone().normalize();
-    const sunLocal = sunWorld.clone().applyMatrix4(new THREE.Matrix4().extractRotation(globe.matrixWorld).invert());
-    window._earthMat.userData.shader.uniforms.sunDir.value.copy(sunLocal);
-  }
-
-  // Pulse rings
-  pulseRings.forEach(ring=>{
-    ring.userData.t = (ring.userData.t+dt*0.42)%1;
-    const pt=ring.userData.t;
-    ring.scale.setScalar(1+pt*3.5);
-    ring.userData.mat.opacity=(1-pt)*0.5;
-  });
-
-  // Marker pulse
-  markerList.forEach((mk,i)=>{
-    const s=1+0.3*Math.abs(Math.sin(t*1.5+i));
-    mk.halo.scale.setScalar(s);
-  });
-
-  // Planes along arcs
-  flights.forEach((fl,i)=>{
-    fl.t=(fl.t+dt*fl.speed)%1;
-    const pos=fl.curve.getPoint(fl.t);
-    const tan=fl.curve.getTangent(fl.t).normalize();
-    const up=pos.clone().normalize();
-    const right=new THREE.Vector3().crossVectors(tan,up).normalize();
-    const corrUp=new THREE.Vector3().crossVectors(right,tan);
-    fl.plane.position.copy(pos);
-    fl.plane.quaternion.setFromRotationMatrix(new THREE.Matrix4().makeBasis(tan,corrUp,right));
-    if(trailsOn) fl.trail.push(pos);
-    // Blink nav lights
-    if(fl.plane.userData.navL)   fl.plane.userData.navL.opacity   = 0.5+0.5*Math.sin(t*5+i*2);
-    if(fl.plane.userData.navR)   fl.plane.userData.navR.opacity   = 0.5+0.5*Math.sin(t*5+i*2+Math.PI);
-    if(fl.plane.userData.beacon) fl.plane.userData.beacon.opacity = 0.4+0.6*(Math.sin(t*3+i)>.6?1:0);
-  });
-
-  renderer.render(scene,camera);
-  updateLabels();
-}
-
-window.addEventListener('resize',()=>{
-  if(!camera||!renderer) return;
-  camera.aspect=innerWidth/innerHeight;
-  camera.updateProjectionMatrix();
-  renderer.setSize(innerWidth,innerHeight);
-});
+rebuildUI=function(){
+  renderFlightList();
+  renderBottomBar();
+  updateStats();
+  if(globe){ buildAirports(); buildFlights(); }
+  closeDetail();
+};
 </script>
+
 </body>
 </html>
