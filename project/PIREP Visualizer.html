@@ -400,8 +400,18 @@ let lastFetched = 0;
 
 function extractICAO(str) {
   if (!str) return null;
-  const m = str.match(/\(([A-Z]{4})[\/\)]/);
-  return m ? m[1] : null;
+  str = str.trim();
+  // Pure 4-letter code
+  if (/^[A-Za-z]{4}$/.test(str)) return str.toUpperCase();
+  // "(ICAO)" or "(ICAO/...)"
+  let m = str.match(/\(([A-Za-z]{4})[\/\)]/);
+  if (m) return m[1].toUpperCase();
+  // "ICAO - Name" or "ICAO: Name"
+  m = str.match(/^([A-Za-z]{4})[\s\-:]/);
+  if (m) return m[1].toUpperCase();
+  // Any standalone 4-letter word
+  m = str.match(/\b([A-Za-z]{4})\b/);
+  return m ? m[1].toUpperCase() : null;
 }
 function cleanAirportName(str) {
   if (!str) return str;
@@ -418,8 +428,14 @@ function fmtTime(str) {
 }
 function fmtAirtime(str) {
   if (!str) return '';
-  const m = str.match(/(\d+):(\d+)/);
-  if (!m) return str;
+  const raw = str.toString().trim();
+  // Pure minutes number e.g. "84"
+  if (/^\d+$/.test(raw)) {
+    const mins = parseInt(raw);
+    return `${Math.floor(mins/60)}h ${String(mins%60).padStart(2,'0')}m`;
+  }
+  const m = raw.match(/(\d+):(\d+)/);
+  if (!m) return raw;
   return `${parseInt(m[1])}h ${m[2]}m`;
 }
 function fmtDate(str) {
@@ -442,33 +458,33 @@ function minutesToHM(mins) {
 }
 
 function parseRow(row, idx) {
-  const originICAO = extractICAO(row['Origin Airport']);
-  const destICAO   = extractICAO(row['Destination Airport']);
+  const originICAO = extractICAO(row['Departure Airport']);
+  const destICAO   = extractICAO(row['Arrival Airport']);
   const originC    = AIRPORT_COORDS[originICAO];
   const destC      = AIRPORT_COORDS[destICAO];
   if (!originC || !destC) {
     console.warn('[PIREP] Unknown airport(s):', originICAO, destICAO, '— skipping');
     return null;
   }
-  const sim = (row['Simulator Name'] || '')
+  const sim = (row['Flight Simulator'] || '')
     .replace('Microsoft Flight Simulator 2020','MSFS 2020')
     .replace('Microsoft Flight Simulator','MSFS')
     .replace('X-Plane 12','XP12').replace('X-Plane 11','XP11').trim();
   return {
-    flight:   row['ICAO Flight Number'] || 'UNK',
+    flight:   row['Callsign'] || 'UNK',
     color:    BRAND_COLORS[idx % BRAND_COLORS.length],
-    pilot:    row['Pilot Name/Username'] || 'Unknown',
+    pilot:    row['Name'] || 'Unknown',
     sim,
-    aircraft: row['Aircraft Flown'] || '',
+    aircraft: row['Aircraft ICAO Code'] || '',
     reg:      row['Aircraft Registration'] || '',
-    network:  row['Network Name'] || 'VATSIM',
-    origin:   { icao: originICAO, name: cleanAirportName(row['Origin Airport']) || originC.name, lat: originC.lat, lon: originC.lon },
-    dest:     { icao: destICAO,   name: cleanAirportName(row['Destination Airport']) || destC.name, lat: destC.lat, lon: destC.lon },
-    dep:      fmtTime(row['Off-Block Time']),
-    arr:      fmtTime(row['On-Block Time']),
-    airtime:  fmtAirtime(row['Air Time']),
-    date:     fmtDate(row['Timestamp']),
-    eval:     row['Self-Evaluation'] || '',
+    network:  'VATSIM',
+    origin:   { icao: originICAO, name: cleanAirportName(row['Departure Airport']) || originC.name, lat: originC.lat, lon: originC.lon },
+    dest:     { icao: destICAO,   name: cleanAirportName(row['Arrival Airport'])   || destC.name,   lat: destC.lat,  lon: destC.lon  },
+    dep:      fmtTime(row['Departure Time (UTC)']),
+    arr:      fmtTime(row['Arrival Time (UTC)']),
+    airtime:  fmtAirtime(row['Block Time (min)']),
+    date:     fmtDate(row['Log Timestamp']),
+    eval:     row['Self Evaluation'] || '',
   };
 }
 
