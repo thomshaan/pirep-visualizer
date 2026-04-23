@@ -144,6 +144,30 @@ body::after{content:'';position:fixed;inset:0;z-index:9;pointer-events:none;
 .bd{width:8px;height:8px;border-radius:50%;background:var(--bc);box-shadow:0 0 7px var(--bc);}
 #botFlights{display:flex;align-items:center;gap:28px;flex-wrap:wrap;justify-content:center;}
 
+/* DEBUG */
+#dbgBtn{position:fixed;bottom:14px;left:16px;z-index:30;padding:5px 10px;
+  border:1px solid rgba(249,148,32,.35);border-radius:5px;background:rgba(26,10,21,.9);
+  color:rgba(249,148,32,.6);font-family:var(--fm);font-size:9px;letter-spacing:.15em;
+  cursor:pointer;pointer-events:auto;}
+#dbgBtn:hover{border-color:var(--orange);color:var(--orange);}
+#dbgPanel{position:fixed;bottom:46px;left:16px;z-index:30;width:340px;
+  background:rgba(16,6,14,.96);border:1px solid rgba(249,148,32,.3);border-radius:8px;
+  padding:12px 14px;font-family:var(--fm);font-size:10px;color:var(--text);
+  display:none;pointer-events:auto;backdrop-filter:blur(14px);}
+#dbgPanel.vis{display:block;}
+.dbg-row{display:flex;justify-content:space-between;padding:4px 0;
+  border-bottom:1px solid rgba(255,255,255,.05);}
+.dbg-lbl{color:var(--dim);font-size:9px;letter-spacing:.12em;}
+.dbg-val{color:var(--gold);text-align:right;max-width:200px;word-break:break-all;line-height:1.4;}
+.dbg-ok{color:#4caf7d;} .dbg-err{color:#e63862;}
+.dbg-keys{margin-top:8px;color:var(--dim);font-size:9px;line-height:1.7;word-break:break-all;}
+.dbg-keys span{display:inline-block;background:rgba(249,148,32,.08);border:1px solid rgba(249,148,32,.2);
+  border-radius:3px;padding:1px 5px;margin:2px;color:var(--orange);}
+#dbgRefresh{margin-top:10px;width:100%;padding:6px;border:1px solid rgba(249,148,32,.4);
+  border-radius:5px;background:rgba(249,148,32,.08);color:var(--orange);
+  font-family:var(--fm);font-size:9px;letter-spacing:.15em;cursor:pointer;}
+#dbgRefresh:hover{background:rgba(249,148,32,.18);}
+
 /* AIRPORT LABELS */
 .albl{position:fixed;z-index:15;font-family:var(--fd);font-size:9px;
   letter-spacing:.15em;padding:3px 8px;border-radius:3px;
@@ -262,6 +286,13 @@ body::after{content:'';position:fixed;inset:0;z-index:9;pointer-events:none;
   <div class="bi" style="color:rgba(180,210,240,.18);">Drag globe · Click flight to inspect</div>
 </div>
 
+<!-- DEBUG -->
+<button id="dbgBtn" onclick="toggleDebug()">DEBUG</button>
+<div id="dbgPanel">
+  <div id="dbgContent"></div>
+  <button id="dbgRefresh" onclick="forceRefresh()">⟳ FORCE REFRESH NOW</button>
+</div>
+
 <!-- TWEAKS -->
 <div class="tweaks" id="tweaksPanel">
   <div class="tw-title">Tweaks</div>
@@ -302,6 +333,9 @@ body::after{content:'';position:fixed;inset:0;z-index:9;pointer-events:none;
 // ═══════════════════════════════════════════════════════
 let AIRPORT_COORDS = {};
 
+// Debug state
+let _dbgAirports=0,_dbgPireps=0,_dbgFallback=true,_dbgErr=null,_dbgRawKeys=[],_dbgLastFetch=null;
+
 const AIRPORTS_CSV_URL = 'https://davidmegginson.github.io/ourairports-data/airports.csv';
 
 async function fetchAirportDB() {
@@ -328,8 +362,10 @@ async function fetchAirportDB() {
       if (isNaN(lat) || isNaN(lon)) continue;
       AIRPORT_COORDS[icao] = { lat, lon, name: clean(idx.name) };
     }
-    console.info('[AirportDB] Loaded', Object.keys(AIRPORT_COORDS).length, 'airports');
+    _dbgAirports=Object.keys(AIRPORT_COORDS).length;
+    console.info('[AirportDB] Loaded', _dbgAirports, 'airports');
   } catch(err) {
+    _dbgAirports=0;
     console.warn('[AirportDB] Failed to load CSV:', err.message);
   }
 }
@@ -442,12 +478,16 @@ async function fetchPIREPs() {
     const res  = await fetch(API_URL);
     const rows = await res.json();
     if (!Array.isArray(rows) || !rows.length) throw new Error('Empty response');
+    _dbgRawKeys = rows[0] ? Object.keys(rows[0]) : [];
     const parsed = rows.map(parseRow).filter(Boolean);
-    if (!parsed.length) throw new Error('No parseable flights');
+    _dbgLastFetch = new Date().toISOString();
+    if (!parsed.length) throw new Error(`0/${rows.length} rows parsed — column mismatch? Keys: ${_dbgRawKeys.join(', ')}`);
     PIREPS = parsed;
+    _dbgPireps = parsed.length; _dbgFallback = false; _dbgErr = null;
     lastFetched = Date.now();
     console.info('[PIREP API] Loaded', parsed.length, 'flights');
   } catch(err) {
+    _dbgErr = err.message; _dbgFallback = true;
     console.warn('[PIREP API] Using fallback data:', err.message);
     PIREPS = [...FALLBACK_PIREPS];
   }
@@ -938,30 +978,37 @@ function closeDetail(){
 // ═══════════════════════════════════════════════════════
 // AIRPORT LABEL POPUP
 // ═══════════════════════════════════════════════════════
+function focusGlobe(lat,lon){
+  if(!globe) return;
+  const v=ll2v(lat,lon);
+  trgY=Math.atan2(v.x,-v.z);
+  trgX=-(lat*0.008);
+}
 function handleLabelClick(icao,lblEl){
   const matches=PIREPS.filter(p=>p.origin.icao===icao||p.dest.icao===icao);
   if(!matches.length) return;
-  if(matches.length===1){
-    openDetail(PIREPS.indexOf(matches[0]));
-    return;
+  if(matches.length===1) openDetail(PIREPS.indexOf(matches[0]));
+  else{
+    // Multiple flights — show popup near the label
+    const rect=lblEl.getBoundingClientRect();
+    const pop=document.getElementById('apPopup');
+    pop.innerHTML=`<div class="ap-pop-title">${icao} · ${matches.length} flights</div>`+
+      matches.map(p=>{
+        const i=PIREPS.indexOf(p);
+        return `<div class="ap-pop-item" onclick="openDetail(${i});document.getElementById('apPopup').classList.remove('vis')">
+          <span class="ap-fi" style="color:${p.color}">${p.flight}</span>
+          <span class="ap-fr">${p.origin.icao} → ${p.dest.icao}</span>
+        </div>`;
+      }).join('');
+    let left=rect.left,top=rect.bottom+6;
+    if(left+200>innerWidth) left=innerWidth-210;
+    if(top+120>innerHeight) top=rect.top-130;
+    pop.style.left=left+'px';pop.style.top=top+'px';
+    pop.classList.add('vis');
   }
-  // Multiple flights — show popup near the label
-  const rect=lblEl.getBoundingClientRect();
-  const pop=document.getElementById('apPopup');
-  pop.innerHTML=`<div class="ap-pop-title">${icao} · ${matches.length} flights</div>`+
-    matches.map(p=>{
-      const i=PIREPS.indexOf(p);
-      return `<div class="ap-pop-item" onclick="openDetail(${i});document.getElementById('apPopup').classList.remove('vis')">
-        <span class="ap-fi" style="color:${p.color}">${p.flight}</span>
-        <span class="ap-fr">${p.origin.icao} → ${p.dest.icao}</span>
-      </div>`;
-    }).join('');
-  // Position popup — keep inside viewport
-  let left=rect.left,top=rect.bottom+6;
-  if(left+200>innerWidth) left=innerWidth-210;
-  if(top+120>innerHeight) top=rect.top-130;
-  pop.style.left=left+'px';pop.style.top=top+'px';
-  pop.classList.add('vis');
+  // Always focus on the clicked airport itself (overrides openDetail's route midpoint)
+  const ap=AIRPORT_COORDS[icao];
+  if(ap) focusGlobe(ap.lat,ap.lon);
 }
 
 // ═══════════════════════════════════════════════════════
@@ -974,6 +1021,39 @@ rebuildUI=function(){
   if(globe){ buildAirports(); buildFlights(); }
   closeDetail();
 };
+
+// ═══════════════════════════════════════════════════════
+// DEBUG PANEL
+// ═══════════════════════════════════════════════════════
+function toggleDebug(){
+  const p=document.getElementById('dbgPanel');
+  if(p.classList.toggle('vis')) refreshDebug();
+}
+function refreshDebug(){
+  const ago = _dbgLastFetch
+    ? Math.round((Date.now()-new Date(_dbgLastFetch))/1000)+'s ago'
+    : 'never';
+  const keyHtml = _dbgRawKeys.length
+    ? _dbgRawKeys.map(k=>`<span>${k}</span>`).join('')
+    : '<span style="color:var(--dim)">not fetched yet</span>';
+  document.getElementById('dbgContent').innerHTML=`
+    <div class="dbg-row"><span class="dbg-lbl">Airport DB</span>
+      <span class="dbg-val ${_dbgAirports>0?'dbg-ok':'dbg-err'}">${_dbgAirports>0?_dbgAirports+' airports':'FAILED'}</span></div>
+    <div class="dbg-row"><span class="dbg-lbl">PIREP source</span>
+      <span class="dbg-val ${_dbgFallback?'dbg-err':'dbg-ok'}">${_dbgFallback?'FALLBACK ('+FALLBACK_PIREPS.length+')':'LIVE ('+_dbgPireps+')'}</span></div>
+    <div class="dbg-row"><span class="dbg-lbl">Last fetch</span>
+      <span class="dbg-val">${ago}</span></div>
+    ${_dbgErr?`<div class="dbg-row"><span class="dbg-lbl">Error</span><span class="dbg-val dbg-err" style="font-size:8px">${_dbgErr}</span></div>`:''}
+    <div class="dbg-keys"><span class="dbg-lbl" style="display:block;margin-bottom:4px">Sheet column keys:</span>${keyHtml}</div>`;
+}
+async function forceRefresh(){
+  document.getElementById('dbgRefresh').textContent='FETCHING…';
+  lastFetched=0;
+  await fetchPIREPs();
+  rebuildUI();
+  refreshDebug();
+  document.getElementById('dbgRefresh').textContent='⟳ FORCE REFRESH NOW';
+}
 </script>
 
 </body>
