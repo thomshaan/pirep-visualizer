@@ -367,22 +367,27 @@ async function fetchAirportDB() {
     const lines = text.split('\n');
     const header = lines[0].split(',').map(h => h.replace(/"/g,'').trim());
     const idx = {
-      ident:    header.indexOf('ident'),
-      name:     header.indexOf('name'),
-      lat:      header.indexOf('latitude_deg'),
-      lon:      header.indexOf('longitude_deg'),
-      type:     header.indexOf('type'),
+      ident:      header.indexOf('ident'),
+      name:       header.indexOf('name'),
+      lat:        header.indexOf('latitude_deg'),
+      lon:        header.indexOf('longitude_deg'),
+      gps_code:   header.indexOf('gps_code'),
+      local_code: header.indexOf('local_code'),
     };
     for (let i = 1; i < lines.length; i++) {
       const cols = lines[i].match(/(".*?"|[^,]+|(?<=,)(?=,)|(?<=,)$)/g);
       if (!cols) continue;
       const clean = c => (cols[c] || '').replace(/"/g,'').trim();
-      const icao = clean(idx.ident);
-      if (icao.length !== 4) continue;
       const lat = parseFloat(clean(idx.lat));
       const lon = parseFloat(clean(idx.lon));
       if (isNaN(lat) || isNaN(lon)) continue;
-      AIRPORT_COORDS[icao] = { lat, lon, name: clean(idx.name) };
+      const entry = { lat, lon, name: clean(idx.name) };
+      const icao  = clean(idx.ident);
+      if (icao.length === 4)  AIRPORT_COORDS[icao]  = entry;
+      const gps   = clean(idx.gps_code);
+      if (gps.length === 4   && !AIRPORT_COORDS[gps])   AIRPORT_COORDS[gps]   = entry;
+      const local = clean(idx.local_code);
+      if (local.length === 4 && !AIRPORT_COORDS[local]) AIRPORT_COORDS[local] = entry;
     }
     _dbgAirports=Object.keys(AIRPORT_COORDS).length;
     console.info('[AirportDB] Loaded', _dbgAirports, 'airports');
@@ -551,6 +556,8 @@ let flights=[], pulseRings=[], airportMarkers=[];
 let sunLight, globe, camera, renderer, scene;
 let rotX=0.12, rotY=2.83, trgX=0.12, trgY=2.83;
 let isDrag=false, px=0, py=0;
+let camZ=2.8, trgZ=2.8;
+const CAM_MIN=1.4, CAM_MAX=5.5;
 
 function setTrails(on){
   trailsOn=on;
@@ -836,6 +843,23 @@ window.addEventListener('mousemove',e=>{
   rotX=Math.max(-1.4,Math.min(1.4,rotX));trgX=rotX;trgY=rotY;px=e.clientX;py=e.clientY;
 });
 
+// Scroll-wheel zoom (skip if over panel UI)
+window.addEventListener('wheel',e=>{
+  if(e.target.closest('.rpanel')||e.target.closest('#dbgPanel')||e.target.closest('#apPopup')) return;
+  e.preventDefault();
+  trgZ=Math.max(CAM_MIN,Math.min(CAM_MAX,trgZ+e.deltaY*0.003));
+},{passive:false});
+
+// Touch pinch zoom
+let _pt0=0;
+window.addEventListener('touchstart',e=>{if(e.touches.length===2) _pt0=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);},{passive:true});
+window.addEventListener('touchmove',e=>{
+  if(e.touches.length!==2) return;
+  const d=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);
+  trgZ=Math.max(CAM_MIN,Math.min(CAM_MAX,trgZ-(d-_pt0)*0.008));
+  _pt0=d;
+},{passive:true});
+
 // Close popup on outside click
 window.addEventListener('click',e=>{
   const pop=document.getElementById('apPopup');
@@ -851,6 +875,7 @@ function animate(){
   requestAnimationFrame(animate);
   const dt=clock.getDelta(),t=clock.getElapsedTime();
   if(!isDrag){trgY+=autoRot;rotX+=(trgX-rotX)*.04;rotY+=(trgY-rotY)*.04;}
+  camZ+=(trgZ-camZ)*.08; camera.position.z=camZ;
   if(globe){globe.rotation.x=rotX;globe.rotation.y=rotY;}
   if(window._cloudMesh) window._cloudMesh.rotation.y+=dt*.008;
   if(window._earthMat&&window._earthMat.userData.shader){
@@ -912,8 +937,9 @@ setInterval(updateZulu,1000);
 // HEADER STATS
 // ═══════════════════════════════════════════════════════
 function updateStats(){
-  document.getElementById('statFlights').textContent=String(PIREPS.length).padStart(2,'0');
-  const totalMins=PIREPS.reduce((s,p)=>s+airtimeToMinutes(p.airtime),0);
+  const set=activeFilter?PIREPS.filter(p=>p.pilot.toLowerCase().includes(activeFilter.toLowerCase())):PIREPS;
+  document.getElementById('statFlights').textContent=String(set.length).padStart(2,'0');
+  const totalMins=set.reduce((s,p)=>s+airtimeToMinutes(p.airtime),0);
   document.getElementById('statAirtime').textContent=minutesToHM(totalMins);
   const nets=[...new Set(PIREPS.map(p=>p.network))];
   document.getElementById('statNetwork').textContent=nets.length===1?nets[0]:'MULTI';
@@ -945,6 +971,7 @@ function setPilotFilter(name){
   document.getElementById('pilotFilter').value=name;
   renderPilotChips();
   renderFlightList(name);
+  updateStats();
 }
 
 // ═══════════════════════════════════════════════════════
@@ -999,6 +1026,7 @@ document.getElementById('pilotFilter').addEventListener('input',function(){
   activeFilter=this.value;
   renderPilotChips();
   renderFlightList(this.value);
+  updateStats();
 });
 
 // ═══════════════════════════════════════════════════════
