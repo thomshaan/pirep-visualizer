@@ -298,61 +298,41 @@ body::after{content:'';position:fixed;inset:0;z-index:9;pointer-events:none;
 
 <script>
 // ═══════════════════════════════════════════════════════
-// AIRPORT COORDINATE LOOKUP
+// AIRPORT COORDINATE LOOKUP (populated from OurAirports CSV)
 // ═══════════════════════════════════════════════════════
-const AIRPORT_COORDS = {
-  'WIHH':{lat:-6.267,lon:106.891,name:'Jakarta Halim Perdanakusuma'},
-  'WIII':{lat:-6.127,lon:106.656,name:'Jakarta Soekarno-Hatta'},
-  'WADD':{lat:-8.748,lon:115.167,name:'Bali Ngurah Rai'},
-  'WARR':{lat:-7.380,lon:112.787,name:'Surabaya Juanda'},
-  'WAHS':{lat:-6.970,lon:110.374,name:'Semarang Ahmad Yani'},
-  'WAPP':{lat:-3.702,lon:128.085,name:'Ambon Pattimura'},
-  'WIPP':{lat:-2.898,lon:104.700,name:'Palembang SMB II'},
-  'WIDD':{lat:1.121,lon:104.118,name:'Batam Hang Nadim'},
-  'WAJJ':{lat:-2.577,lon:140.517,name:'Jayapura Sentani'},
-  'WABP':{lat:-3.868,lon:136.883,name:'Timika Moses Kilangin'},
-  'WAMM':{lat:1.549,lon:124.926,name:'Manado Sam Ratulangi'},
-  'WALL':{lat:-3.442,lon:114.762,name:'Banjarmasin Syamsudin Noor'},
-  'WALS':{lat:-8.559,lon:125.188,name:'Dili Presidente Nicolau Lobato'},
-  'WART':{lat:1.268,lon:116.894,name:'Balikpapan Sepinggan'},
-  'VTBS':{lat:13.681,lon:100.747,name:'Bangkok Suvarnabhumi'},
-  'VTBD':{lat:13.913,lon:100.607,name:'Bangkok Don Mueang'},
-  'VTSP':{lat:8.113,lon:98.317,name:'Phuket Int\'l'},
-  'VTSM':{lat:9.134,lon:99.464,name:'Samui'},
-  'WMKK':{lat:2.746,lon:101.710,name:'Kuala Lumpur KLIA'},
-  'WMSA':{lat:3.131,lon:101.699,name:'Kuala Lumpur KLIA2'},
-  'WBKK':{lat:5.937,lon:116.051,name:'Kota Kinabalu'},
-  'WBGG':{lat:1.484,lon:110.329,name:'Kuching'},
-  'WSSS':{lat:1.359,lon:103.989,name:'Singapore Changi'},
-  'RPLL':{lat:14.508,lon:121.019,name:'Manila Ninoy Aquino'},
-  'RPVV':{lat:11.827,lon:122.076,name:'Kalibo Int\'l'},
-  'RPLC':{lat:15.186,lon:120.560,name:'Clark Int\'l'},
-  'VVNB':{lat:21.221,lon:105.807,name:'Hanoi Noi Bai'},
-  'VVTS':{lat:10.819,lon:106.652,name:'Ho Chi Minh Tan Son Nhat'},
-  'VVDN':{lat:16.044,lon:108.199,name:'Da Nang'},
-  'VDPP':{lat:11.547,lon:104.844,name:'Phnom Penh'},
-  'VDSR':{lat:13.411,lon:103.813,name:'Siem Reap'},
-  'VYYY':{lat:16.907,lon:96.133,name:'Yangon'},
-  'VYMM':{lat:21.702,lon:96.133,name:'Mandalay'},
-  'VLVT':{lat:17.988,lon:102.563,name:'Vientiane Wattay'},
-  'WBSB':{lat:4.944,lon:114.928,name:'Bandar Seri Begawan'},
-  'VHHH':{lat:22.309,lon:113.915,name:'Hong Kong Int\'l'},
-  'RCTP':{lat:25.077,lon:121.233,name:'Taipei Taoyuan'},
-  'RKSI':{lat:37.469,lon:126.451,name:'Seoul Incheon'},
-  'RJTT':{lat:35.549,lon:139.780,name:'Tokyo Haneda'},
-  'RJAA':{lat:35.765,lon:140.387,name:'Tokyo Narita'},
-  'RJOO':{lat:34.786,lon:135.438,name:'Osaka Itami'},
-  'RJBB':{lat:34.432,lon:135.244,name:'Osaka Kansai'},
-  'ZBAA':{lat:40.080,lon:116.585,name:'Beijing Capital'},
-  'ZSPD':{lat:31.143,lon:121.805,name:'Shanghai Pudong'},
-  'ZGGG':{lat:23.392,lon:113.299,name:'Guangzhou Baiyun'},
-  'ZGSZ':{lat:22.639,lon:113.811,name:'Shenzhen Bao\'an'},
-  'VIDP':{lat:28.556,lon:77.100,name:'Delhi Indira Gandhi'},
-  'VABB':{lat:19.088,lon:72.868,name:'Mumbai CSMT'},
-  'OMDB':{lat:25.253,lon:55.364,name:'Dubai Int\'l'},
-  'YSSY':{lat:-33.946,lon:151.177,name:'Sydney Kingsford Smith'},
-  'YMML':{lat:-37.673,lon:144.843,name:'Melbourne Tullamarine'},
-};
+let AIRPORT_COORDS = {};
+
+const AIRPORTS_CSV_URL = 'https://davidmegginson.github.io/ourairports-data/airports.csv';
+
+async function fetchAirportDB() {
+  try {
+    const res = await fetch(AIRPORTS_CSV_URL);
+    const text = await res.text();
+    const lines = text.split('\n');
+    const header = lines[0].split(',').map(h => h.replace(/"/g,'').trim());
+    const idx = {
+      ident:    header.indexOf('ident'),
+      name:     header.indexOf('name'),
+      lat:      header.indexOf('latitude_deg'),
+      lon:      header.indexOf('longitude_deg'),
+      type:     header.indexOf('type'),
+    };
+    for (let i = 1; i < lines.length; i++) {
+      const cols = lines[i].match(/(".*?"|[^,]+|(?<=,)(?=,)|(?<=,)$)/g);
+      if (!cols) continue;
+      const clean = c => (cols[c] || '').replace(/"/g,'').trim();
+      const icao = clean(idx.ident);
+      if (icao.length !== 4) continue;
+      const lat = parseFloat(clean(idx.lat));
+      const lon = parseFloat(clean(idx.lon));
+      if (isNaN(lat) || isNaN(lon)) continue;
+      AIRPORT_COORDS[icao] = { lat, lon, name: clean(idx.name) };
+    }
+    console.info('[AirportDB] Loaded', Object.keys(AIRPORT_COORDS).length, 'airports');
+  } catch(err) {
+    console.warn('[AirportDB] Failed to load CSV:', err.message);
+  }
+}
 
 // ═══════════════════════════════════════════════════════
 // FALLBACK PIREP DATA (used if API is unavailable)
@@ -473,8 +453,8 @@ async function fetchPIREPs() {
   }
 }
 
-// Auto-refresh every hour
-setInterval(() => { if (Date.now() - lastFetched > 3_600_000) fetchPIREPs().then(rebuildUI); }, 60_000);
+// Auto-refresh every minute
+setInterval(() => { if (Date.now() - lastFetched > 60_000) fetchPIREPs().then(rebuildUI); }, 60_000);
 
 // ═══════════════════════════════════════════════════════
 // HELPER STUBS (filled in next steps)
@@ -547,7 +527,9 @@ function setProgress(pct,msg){
 // GLOBE INIT
 // ═══════════════════════════════════════════════════════
 window.addEventListener('load',async function(){
-  setProgress(5,'FETCHING FLIGHT DATA…');
+  setProgress(5,'LOADING AIRPORT DATABASE…');
+  await fetchAirportDB();
+  setProgress(10,'FETCHING FLIGHT DATA…');
   await fetchPIREPs();
   setProgress(15,'INITIALIZING 3D ENGINE…');
 
