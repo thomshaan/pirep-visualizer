@@ -50,15 +50,20 @@ body::after{content:'';position:fixed;inset:0;z-index:9;pointer-events:none;
 @keyframes blink{0%,100%{opacity:1;}50%{opacity:.3;}}
 
 /* RIGHT PANEL */
-.rpanel{position:fixed;top:90px;right:0;bottom:60px;width:310px;z-index:20;
-  display:flex;flex-direction:column;pointer-events:auto;}
+.rpanel{position:fixed;top:90px;right:0;bottom:0;width:320px;z-index:20;
+  display:flex;flex-direction:column;pointer-events:auto;
+  background:linear-gradient(180deg,rgba(18,7,16,.96) 0%,rgba(26,10,21,.92) 100%);
+  border-left:1px solid rgba(249,148,32,.1);backdrop-filter:blur(28px);}
 
 /* Pilot filter header */
-.rf-head{padding:0 10px 8px;flex-shrink:0;}
-.slbl{font-family:var(--fd);font-size:9px;letter-spacing:.3em;color:var(--dim);
-  text-transform:uppercase;padding:0 6px;margin-bottom:8px;display:block;}
+.rf-head{padding:10px 14px 10px;flex-shrink:0;border-bottom:1px solid rgba(249,148,32,.08);}
+.slbl{font-family:var(--fd);font-size:9px;letter-spacing:.3em;color:var(--gold);opacity:.7;
+  text-transform:uppercase;padding:0 4px;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;}
+.slbl-count{font-size:9px;letter-spacing:.08em;color:var(--orange);opacity:1;
+  background:rgba(249,148,32,.1);border:1px solid rgba(249,148,32,.25);
+  border-radius:10px;padding:1px 7px;font-family:var(--fm);}
 .pf-input-wrap{position:relative;margin-bottom:8px;}
-.pf-input{width:100%;background:rgba(58,20,44,0.7);border:1px solid var(--border);
+.pf-input{width:100%;background:rgba(42,15,34,.8);border:1px solid var(--border);
   border-radius:8px;padding:8px 12px 8px 32px;color:var(--text);font-family:var(--fb);
   font-size:11px;outline:none;transition:border-color .2s;}
 .pf-input::placeholder{color:var(--dim);}
@@ -68,35 +73,42 @@ body::after{content:'';position:fixed;inset:0;z-index:9;pointer-events:none;
 .pilot-chips{display:flex;gap:5px;overflow-x:auto;padding-bottom:4px;}
 .pilot-chips::-webkit-scrollbar{height:2px;}
 .pilot-chips::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px;}
-.pchip{flex-shrink:0;padding:4px 10px;border-radius:12px;border:1px solid var(--border);
+.pchip{flex-shrink:0;padding:3px 9px;border-radius:10px;border:1px solid var(--border);
   background:transparent;color:var(--dim);font-family:var(--fm);font-size:9px;
   cursor:pointer;transition:all .2s;letter-spacing:.08em;}
 .pchip.active{background:rgba(249,148,32,.12);border-color:var(--orange);color:var(--orange);}
 .pchip:hover:not(.active){border-color:var(--border-hi);color:var(--text);}
 
 /* Flight list */
-.flight-list{flex:1;overflow-y:auto;padding:0 10px 10px;display:flex;flex-direction:column;gap:8px;}
+.flight-list{flex:1;overflow-y:auto;padding:8px 10px;display:flex;flex-direction:column;gap:5px;min-height:0;}
 .flight-list::-webkit-scrollbar{width:3px;}
-.flight-list::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px;}
+.flight-list::-webkit-scrollbar-thumb{background:rgba(249,148,32,.2);border-radius:2px;}
 .no-flights{text-align:center;padding:32px 16px;color:var(--dim);font-size:11px;letter-spacing:.1em;}
 
-/* FLIGHT CARDS */
-.pcard{background:var(--surf);border:1px solid var(--border);border-radius:10px;
-  padding:14px 14px 14px 18px;cursor:pointer;
-  transition:all .3s cubic-bezier(.23,1,.32,1);backdrop-filter:blur(14px);
+/* FLIGHT CARDS — compact */
+.pcard{background:rgba(42,15,34,.55);border:1px solid var(--border);border-radius:8px;
+  padding:9px 12px 9px 15px;cursor:pointer;
+  transition:all .22s cubic-bezier(.23,1,.32,1);
   position:relative;overflow:hidden;}
-.pcard::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;
-  background:var(--cc,var(--orange));box-shadow:0 0 8px var(--cc,var(--orange));}
-.pcard:hover,.pcard.active{border-color:var(--border-hi);
-  box-shadow:0 0 24px rgba(249,148,32,.15),inset 0 0 30px rgba(249,148,32,.04);transform:translateX(-5px);}
-.cf{font-family:var(--fd);font-size:17px;font-weight:700;color:var(--cc,var(--gold));
-  text-shadow:0 0 10px var(--cc,var(--orange));margin-bottom:6px;letter-spacing:.04em;}
-.croute{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:500;margin-bottom:8px;}
-.carrow{color:var(--dim);font-size:9px;}
-.cmeta{display:grid;grid-template-columns:1fr 1fr;gap:3px 8px;}
-.cm{font-family:var(--fm);font-size:10px;color:var(--dim);}
-.cmv{color:var(--text);}
-.cdate{font-size:10px;color:var(--dim);margin-top:6px;font-family:var(--fm);}
+.pcard::before{content:'';position:absolute;left:0;top:0;bottom:0;width:2px;
+  background:var(--cc,var(--orange));box-shadow:0 0 6px var(--cc,var(--orange));}
+.pcard:hover,.pcard.active{border-color:rgba(249,148,32,.35);
+  background:rgba(62,21,48,.7);transform:translateX(-3px);
+  box-shadow:0 4px 20px rgba(0,0,0,.4);}
+.card-top{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:3px;}
+.cf{font-family:var(--fd);font-size:13px;font-weight:700;color:var(--cc,var(--gold));
+  text-shadow:0 0 8px var(--cc,var(--orange));letter-spacing:.04em;}
+.ctime{font-family:var(--fm);font-size:9px;color:var(--dim);letter-spacing:.06em;}
+.croute{display:flex;align-items:center;gap:5px;font-size:12px;font-weight:600;margin-bottom:3px;color:var(--text);}
+.carrow{color:var(--dim);font-size:8px;}
+.cinfo{font-family:var(--fm);font-size:9px;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+
+/* Panel footer */
+.panel-footer{padding:7px 14px;border-top:1px solid rgba(249,148,32,.07);flex-shrink:0;
+  display:flex;justify-content:space-between;align-items:center;}
+.pf-status{font-family:var(--fm);font-size:8px;letter-spacing:.1em;color:rgba(245,230,218,.22);}
+.pf-dot{width:5px;height:5px;border-radius:50%;background:var(--orange);
+  box-shadow:0 0 5px var(--orange);animation:blink 2s step-end infinite;flex-shrink:0;}
 
 /* DETAIL VIEW (inside right panel) */
 .detail-view{flex:1;overflow-y:auto;padding:0 10px 10px;display:none;flex-direction:column;gap:0;}
@@ -136,13 +148,6 @@ body::after{content:'';position:fixed;inset:0;z-index:9;pointer-events:none;
 .devlbl{font-size:8px;letter-spacing:.22em;color:rgba(245,198,36,.85);text-transform:uppercase;margin-bottom:6px;font-weight:700;}
 .devtxt{font-size:11px;line-height:1.65;color:rgba(245,230,218,.82);font-style:italic;}
 
-/* BOTTOM BAR */
-.bot{position:fixed;bottom:0;left:0;right:0;z-index:20;padding:12px 28px;
-  background:linear-gradient(0deg,rgba(26,10,21,.98) 0%,transparent 100%);
-  display:flex;align-items:center;justify-content:center;gap:28px;pointer-events:none;}
-.bi{display:flex;align-items:center;gap:7px;font-size:10px;color:var(--dim);font-weight:500;}
-.bd{width:8px;height:8px;border-radius:50%;background:var(--bc);box-shadow:0 0 7px var(--bc);}
-#botFlights{display:flex;align-items:center;gap:28px;flex-wrap:wrap;justify-content:center;}
 
 /* DEBUG */
 #dbgBtn{position:fixed;bottom:14px;left:16px;z-index:30;padding:5px 10px;
@@ -207,7 +212,7 @@ body::after{content:'';position:fixed;inset:0;z-index:9;pointer-events:none;
 .ld-txt{font-size:10px;color:var(--dim);letter-spacing:.2em;font-weight:500;}
 
 /* TWEAKS */
-.tweaks{position:fixed;bottom:72px;right:320px;width:215px;
+.tweaks{position:fixed;bottom:16px;right:330px;width:215px;
   background:rgba(26,10,21,.96);border:1px solid var(--border);border-radius:12px;
   padding:16px;z-index:100;backdrop-filter:blur(20px);display:none;}
 .tweaks.vis{display:block;}
@@ -259,10 +264,10 @@ body::after{content:'';position:fixed;inset:0;z-index:9;pointer-events:none;
 <!-- RIGHT PANEL -->
 <div class="rpanel">
   <div class="rf-head">
-    <span class="slbl">Flight Log</span>
+    <span class="slbl">Flight Log <span class="slbl-count" id="flightCount">–</span></span>
     <div class="pf-input-wrap">
       <span class="pf-icon">✦</span>
-      <input class="pf-input" id="pilotFilter" type="text" placeholder="Filter by pilot name…" autocomplete="off">
+      <input class="pf-input" id="pilotFilter" type="text" placeholder="Filter by pilot…" autocomplete="off">
     </div>
     <div class="pilot-chips" id="pilotChips"></div>
   </div>
@@ -275,16 +280,16 @@ body::after{content:'';position:fixed;inset:0;z-index:9;pointer-events:none;
     <button class="dv-back" onclick="closeDetail()">◀ Back to flights</button>
     <div class="dv-card" id="detContent"></div>
   </div>
+
+  <div class="panel-footer">
+    <span class="pf-status" id="footerUpdate">–</span>
+    <div class="pf-dot"></div>
+  </div>
 </div>
 
 <!-- AIRPORT POPUP -->
 <div class="ap-popup" id="apPopup"></div>
 
-<!-- BOTTOM BAR -->
-<div class="bot">
-  <div id="botFlights"></div>
-  <div class="bi" style="color:rgba(180,210,240,.18);">Drag globe · Click flight to inspect</div>
-</div>
 
 <!-- DEBUG -->
 <button id="dbgBtn" onclick="toggleDebug()">DEBUG</button>
@@ -888,16 +893,11 @@ function updateStats(){
   document.getElementById('statNetwork').textContent=nets.length===1?nets[0]:'MULTI';
 }
 
-// ═══════════════════════════════════════════════════════
-// BOTTOM BAR
-// ═══════════════════════════════════════════════════════
 function renderBottomBar(){
-  const el=document.getElementById('botFlights');
-  el.innerHTML=PIREPS.map(p=>`
-    <div class="bi">
-      <div class="bd" style="--bc:${p.color}"></div>
-      ${p.flight} · ${p.origin.icao} → ${p.dest.icao}
-    </div>`).join('');
+  const el=document.getElementById('footerUpdate');
+  if(!el||!_dbgLastFetch) return;
+  const secs=Math.round((Date.now()-new Date(_dbgLastFetch))/1000);
+  el.textContent=_dbgFallback?'SAMPLE DATA · API UNAVAILABLE':`UPDATED ${secs}S AGO · LIVE DATA`;
 }
 
 // ═══════════════════════════════════════════════════════
@@ -931,17 +931,16 @@ function renderFlightList(filter){
   list.innerHTML=filtered.map(p=>{
     const i=PIREPS.indexOf(p);
     return `<div class="pcard" id="card${i}" style="--cc:${p.color}" onclick="openDetail(${i})">
-      <div class="cf">${p.flight}</div>
-      <div class="croute"><span>${p.origin.icao}</span><span class="carrow">──▶</span><span>${p.dest.icao}</span></div>
-      <div class="cmeta">
-        <div class="cm">Pilot</div><div class="cm cmv">${p.pilot}</div>
-        <div class="cm">Aircraft</div><div class="cm cmv">${p.aircraft}</div>
-        <div class="cm">Dep</div><div class="cm cmv">${p.dep}</div>
-        <div class="cm">Arr</div><div class="cm cmv">${p.arr}</div>
+      <div class="card-top">
+        <div class="cf">${p.flight}</div>
+        <div class="ctime">${p.airtime}</div>
       </div>
-      <div class="cdate">${p.date} · ${p.airtime} air</div>
+      <div class="croute"><span>${p.origin.icao}</span><span class="carrow"> ──▶ </span><span>${p.dest.icao}</span></div>
+      <div class="cinfo">${p.pilot}${p.aircraft?' · '+p.aircraft:''} · ${p.date}</div>
     </div>`;
   }).join('');
+  const el=document.getElementById('flightCount');
+  if(el) el.textContent=filtered.length;
   renderPilotChips();
 }
 
