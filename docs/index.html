@@ -334,7 +334,7 @@ body::after{content:'';position:fixed;inset:0;z-index:9;pointer-events:none;
   </div>
   <div class="tw-row">
     <div class="tw-lbl">Arc Height</div>
-    <input type="range" class="tw-sl" id="twArc" min="5" max="50" value="18">
+    <input type="range" class="tw-sl" id="twArc" min="5" max="50" value="10">
   </div>
   <div class="tw-row">
     <div class="tw-lbl">Contrails</div>
@@ -564,7 +564,7 @@ function rebuildUI() {} // overridden later
 // ═══════════════════════════════════════════════════════
 // GLOBE GLOBALS
 // ═══════════════════════════════════════════════════════
-let arcH=0.18, autoRot=0.00015, trailsOn=true, cloudsOn=true;
+let arcH=0.10, autoRot=0.00015, trailsOn=true, cloudsOn=true;
 let flights=[], pulseRings=[], airportMarkers=[];
 let sunLight, globe, camera, renderer, scene;
 let rotX=0.12, rotY=2.83, trgX=0.12, trgY=2.83;
@@ -745,7 +745,7 @@ window.addEventListener('load',async function(){
 function buildAirports(){
   // Remove old markers
   airportMarkers.forEach(m=>{globe.remove(m.dot);globe.remove(m.halo);globe.remove(m.ring);});
-  airportMarkers=[];
+  airportMarkers=[]; pulseRings=[];
   document.querySelectorAll('.albl').forEach(el=>el.remove());
 
   // Collect unique airports from current PIREPs
@@ -760,15 +760,14 @@ function buildAirports(){
     const v=ll2v(ap.lat,ap.lon,1.009);
     const c=new THREE.Color('#F99420');
 
-    const zR=Math.max(0.35,camZ/2.8);
-    const dot=new THREE.Mesh(new THREE.SphereGeometry(0.011*zR,10,10),new THREE.MeshBasicMaterial({color:c,blending:THREE.AdditiveBlending,depthWrite:false}));
+    const dot=new THREE.Mesh(new THREE.SphereGeometry(0.011,10,10),new THREE.MeshBasicMaterial({color:c,blending:THREE.AdditiveBlending,depthWrite:false}));
     dot.position.copy(v);globe.add(dot);
 
-    const halo=new THREE.Mesh(new THREE.SphereGeometry(0.022*zR,10,10),new THREE.MeshBasicMaterial({color:c,transparent:true,opacity:0.2,blending:THREE.AdditiveBlending,depthWrite:false}));
+    const halo=new THREE.Mesh(new THREE.SphereGeometry(0.022,10,10),new THREE.MeshBasicMaterial({color:c,transparent:true,opacity:0.2,blending:THREE.AdditiveBlending,depthWrite:false}));
     halo.position.copy(v);globe.add(halo);
 
     const rmat=new THREE.MeshBasicMaterial({color:c,transparent:true,opacity:0.6,side:THREE.DoubleSide,blending:THREE.AdditiveBlending,depthWrite:false});
-    const ring=new THREE.Mesh(new THREE.RingGeometry(0.015*zR,0.021*zR,32),rmat);
+    const ring=new THREE.Mesh(new THREE.RingGeometry(0.015,0.021,32),rmat);
     ring.position.copy(v);ring.lookAt(new THREE.Vector3(0,0,0));
     ring.userData={t:Math.random(),mat:rmat};
     globe.add(ring);pulseRings.push(ring);
@@ -798,9 +797,8 @@ function buildFlights(){
   const seenRoutes=new Set();
   PIREPS.forEach((p,i)=>{
     const curve=buildCurve(p.origin.lat,p.origin.lon,p.dest.lat,p.dest.lon,arcH);
-    const tubeRad=0.003*Math.max(0.35,camZ/2.8);
     const mat=new THREE.MeshBasicMaterial({color:new THREE.Color(p.color),transparent:true,opacity:0.85,blending:THREE.AdditiveBlending,depthWrite:false});
-    const arcMesh=new THREE.Mesh(new THREE.TubeGeometry(curve,100,tubeRad,6,false),mat);
+    const arcMesh=new THREE.Mesh(new THREE.TubeGeometry(curve,80,0.0018,5,false),mat);
     globe.add(arcMesh);
     const routeKey=p.origin.icao+'-'+p.dest.icao;
     const isNew=!seenRoutes.has(routeKey);
@@ -899,11 +897,11 @@ function animate(){
     const sv=ll2v(mLat,mLon);
     trgY=Math.atan2(-sv.x,sv.z); trgX=-(mLat*Math.PI/180)*0.46;
   } else if(!isDrag){ trgY+=autoRot; }
-  rotX+=(trgX-rotX)*.04; rotY+=(trgY-rotY)*.04;
+  rotX+=(trgX-rotX)*.04;
+  let dY=trgY-rotY; while(dY>Math.PI)dY-=2*Math.PI; while(dY<-Math.PI)dY+=2*Math.PI;
+  rotY+=dY*.04;
   camZ+=(trgZ-camZ)*.08; camera.position.z=camZ;
   if(globe){globe.rotation.x=rotX;globe.rotation.y=rotY;}
-  // Throttled zoom-based rebuild
-  if(Math.abs(camZ-_lastBuildZ)>0.28&&globe){ buildFlights(); buildAirports(); _lastBuildZ=camZ; }
   if(window._cloudMesh) window._cloudMesh.rotation.y+=dt*.008;
   if(window._earthMat&&window._earthMat.userData.shader){
     const sl=sunLight.position.clone().normalize().applyMatrix4(new THREE.Matrix4().extractRotation(globe.matrixWorld).invert());
