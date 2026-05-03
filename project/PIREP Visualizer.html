@@ -517,11 +517,43 @@ function normSim(s) {
     .replace('X-Plane 12','XP12').replace('X-Plane 11','XP11').trim();
 }
 
-function parseSubsidiary(str) {
-  if (!str) return '';
-  // "AJV - Abel Jets Medium-Cost Carrier (MCC)" → "Abel Jets Medium-Cost Carrier (MCC)"
-  const m = str.match(/^[A-Z0-9]+\s*-\s*(.+)/i);
-  return m ? m[1].trim() : str.trim();
+const SUBSIDIARY_MAP = {
+  "AJV":"Abel Jets MCC","AJP":"Abel Jets Platinum","HAD":"Holi-Abel-Day!",
+  "APX":"Abel Pixel","SJP":"Abel Jump","AEX":"Abel Executive",
+  "HEL":"Abel Helicopters","AXP":"Abel Xplore","ACS":"Abel Cargo Expeditionary Service",
+  "ICT":"ACES Insane Cargo Transporter","TCC":"ACES Time-Critical Cargo",
+  "CSM":"Abel Cosmos","AFT":"Abel Fire and Rescue","AFS":"Abel Aviateur",
+  "ARF":"Abel Retro","OST":"Orange Skies Aerobatic Team","ATS":"Abel Transit!",
+  "AGS":"Abel Ground","MCH":"Mandiola Aviation Clear Holdings","AIF":"Abel Inspect!",
+  "AJX":"Abel Jets Advanced Xperimental","AIN":"Intercontinental","AST":"Starlight",
+  "ARC":"Rianto Company","AMF":"Abel Maintenance Facility","MHA":"MahouAir VA",
+  "MHI":"Mahou Air International","MHL":"Mahou Air Link","MHC":"Mahou Air Cargo",
+  "MHE":"Mahou Air Elite","OVR":"Ovovivipar Industries Co Ltd","ACO":"AbelConstruction",
+  "ZTK":"MOA Airways"
+};
+const _AJV_SUFFIX_MAP = {
+  "P":"Abel Jets Platinum","H":"Holi-Abel-Day!","J":"Abel Jump",
+  "I":"Intercontinental Airways","E":"Abel Jets Executive","L":"Abel Helicopters",
+  "X":"Abel Xplore","V":"Abel Aviateur","R":"Abel Jets Retro","T":"Abel Transit!",
+  "G":"Abel Ground!","M":"Mandiola Aviation Clear Holdings","S":"Abel Inspect!",
+  "A":"Abel Jets Advanced Experimental / Ovovivipar Industries",
+  "N":"Rianto Company","F":"Abel Maintenance Facility","C":"AbelConstruction"
+};
+const _ICAO_SUB_MAP = {
+  "FCN":"ACES Cargo Group","PXL":"Abel Pixel / Starlight VA","ZTK":"MOA Airways",
+  "MHU":"MahouAir Group","ARS":"Abel Fire and Rescue","CSM":"Abel Cosmos"
+};
+
+function getSubsidiaryFromCallsign(callsign) {
+  if (!callsign) return '';
+  const cs = String(callsign).trim().toUpperCase();
+  if (cs.startsWith('AJV')) {
+    const last = cs.slice(-1);
+    if (!isNaN(last)) return 'Abel Jets MCC';
+    return _AJV_SUFFIX_MAP[last] || '';
+  }
+  const prefix = cs.substring(0, 3);
+  return SUBSIDIARY_MAP[prefix] || _ICAO_SUB_MAP[prefix] || '';
 }
 
 function parseRow(row) {
@@ -534,7 +566,6 @@ function parseRow(row) {
     return null;
   }
   const callsign = row['Callsign'] || 'UNK';
-  const subRaw = row['Subsidiary'] || row['Abel Jets Virtual Group Subsidiary'] || '';
   return {
     flight:     callsign,
     color:      '#F99420',
@@ -543,7 +574,7 @@ function parseRow(row) {
     aircraft:   row['Aircraft ICAO Code'] || '',
     reg:        row['Aircraft Registration'] || '',
     network:    'VATSIM',
-    subsidiary: parseSubsidiary(subRaw),
+    subsidiary: getSubsidiaryFromCallsign(callsign),
     origin:     { icao: originICAO, name: cleanAirportName(row['Departure Airport']) || originC.name, lat: originC.lat, lon: originC.lon },
     dest:       { icao: destICAO,   name: cleanAirportName(row['Arrival Airport'])   || destC.name,   lat: destC.lat,  lon: destC.lon  },
     dep:        fmtTime(row['Departure Time (UTC)']),
@@ -572,7 +603,7 @@ function parseOldRow(row) {
     aircraft:   row['Aircraft Flown'] || '',
     reg:        row['Aircraft Registration'] || '',
     network:    row['Network Name'] || 'Unavailable — Older PIREP',
-    subsidiary: parseSubsidiary(row['Abel Jets Virtual Group Subsidiary'] || ''),
+    subsidiary: getSubsidiaryFromCallsign(row['ICAO Flight Number'] || ''),
     origin:     { icao: originICAO, name: cleanAirportName(row['Origin Airport']) || originC.name, lat: originC.lat, lon: originC.lon },
     dest:       { icao: destICAO,   name: cleanAirportName(row['Destination Airport']) || destC.name, lat: destC.lat, lon: destC.lon },
     dep:        fmtTime(row['Off-Block Time']),
