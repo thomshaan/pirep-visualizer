@@ -519,8 +519,9 @@ function normSim(s) {
 
 function parseSubsidiary(str) {
   if (!str) return '';
-  const m = str.match(/^([A-Z0-9]+)\s*-/i);
-  return m ? m[1].toUpperCase() : '';
+  // "AJV - Abel Jets Medium-Cost Carrier (MCC)" → "Abel Jets Medium-Cost Carrier (MCC)"
+  const m = str.match(/^[A-Z0-9]+\s*-\s*(.+)/i);
+  return m ? m[1].trim() : str.trim();
 }
 
 function parseRow(row) {
@@ -533,7 +534,7 @@ function parseRow(row) {
     return null;
   }
   const callsign = row['Callsign'] || 'UNK';
-  const subPrefix = callsign.match(/^([A-Za-z]+)/)?.[1]?.toUpperCase() || '';
+  const subRaw = row['Subsidiary'] || row['Abel Jets Virtual Group Subsidiary'] || '';
   return {
     flight:     callsign,
     color:      '#F99420',
@@ -542,7 +543,7 @@ function parseRow(row) {
     aircraft:   row['Aircraft ICAO Code'] || '',
     reg:        row['Aircraft Registration'] || '',
     network:    'VATSIM',
-    subsidiary: subPrefix,
+    subsidiary: parseSubsidiary(subRaw),
     origin:     { icao: originICAO, name: cleanAirportName(row['Departure Airport']) || originC.name, lat: originC.lat, lon: originC.lon },
     dest:       { icao: destICAO,   name: cleanAirportName(row['Arrival Airport'])   || destC.name,   lat: destC.lat,  lon: destC.lon  },
     dep:        fmtTime(row['Departure Time (UTC)']),
@@ -571,7 +572,7 @@ function parseOldRow(row) {
     aircraft:   row['Aircraft Flown'] || '',
     reg:        row['Aircraft Registration'] || '',
     network:    row['Network Name'] || 'Unavailable — Older PIREP',
-    subsidiary: parseSubsidiary(row['Abel Jets Virtual Group Subsidiary']),
+    subsidiary: parseSubsidiary(row['Abel Jets Virtual Group Subsidiary'] || ''),
     origin:     { icao: originICAO, name: cleanAirportName(row['Origin Airport']) || originC.name, lat: originC.lat, lon: originC.lon },
     dest:       { icao: destICAO,   name: cleanAirportName(row['Destination Airport']) || destC.name, lat: destC.lat, lon: destC.lon },
     dep:        fmtTime(row['Off-Block Time']),
