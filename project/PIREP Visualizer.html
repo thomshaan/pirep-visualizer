@@ -53,7 +53,18 @@ body::after{content:'';position:fixed;inset:0;z-index:9;pointer-events:none;
 .rpanel{position:fixed;top:90px;right:0;bottom:0;width:320px;z-index:20;
   display:flex;flex-direction:column;pointer-events:auto;
   background:linear-gradient(180deg,rgba(18,7,16,.96) 0%,rgba(26,10,21,.92) 100%);
-  border-left:1px solid rgba(249,148,32,.1);backdrop-filter:blur(28px);}
+  border-left:1px solid rgba(249,148,32,.1);backdrop-filter:blur(28px);
+  transition:transform .3s cubic-bezier(.23,1,.32,1);}
+body.panel-collapsed .rpanel{transform:translateX(100%);}
+
+/* Panel toggle tab */
+#panelToggle{position:fixed;top:50%;right:319px;transform:translateY(-50%);z-index:25;
+  width:22px;height:56px;background:rgba(18,7,16,.96);border:1px solid rgba(249,148,32,.25);
+  border-right:none;border-radius:6px 0 0 6px;color:var(--orange);cursor:pointer;
+  font-size:11px;display:flex;align-items:center;justify-content:center;pointer-events:auto;
+  transition:right .3s cubic-bezier(.23,1,.32,1),background .18s;}
+#panelToggle:hover{background:rgba(62,21,48,.9);border-color:rgba(249,148,32,.5);}
+body.panel-collapsed #panelToggle{right:0;}
 
 /* Pilot filter header */
 .rf-head{padding:10px 14px 10px;flex-shrink:0;border-bottom:1px solid rgba(249,148,32,.08);}
@@ -278,8 +289,11 @@ body::after{content:'';position:fixed;inset:0;z-index:9;pointer-events:none;
   </div>
 </div>
 
+<!-- PANEL TOGGLE TAB -->
+<button id="panelToggle" onclick="togglePanel()" title="Toggle panel">◀</button>
+
 <!-- RIGHT PANEL -->
-<div class="rpanel">
+<div class="rpanel" id="rpanel">
   <div class="rf-head">
     <span class="slbl">Flight Log <span class="slbl-count" id="flightCount">–</span></span>
     <div class="pf-input-wrap">
@@ -896,7 +910,7 @@ function animate(){
     const vb=ll2v(selectedPIREP.dest.lat,selectedPIREP.dest.lon);
     const mid=va.clone().add(vb).normalize();
     trgY=Math.atan2(-mid.x,mid.z);
-    trgX=-Math.asin(Math.max(-1,Math.min(1,mid.y)))*0.46;
+    trgX=Math.asin(Math.max(-1,Math.min(1,mid.y)));
   } else if(!isDrag){ trgY+=autoRot; }
   rotX+=(trgX-rotX)*.04;
   let dY=trgY-rotY; while(dY>Math.PI)dY-=2*Math.PI; while(dY<-Math.PI)dY+=2*Math.PI;
@@ -952,6 +966,14 @@ window.addEventListener('resize',()=>{
   camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();
   renderer.setSize(innerWidth,innerHeight);
 });
+
+// ═══════════════════════════════════════════════════════
+// PANEL TOGGLE
+// ═══════════════════════════════════════════════════════
+function togglePanel(){
+  const collapsed=document.body.classList.toggle('panel-collapsed');
+  document.getElementById('panelToggle').textContent=collapsed?'▶':'◀';
+}
 
 // ═══════════════════════════════════════════════════════
 // ZULU CLOCK
