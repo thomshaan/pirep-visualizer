@@ -590,9 +590,9 @@ let _nextRefreshAt=Date.now()+60000;
 
 function setTrails(on){
   trailsOn=on;
-  flights.forEach(f=>f.trail.line.visible=on);
   document.getElementById('twTrailOn').classList.toggle('on',on);
   document.getElementById('twTrailOff').classList.toggle('on',!on);
+  applyFlightVisibility();
 }
 function setClouds(on){
   cloudsOn=on;
@@ -957,7 +957,7 @@ function updateLabels(){
     const visible=proj.z<1&&world.clone().normalize().dot(world.clone().sub(camera.position).normalize())<-0.12;
     mk.lbl.style.left=((proj.x+1)/2*innerWidth)+'px';
     mk.lbl.style.top=((-proj.y+1)/2*innerHeight)+'px';
-    mk.lbl.classList.toggle('show',visible);
+    mk.lbl.classList.toggle('show',visible&&mk.dot.visible);
   });
 }
 
@@ -1196,9 +1196,10 @@ function focusGlobe(lat,lon){
   trgX=-(lat*Math.PI/180)*0.46;
 }
 function handleLabelClick(icao,lblEl){
-  const matches=PIREPS.filter(p=>p.origin.icao===icao||p.dest.icao===icao);
+  const all=PIREPS.filter(p=>p.origin.icao===icao||p.dest.icao===icao);
+  const matches=activeFilter?all.filter(p=>p.pilot.toLowerCase().includes(activeFilter.toLowerCase())):all;
   if(!matches.length) return;
-  if(matches.length===1) openDetail(PIREPS.indexOf(matches[0]));
+  if(matches.length===1){openDetail(PIREPS.indexOf(matches[0]));return;}
   else{
     // Multiple flights — show popup near the label
     const rect=lblEl.getBoundingClientRect();
