@@ -116,6 +116,7 @@ body.panel-collapsed #panelToggle{right:0;}
 .card-top{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:3px;}
 .cf{font-family:var(--fd);font-size:13px;font-weight:700;color:var(--cc,var(--gold));
   text-shadow:0 0 8px var(--cc,var(--orange));letter-spacing:.04em;}
+.csub{font-family:var(--fm);font-size:8px;letter-spacing:.1em;color:var(--dim);margin-top:1px;}
 .ctime{font-family:var(--fm);font-size:9px;color:var(--dim);letter-spacing:.06em;}
 .croute{display:flex;align-items:center;gap:5px;font-size:12px;font-weight:600;margin-bottom:3px;color:var(--text);}
 .carrow{color:var(--dim);font-size:8px;}
@@ -446,7 +447,8 @@ let PIREPS = [...FALLBACK_PIREPS];
 // ═══════════════════════════════════════════════════════
 // OPENSHEET DATA PARSER
 // ═══════════════════════════════════════════════════════
-const API_URL = 'https://opensheet.elk.sh/1BeLTYOaEOn7o8h-VO6N80fe_C7H0z8fhB7nyksqmck4/VATSIM%20Auto%20PIREP';
+const API_URL     = 'https://opensheet.elk.sh/1BeLTYOaEOn7o8h-VO6N80fe_C7H0z8fhB7nyksqmck4/VATSIM%20Auto%20PIREP';
+const OLD_API_URL = 'https://opensheet.elk.sh/1BeLTYOaEOn7o8h-VO6N80fe_C7H0z8fhB7nyksqmck4/Flight%20Log%20Entries';
 let lastFetched = 0;
 
 function extractICAO(str) {
@@ -508,7 +510,20 @@ function minutesToHM(mins) {
   return `${h}:${String(m).padStart(2,'0')}`;
 }
 
-function parseRow(row, idx) {
+function normSim(s) {
+  return (s || '')
+    .replace('Microsoft Flight Simulator 2020','MSFS 2020')
+    .replace('Microsoft Flight Simulator','MSFS')
+    .replace('X-Plane 12','XP12').replace('X-Plane 11','XP11').trim();
+}
+
+function parseSubsidiary(str) {
+  if (!str) return '';
+  const m = str.match(/^([A-Z0-9]+)\s*-/i);
+  return m ? m[1].toUpperCase() : '';
+}
+
+function parseRow(row) {
   const originICAO = extractICAO(row['Departure Airport']);
   const destICAO   = extractICAO(row['Arrival Airport']);
   const originC    = AIRPORT_COORDS[originICAO];
@@ -517,44 +532,99 @@ function parseRow(row, idx) {
     console.warn('[PIREP] Unknown airport(s):', originICAO, destICAO, '— skipping');
     return null;
   }
-  const sim = (row['Flight Simulator'] || '')
-    .replace('Microsoft Flight Simulator 2020','MSFS 2020')
-    .replace('Microsoft Flight Simulator','MSFS')
-    .replace('X-Plane 12','XP12').replace('X-Plane 11','XP11').trim();
+  const callsign = row['Callsign'] || 'UNK';
+  const subPrefix = callsign.match(/^([A-Za-z]+)/)?.[1]?.toUpperCase() || '';
   return {
-    flight:   row['Callsign'] || 'UNK',
-    color:    BRAND_COLORS[idx % BRAND_COLORS.length],
-    pilot:    row['Name'] || 'Unknown',
-    sim,
-    aircraft: row['Aircraft ICAO Code'] || '',
-    reg:      row['Aircraft Registration'] || '',
-    network:  'VATSIM',
-    origin:   { icao: originICAO, name: cleanAirportName(row['Departure Airport']) || originC.name, lat: originC.lat, lon: originC.lon },
-    dest:     { icao: destICAO,   name: cleanAirportName(row['Arrival Airport'])   || destC.name,   lat: destC.lat,  lon: destC.lon  },
-    dep:      fmtTime(row['Departure Time (UTC)']),
-    arr:      fmtTime(row['Arrival Time (UTC)']),
-    airtime:        fmtAirtime(row['Block Time (min)']),
-    date:           fmtDate(row['Log Timestamp']),
-    eval:           row['Self Evaluation'] || '',
-    _rawTimestamp:  row['Log Timestamp'] || '',
+    flight:     callsign,
+    color:      '#F99420',
+    pilot:      row['Name'] || 'Unknown',
+    sim:        normSim(row['Flight Simulator']),
+    aircraft:   row['Aircraft ICAO Code'] || '',
+    reg:        row['Aircraft Registration'] || '',
+    network:    'VATSIM',
+    subsidiary: subPrefix,
+    origin:     { icao: originICAO, name: cleanAirportName(row['Departure Airport']) || originC.name, lat: originC.lat, lon: originC.lon },
+    dest:       { icao: destICAO,   name: cleanAirportName(row['Arrival Airport'])   || destC.name,   lat: destC.lat,  lon: destC.lon  },
+    dep:        fmtTime(row['Departure Time (UTC)']),
+    arr:        fmtTime(row['Arrival Time (UTC)']),
+    airtime:    fmtAirtime(row['Block Time (min)']),
+    date:       fmtDate(row['Log Timestamp']),
+    eval:       row['Self Evaluation'] || '',
+    _rawTimestamp: row['Log Timestamp'] || '',
   };
+}
+
+function parseOldRow(row) {
+  const originICAO = extractICAO(row['Origin Airport']);
+  const destICAO   = extractICAO(row['Destination Airport']);
+  const originC    = AIRPORT_COORDS[originICAO];
+  const destC      = AIRPORT_COORDS[destICAO];
+  if (!originC || !destC) {
+    console.warn('[PIREP OLD] Unknown airport(s):', originICAO, destICAO, '— skipping');
+    return null;
+  }
+  return {
+    flight:     row['ICAO Flight Number'] || 'UNK',
+    color:      '#F99420',
+    pilot:      row['Pilot Name/Username'] || 'Unknown',
+    sim:        normSim(row['Simulator Name']),
+    aircraft:   row['Aircraft Flown'] || '',
+    reg:        row['Aircraft Registration'] || '',
+    network:    row['Network Name'] || 'Unavailable — Older PIREP',
+    subsidiary: parseSubsidiary(row['Abel Jets Virtual Group Subsidiary']),
+    origin:     { icao: originICAO, name: cleanAirportName(row['Origin Airport']) || originC.name, lat: originC.lat, lon: originC.lon },
+    dest:       { icao: destICAO,   name: cleanAirportName(row['Destination Airport']) || destC.name, lat: destC.lat, lon: destC.lon },
+    dep:        fmtTime(row['Off-Block Time']),
+    arr:        fmtTime(row['On-Block Time']),
+    airtime:    fmtAirtime(row['Air Time']),
+    date:       fmtDate(row['Timestamp']),
+    eval:       row['Self-Evaluation'] || '',
+    _rawTimestamp: row['Timestamp'] || '',
+    _legacy:    true,
+  };
+}
+
+function assignPilotColors(pireps) {
+  const pilotMap = {};
+  pireps.forEach(p => { if (!(p.pilot in pilotMap)) pilotMap[p.pilot] = Object.keys(pilotMap).length; });
+  pireps.forEach(p => { p.color = BRAND_COLORS[pilotMap[p.pilot] % BRAND_COLORS.length]; });
 }
 
 async function fetchPIREPs() {
   try {
     setLdTxt('FETCHING FLIGHT DATA…');
-    const res  = await fetch(API_URL);
-    const rows = await res.json();
-    if (!Array.isArray(rows) || !rows.length) throw new Error('Empty response');
-    _dbgRawKeys = rows[0] ? Object.keys(rows[0]) : [];
-    const parsed = rows.map(parseRow).filter(Boolean);
+    const [newRes, oldRes] = await Promise.allSettled([fetch(API_URL), fetch(OLD_API_URL)]);
+
+    let newParsed = [], oldParsed = [];
+
+    if (newRes.status === 'fulfilled') {
+      const rows = await newRes.value.json();
+      _dbgRawKeys = rows[0] ? Object.keys(rows[0]) : [];
+      newParsed = rows.map(parseRow).filter(Boolean);
+      console.info('[PIREP API] New sheet:', newParsed.length, 'flights');
+    } else {
+      console.warn('[PIREP API] New sheet failed:', newRes.reason);
+    }
+
+    if (oldRes.status === 'fulfilled') {
+      const rows = await oldRes.value.json();
+      oldParsed = rows.map(parseOldRow).filter(Boolean);
+      console.info('[PIREP API] Old sheet:', oldParsed.length, 'flights');
+    } else {
+      console.warn('[PIREP API] Old sheet failed:', oldRes.reason);
+    }
+
+    const combined = [...newParsed, ...oldParsed];
+    if (!combined.length) throw new Error('No flights parsed from either sheet');
+
+    combined.sort((a,b) => new Date(b._rawTimestamp) - new Date(a._rawTimestamp));
+    assignPilotColors(combined);
+
+    PIREPS = combined;
     _dbgLastFetch = new Date().toISOString();
-    if (!parsed.length) throw new Error(`0/${rows.length} rows parsed — column mismatch? Keys: ${_dbgRawKeys.join(', ')}`);
-    PIREPS = parsed;
-    PIREPS.sort((a,b)=>new Date(b._rawTimestamp)-new Date(a._rawTimestamp));
-    _dbgPireps = parsed.length; _dbgFallback = false; _dbgErr = null;
+    _dbgPireps = combined.length; _dbgFallback = false; _dbgErr = null;
     lastFetched = Date.now(); _nextRefreshAt = Date.now()+60000;
-    console.info('[PIREP API] Loaded', parsed.length, 'flights');
+    console.info('[PIREP API] Total loaded:', combined.length, 'flights');
   } catch(err) {
     _dbgErr = err.message; _dbgFallback = true;
     console.warn('[PIREP API] Using fallback data:', err.message);
@@ -1111,7 +1181,7 @@ function renderFlightList(filter){
     return `<div class="pcard" id="card${i}" style="--cc:${p.color}" data-idx="${i}"
       onclick="openDetail(${i})" onmouseover="hoverCard(${i})" onmouseleave="unhoverCard(${i})">
       <div class="card-top">
-        <div class="cf">${p.flight}</div>
+        <div><div class="cf">${p.flight}</div>${p.subsidiary?`<div class="csub">${p.subsidiary}</div>`:''}</div>
         <div class="ctime">${p.airtime}</div>
       </div>
       <div class="croute"><span>${p.origin.icao}</span><span class="carrow"> ──▶ </span><span>${p.dest.icao}</span></div>
@@ -1147,7 +1217,7 @@ function openDetail(i){
   document.getElementById('detContent').style.setProperty('--dc',p.color);
   document.getElementById('detContent').innerHTML=`
     <div class="dh">
-      <div><div class="dfn">${p.flight}</div><div class="dpilot">✦ ${p.pilot}</div></div>
+      <div><div class="dfn">${p.flight}</div>${p.subsidiary?`<div style="font-family:var(--fm);font-size:9px;letter-spacing:.1em;color:var(--dim);margin-top:2px;">${p.subsidiary}</div>`:''}<div class="dpilot">✦ ${p.pilot}</div></div>
       <div class="dbadge">${p.network}</div>
     </div>
     <div class="drte">
@@ -1173,7 +1243,7 @@ function openDetail(i){
     const _va=ll2v(p.origin.lat,p.origin.lon),_vb=ll2v(p.dest.lat,p.dest.lon);
     const _mid=_va.clone().add(_vb).normalize();
     trgY=Math.atan2(-_mid.x,_mid.z);
-    trgX=-Math.asin(Math.max(-1,Math.min(1,_mid.y)))*0.46;
+    trgX=Math.asin(Math.max(-1,Math.min(1,_mid.y)));
   }
 }
 
