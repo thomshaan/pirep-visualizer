@@ -178,12 +178,74 @@ body.panel-collapsed #panelToggle{right:0;}
 .devtxt{font-size:11px;line-height:1.65;color:rgba(245,230,218,.82);font-style:italic;}
 
 
+/* BOTTOM-LEFT TOOLBAR */
+.blbar{position:fixed;bottom:14px;left:16px;z-index:30;display:flex;gap:6px;pointer-events:auto;}
+.blbtn{padding:5px 10px;border:1px solid rgba(249,148,32,.35);border-radius:5px;
+  background:rgba(26,10,21,.9);color:rgba(249,148,32,.6);font-family:var(--fm);
+  font-size:9px;letter-spacing:.15em;cursor:pointer;transition:all .18s;}
+.blbtn:hover{border-color:var(--orange);color:var(--orange);}
+.blbtn.on{background:rgba(249,148,32,.15);border-color:var(--orange);color:var(--orange);}
+
+/* DENSITY LEGEND */
+#densLegend{position:fixed;bottom:48px;left:16px;z-index:29;display:none;align-items:center;gap:8px;
+  background:rgba(26,10,21,.9);border:1px solid var(--border);border-radius:6px;padding:6px 10px;
+  font-family:var(--fm);font-size:8px;letter-spacing:.12em;color:var(--dim);pointer-events:none;}
+#densLegend.vis{display:flex;}
+.dl-bar{width:90px;height:6px;border-radius:3px;background:linear-gradient(90deg,#F5C624,#F99420,#E63862);}
+
+/* OPS REPORT MODAL */
+.ops-overlay{position:fixed;inset:0;z-index:60;display:none;align-items:center;justify-content:center;
+  background:rgba(10,4,9,.72);backdrop-filter:blur(6px);pointer-events:auto;}
+.ops-overlay.vis{display:flex;}
+.ops-modal{width:min(760px,94vw);max-height:86vh;display:flex;flex-direction:column;
+  background:rgba(26,10,21,.97);border:1px solid var(--border-hi);border-radius:14px;
+  box-shadow:0 20px 60px rgba(0,0,0,.6);overflow:hidden;}
+.ops-head{display:flex;align-items:center;justify-content:space-between;gap:12px;
+  padding:14px 18px;border-bottom:1px solid var(--border);flex-shrink:0;}
+.ops-title{font-family:var(--fd);font-size:12px;font-weight:700;letter-spacing:.2em;
+  color:var(--gold);text-transform:uppercase;}
+.ops-tabs{display:flex;gap:5px;}
+.ops-tab{padding:5px 12px;border:1px solid var(--border);border-radius:5px;background:transparent;
+  color:var(--dim);font-family:var(--fm);font-size:9px;letter-spacing:.12em;cursor:pointer;transition:all .18s;}
+.ops-tab.on{background:rgba(249,148,32,.12);border-color:var(--orange);color:var(--orange);}
+.ops-close{border:none;background:none;color:var(--dim);font-size:16px;cursor:pointer;line-height:1;}
+.ops-close:hover{color:var(--orange);}
+.ops-body{padding:16px 18px;overflow-y:auto;}
+.ops-body::-webkit-scrollbar{width:3px;}
+.ops-body::-webkit-scrollbar-thumb{background:rgba(249,148,32,.2);border-radius:2px;}
+.ops-mnav{display:flex;align-items:center;justify-content:center;gap:14px;margin-bottom:14px;}
+.ops-month{font-family:var(--fd);font-size:14px;color:var(--text);letter-spacing:.14em;}
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin-bottom:16px;}
+.kpi{background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.06);border-radius:8px;padding:10px 12px;}
+.kpi-l{font-size:8px;letter-spacing:.2em;color:var(--dim);text-transform:uppercase;margin-bottom:5px;}
+.kpi-v{font-family:var(--fd);font-size:15px;color:var(--orange);font-weight:700;line-height:1.2;}
+.kpi-s{font-family:var(--fm);font-size:9px;color:var(--dim);margin-top:3px;}
+.ops-sec{font-size:8px;letter-spacing:.24em;color:var(--gold);opacity:.75;text-transform:uppercase;
+  margin:14px 0 8px;font-family:var(--fd);}
+.wk-chart{display:flex;gap:10px;align-items:flex-end;height:120px;padding:0 4px;margin-bottom:6px;}
+.wk-col{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:5px;height:100%;}
+.wk-bar{width:100%;max-width:56px;border-radius:4px 4px 0 0;
+  background:linear-gradient(180deg,var(--gold),var(--orange));
+  box-shadow:0 0 12px rgba(249,148,32,.25);min-height:2px;}
+.wk-n{font-family:var(--fm);font-size:10px;color:var(--gold);}
+.wk-lbl{display:flex;gap:10px;padding:0 4px;}
+.wk-l{flex:1;text-align:center;font-family:var(--fm);font-size:8px;color:var(--dim);
+  letter-spacing:.1em;line-height:1.6;}
+
+/* FLEET TIMELINE */
+.tl-axis{display:flex;justify-content:space-between;font-family:var(--fm);font-size:8px;
+  color:var(--dim);letter-spacing:.1em;padding:0 0 8px;}
+.tl-row{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid rgba(255,255,255,.04);}
+.tl-info{width:140px;flex-shrink:0;}
+.tl-reg{font-family:var(--fd);font-size:11px;color:var(--text);font-weight:700;}
+.tl-sub{font-family:var(--fm);font-size:8px;color:var(--dim);margin-top:2px;line-height:1.4;}
+.tl-track{flex:1;position:relative;height:22px;background:rgba(255,255,255,.025);border-radius:4px;}
+.tl-dot{position:absolute;top:50%;transform:translate(-50%,-50%);border-radius:50%;cursor:pointer;
+  box-shadow:0 0 8px currentColor;transition:transform .15s;}
+.tl-dot:hover{transform:translate(-50%,-50%) scale(1.5);}
+.tl-hours{font-family:var(--fm);font-size:9px;color:var(--orange);width:58px;text-align:right;flex-shrink:0;line-height:1.5;}
+
 /* DEBUG */
-#dbgBtn{position:fixed;bottom:14px;left:16px;z-index:30;padding:5px 10px;
-  border:1px solid rgba(249,148,32,.35);border-radius:5px;background:rgba(26,10,21,.9);
-  color:rgba(249,148,32,.6);font-family:var(--fm);font-size:9px;letter-spacing:.15em;
-  cursor:pointer;pointer-events:auto;}
-#dbgBtn:hover{border-color:var(--orange);color:var(--orange);}
 #dbgPanel{position:fixed;bottom:46px;left:16px;z-index:30;width:340px;
   background:rgba(16,6,14,.96);border:1px solid rgba(249,148,32,.3);border-radius:8px;
   padding:12px 14px;font-family:var(--fm);font-size:10px;color:var(--text);
@@ -333,8 +395,33 @@ body.panel-collapsed #panelToggle{right:0;}
 <div class="ap-popup" id="apPopup"></div>
 
 
+<!-- BOTTOM-LEFT TOOLBAR -->
+<div class="blbar">
+  <button class="blbtn" id="dbgBtn" onclick="toggleDebug()">DEBUG</button>
+  <button class="blbtn" id="densityBtn" onclick="toggleDensity()">⛁ DENSITY</button>
+  <button class="blbtn" id="opsBtn" onclick="openOps()">▤ OPS REPORT</button>
+</div>
+
+<!-- DENSITY LEGEND -->
+<div id="densLegend"><span>ROUTE DENSITY</span><div class="dl-bar"></div><span id="dlMax">1 FLT</span></div>
+
+<!-- OPS REPORT MODAL -->
+<div class="ops-overlay" id="opsOverlay">
+  <div class="ops-modal">
+    <div class="ops-head">
+      <div class="ops-title">Operations Report</div>
+      <div class="ops-tabs">
+        <button class="ops-tab on" id="opsTabM" onclick="setOpsTab('month')">MONTHLY OPS</button>
+        <button class="ops-tab" id="opsTabT" onclick="setOpsTab('fleet')">FLEET TIMELINE</button>
+      </div>
+      <button class="ops-close" onclick="closeOps()">✕</button>
+    </div>
+    <div class="ops-body" id="opsBody"></div>
+  </div>
+</div>
+
 <!-- DEBUG -->
-<button id="dbgBtn" onclick="toggleDebug()">DEBUG</button>
+
 <div id="dbgPanel">
   <div id="dbgContent"></div>
   <button id="dbgRefresh" onclick="forceRefresh()">⟳ FORCE REFRESH NOW</button>
@@ -680,7 +767,7 @@ function rebuildUI() {} // overridden later
 // ═══════════════════════════════════════════════════════
 // GLOBE GLOBALS
 // ═══════════════════════════════════════════════════════
-let arcH=0.10, autoRot=0.00015, trailsOn=true, cloudsOn=true;
+let arcH=0.10, autoRot=0.00015, trailsOn=true, cloudsOn=true, densityMode=false;
 let flights=[], pulseRings=[], airportMarkers=[];
 let sunLight, globe, camera, renderer, scene;
 let rotX=0.12, rotY=2.83, trgX=0.12, trgY=2.83;
@@ -910,6 +997,7 @@ function buildFlights(){
     if(f.trail)  globe.remove(f.trail.line);
   });
   flights=[];
+  if(densityMode){buildDensityFlights();return;}
   const seenRoutes=new Set();
   PIREPS.forEach((p,i)=>{
     const curve=buildCurve(p.origin.lat,p.origin.lon,p.dest.lat,p.dest.lon,arcH);
@@ -921,8 +1009,51 @@ function buildFlights(){
     if(isNew) seenRoutes.add(routeKey);
     const plane=isNew?makePlane(p.color):null; if(plane) globe.add(plane);
     const trail=isNew?new Trail(p.color,60):null; if(trail) globe.add(trail.line);
-    flights.push({curve,arcMesh,plane,trail,t:Math.random(),speed:0.007+Math.random()*0.004,color:p.color,mat});
+    flights.push({curve,arcMesh,plane,trail,t:Math.random(),speed:0.007+Math.random()*0.004,color:p.color,mat,pireps:[p],baseOpacity:0.85});
   });
+}
+
+// ═══════════════════════════════════════════════════════
+// ROUTE DENSITY HEATMAP
+// ═══════════════════════════════════════════════════════
+function routeGroups(){
+  // Group PIREPs by unordered airport pair — A→B and B→A form one corridor
+  const groups={};
+  PIREPS.forEach(p=>{
+    const key=[p.origin.icao,p.dest.icao].sort().join('-');
+    if(!groups[key]) groups[key]={a:p.origin,b:p.dest,pireps:[]};
+    groups[key].pireps.push(p);
+  });
+  return Object.values(groups);
+}
+function densityColor(f){ // 0..1 → gold → orange → magenta
+  const c=new THREE.Color('#F5C624');
+  if(f<0.5) c.lerp(new THREE.Color('#F99420'),f*2);
+  else{ c.set('#F99420'); c.lerp(new THREE.Color('#E63862'),(f-0.5)*2); }
+  return c;
+}
+function buildDensityFlights(){
+  const groups=routeGroups();
+  const max=Math.max(1,...groups.map(g=>g.pireps.length));
+  document.getElementById('dlMax').textContent=max>1?'1–'+max+' FLTS':'1 FLT';
+  groups.forEach(g=>{
+    const n=g.pireps.length, f=max>1?(n-1)/(max-1):1;
+    const col=densityColor(f), hex='#'+col.getHexString();
+    const curve=buildCurve(g.a.lat,g.a.lon,g.b.lat,g.b.lon,arcH*(0.75+0.5*f));
+    const baseOpacity=0.35+0.55*f;
+    const mat=new THREE.MeshBasicMaterial({color:col,transparent:true,opacity:baseOpacity,blending:THREE.AdditiveBlending,depthWrite:false});
+    const arcMesh=new THREE.Mesh(new THREE.TubeGeometry(curve,80,0.0018+0.0052*f,6,false),mat);
+    globe.add(arcMesh);
+    const plane=makePlane(hex); globe.add(plane);
+    const trail=new Trail(hex,60); globe.add(trail.line);
+    flights.push({curve,arcMesh,plane,trail,t:Math.random(),speed:0.007+Math.random()*0.004,color:hex,mat,pireps:g.pireps,baseOpacity});
+  });
+}
+function toggleDensity(){
+  densityMode=!densityMode;
+  document.getElementById('densityBtn').classList.toggle('on',densityMode);
+  document.getElementById('densLegend').classList.toggle('vis',densityMode);
+  if(globe){buildFlights();applyFlightVisibility();}
 }
 
 function makePlane(color){
@@ -977,7 +1108,7 @@ window.addEventListener('mousemove',e=>{
 
 // Scroll-wheel zoom (skip if over panel UI)
 window.addEventListener('wheel',e=>{
-  if(e.target.closest('.rpanel')||e.target.closest('#dbgPanel')||e.target.closest('#apPopup')) return;
+  if(e.target.closest('.rpanel')||e.target.closest('#dbgPanel')||e.target.closest('#apPopup')||e.target.closest('.ops-modal')) return;
   e.preventDefault();
   trgZ=Math.max(CAM_MIN,Math.min(CAM_MAX,trgZ+e.deltaY*0.003));
 },{passive:false});
@@ -1030,9 +1161,9 @@ function animate(){
   airportMarkers.forEach((mk,i)=>{mk.halo.scale.setScalar((1+.3*Math.abs(Math.sin(t*1.5+i)))*zS);mk.dot.scale.setScalar(zS);});
   // Arc highlight for selected flight
   if(selectedPIREP){
-    flights.forEach((fl,i)=>{
+    flights.forEach(fl=>{
       if(!fl.mat) return;
-      fl.mat.opacity=PIREPS[i]===selectedPIREP?1.0:0.12;
+      fl.mat.opacity=fl.pireps.includes(selectedPIREP)?1.0:0.12;
     });
   }
   flights.forEach((fl,i)=>{
@@ -1146,8 +1277,8 @@ function applyFlightVisibility(){
     PIREPS.filter(p=>p.pilot.toLowerCase().includes(q))
           .forEach(p=>{activeAirports.add(p.origin.icao);activeAirports.add(p.dest.icao);});
   }
-  flights.forEach((fl,i)=>{
-    const vis=!q||PIREPS[i].pilot.toLowerCase().includes(q);
+  flights.forEach(fl=>{
+    const vis=!q||fl.pireps.some(p=>p.pilot.toLowerCase().includes(q));
     fl.arcMesh.visible=vis;
     if(fl.plane) fl.plane.visible=vis;
     if(fl.trail) fl.trail.line.visible=vis;
@@ -1184,13 +1315,19 @@ function changePage(dir){
   renderFlightList();
 }
 
+function flightFor(i){
+  const p=PIREPS[i];
+  return flights.find(fl=>fl.pireps&&fl.pireps.includes(p));
+}
 function hoverCard(i){
   if(selectedPIREP) return;
-  if(flights[i]?.mat) flights[i].mat.opacity=1.0;
+  const fl=flightFor(i);
+  if(fl&&fl.mat) fl.mat.opacity=1.0;
 }
 function unhoverCard(i){
   if(selectedPIREP) return;
-  if(flights[i]?.mat) flights[i].mat.opacity=0.85;
+  const fl=flightFor(i);
+  if(fl&&fl.mat) fl.mat.opacity=fl.baseOpacity;
 }
 
 function renderFlightList(filter){
@@ -1264,6 +1401,8 @@ function openDetail(i){
       <div class="df"><div class="dfl">Network</div><div class="dfv">${p.network}</div></div>
     </div>
     <div class="deval"><div class="devlbl">⚠ Self-Evaluation</div><div class="devtxt">"${p.eval}"</div></div>`;
+  document.body.classList.remove('panel-collapsed');
+  document.getElementById('panelToggle').textContent='◀';
   document.getElementById('flightList').style.display='none';
   document.getElementById('pagBar').style.display='none';
   document.getElementById('detailView').classList.add('vis');
@@ -1285,7 +1424,7 @@ function closeDetail(){
   document.getElementById('pagBar').style.display=_filtered.length>PAGE_SIZE?'flex':'none';
   document.querySelectorAll('.pcard').forEach(c=>c.classList.remove('active'));
   autoRot=_savedAutoRot; selectedPIREP=null;
-  flights.forEach(fl=>{if(fl.mat) fl.mat.opacity=0.85;});
+  flights.forEach(fl=>{if(fl.mat) fl.mat.opacity=fl.baseOpacity??0.85;});
 }
 
 // ═══════════════════════════════════════════════════════
@@ -1334,6 +1473,7 @@ rebuildUI=function(){
   renderBottomBar();
   updateStats();
   if(globe){ buildAirports(); buildFlights(); applyFlightVisibility(); }
+  if(document.getElementById('opsOverlay').classList.contains('vis')) renderOps();
   closeDetail();
   if(!_urlPilotApplied){
     _urlPilotApplied=true;
@@ -1341,6 +1481,135 @@ rebuildUI=function(){
     if(pilot) setPilotFilter(pilot);
   }
 };
+
+// ═══════════════════════════════════════════════════════
+// OPERATIONS REPORT (monthly stats + fleet timeline)
+// ═══════════════════════════════════════════════════════
+let opsTab='month', opsMonthIdx=-1; // -1 = latest month with data
+
+function pirepDate(p){
+  if(p._rawTimestamp){const d=new Date(p._rawTimestamp);if(!isNaN(d))return d;}
+  if(p.date){const d=new Date(p.date);if(!isNaN(d))return d;}
+  return null;
+}
+function opsMonths(){
+  const set=new Set();
+  PIREPS.forEach(p=>{const d=pirepDate(p);if(d)set.add(d.getFullYear()*100+d.getMonth());});
+  return [...set].sort((a,b)=>a-b);
+}
+function openOps(){
+  document.getElementById('opsOverlay').classList.add('vis');
+  renderOps();
+}
+function closeOps(){document.getElementById('opsOverlay').classList.remove('vis');}
+function setOpsTab(t){
+  opsTab=t;
+  document.getElementById('opsTabM').classList.toggle('on',t==='month');
+  document.getElementById('opsTabT').classList.toggle('on',t==='fleet');
+  renderOps();
+}
+function opsNav(dir){
+  const ms=opsMonths();
+  if(!ms.length) return;
+  let i=opsMonthIdx<0?ms.length-1:opsMonthIdx;
+  opsMonthIdx=Math.max(0,Math.min(ms.length-1,i+dir));
+  renderOps();
+}
+function renderOps(){
+  if(opsTab==='month') renderMonthlyOps(); else renderFleetTimeline();
+}
+
+function renderMonthlyOps(){
+  const body=document.getElementById('opsBody');
+  const ms=opsMonths();
+  if(!ms.length){body.innerHTML='<div class="no-flights">No dated flights available.</div>';return;}
+  const idx=opsMonthIdx<0?ms.length-1:Math.min(opsMonthIdx,ms.length-1);
+  const key=ms[idx], year=Math.floor(key/100), mon=key%100;
+  const set=PIREPS.filter(p=>{const d=pirepDate(p);return d&&d.getFullYear()===year&&d.getMonth()===mon;});
+  const totalMins=set.reduce((s,p)=>s+airtimeToMinutes(p.airtime),0);
+
+  // Weekly buckets (days 1–7, 8–14, 15–21, 22–28, 29+)
+  const weeks=[0,0,0,0,0], wMins=[0,0,0,0,0];
+  set.forEach(p=>{
+    const w=Math.min(4,Math.floor((pirepDate(p).getDate()-1)/7));
+    weeks[w]++; wMins[w]+=airtimeToMinutes(p.airtime);
+  });
+  while(weeks.length>4&&!weeks[weeks.length-1]){weeks.pop();wMins.pop();}
+  const maxW=Math.max(1,...weeks);
+
+  const byPilot={};
+  set.forEach(p=>{(byPilot[p.pilot]=byPilot[p.pilot]||{n:0,m:0});byPilot[p.pilot].n++;byPilot[p.pilot].m+=airtimeToMinutes(p.airtime);});
+  const topPilot=Object.entries(byPilot).sort((a,b)=>b[1].n-a[1].n||b[1].m-a[1].m)[0];
+
+  const byRoute={};
+  set.forEach(p=>{const k=p.origin.icao+' → '+p.dest.icao;byRoute[k]=(byRoute[k]||0)+1;});
+  const topRoute=Object.entries(byRoute).sort((a,b)=>b[1]-a[1])[0];
+
+  const byAc={};
+  set.forEach(p=>{
+    const k=p.reg||p.aircraft||'N/A';
+    (byAc[k]=byAc[k]||{m:0,n:0,type:p.aircraft});
+    byAc[k].m+=airtimeToMinutes(p.airtime); byAc[k].n++;
+  });
+  const topAc=Object.entries(byAc).sort((a,b)=>b[1].m-a[1].m||b[1].n-a[1].n)[0];
+
+  const MN=['JANUARY','FEBRUARY','MARCH','APRIL','MAY','JUNE','JULY','AUGUST','SEPTEMBER','OCTOBER','NOVEMBER','DECEMBER'];
+  body.innerHTML=`
+    <div class="ops-mnav">
+      <button class="pag-btn" onclick="opsNav(-1)" ${idx===0?'disabled':''}>◀</button>
+      <span class="ops-month">${MN[mon]} ${year}</span>
+      <button class="pag-btn" onclick="opsNav(1)" ${idx===ms.length-1?'disabled':''}>▶</button>
+    </div>
+    <div class="kpi-grid">
+      <div class="kpi"><div class="kpi-l">Flights</div><div class="kpi-v">${set.length}</div><div class="kpi-s">logged this month</div></div>
+      <div class="kpi"><div class="kpi-l">Flying Hours</div><div class="kpi-v">${minutesToHM(totalMins)}</div><div class="kpi-s">total block time</div></div>
+      <div class="kpi"><div class="kpi-l">Most Active Pilot</div><div class="kpi-v" style="font-size:12px">${topPilot?topPilot[0]:'–'}</div><div class="kpi-s">${topPilot?topPilot[1].n+' flights · '+minutesToHM(topPilot[1].m):''}</div></div>
+      <div class="kpi"><div class="kpi-l">Busiest Route</div><div class="kpi-v" style="font-size:12px">${topRoute?topRoute[0]:'–'}</div><div class="kpi-s">${topRoute?topRoute[1]+' flight'+(topRoute[1]>1?'s':''):''}</div></div>
+      <div class="kpi"><div class="kpi-l">Most Utilized Aircraft</div><div class="kpi-v" style="font-size:12px">${topAc?topAc[0]:'–'}</div><div class="kpi-s">${topAc?(topAc[1].type&&topAc[1].type!==topAc[0]?topAc[1].type+' · ':'')+minutesToHM(topAc[1].m)+' · '+topAc[1].n+' flight'+(topAc[1].n>1?'s':''):''}</div></div>
+    </div>
+    <div class="ops-sec">Flights per week</div>
+    <div class="wk-chart">${weeks.map(n=>`<div class="wk-col"><span class="wk-n">${n||''}</span><div class="wk-bar" style="height:${n/maxW*100}%"></div></div>`).join('')}</div>
+    <div class="wk-lbl">${weeks.map((n,i)=>`<span class="wk-l">W${i+1}<br>${minutesToHM(wMins[i])}</span>`).join('')}</div>`;
+}
+
+function renderFleetTimeline(){
+  const body=document.getElementById('opsBody');
+  const dated=PIREPS.filter(p=>pirepDate(p));
+  if(!dated.length){body.innerHTML='<div class="no-flights">No dated flights available.</div>';return;}
+  const times=dated.map(p=>pirepDate(p).getTime());
+  const min=Math.min(...times), max=Math.max(...times), span=Math.max(1,max-min);
+  const maxAir=Math.max(1,...dated.map(p=>airtimeToMinutes(p.airtime)));
+  const byReg={};
+  dated.forEach(p=>{
+    const k=p.reg||'—';
+    (byReg[k]=byReg[k]||{mins:0,list:[],types:new Set()});
+    byReg[k].mins+=airtimeToMinutes(p.airtime);
+    byReg[k].list.push(p);
+    if(p.aircraft) byReg[k].types.add(p.aircraft);
+  });
+  const rows=Object.entries(byReg).sort((a,b)=>b[1].mins-a[1].mins);
+  const fmtD=t=>new Date(t).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'2-digit'}).toUpperCase();
+  body.innerHTML=`
+    <div class="tl-axis"><span>${fmtD(min)}</span><span>AIRCRAFT UTILIZATION · ${rows.length} AIRFRAME${rows.length>1?'S':''}</span><span>${fmtD(max)}</span></div>`
+    +rows.map(([reg,r])=>{
+      const dots=r.list.map(p=>{
+        const left=2+(pirepDate(p).getTime()-min)/span*96;
+        const sz=6+Math.round(airtimeToMinutes(p.airtime)/maxAir*8);
+        const i=PIREPS.indexOf(p);
+        return `<div class="tl-dot" style="left:${left.toFixed(2)}%;width:${sz}px;height:${sz}px;background:${p.color};color:${p.color}"
+          title="${p.flight} · ${p.origin.icao}→${p.dest.icao} · ${p.date} · ${p.airtime}"
+          onclick="closeOps();openDetail(${i})"></div>`;
+      }).join('');
+      return `<div class="tl-row">
+        <div class="tl-info"><div class="tl-reg">${reg}</div><div class="tl-sub">${[...r.types].join(' / ')||'&nbsp;'}</div></div>
+        <div class="tl-track">${dots}</div>
+        <div class="tl-hours">${minutesToHM(r.mins)}<br><span style="color:var(--dim)">${r.list.length} FLT${r.list.length>1?'S':''}</span></div>
+      </div>`;
+    }).join('');
+}
+
+document.getElementById('opsOverlay').addEventListener('click',e=>{if(e.target.id==='opsOverlay')closeOps();});
+window.addEventListener('keydown',e=>{if(e.key==='Escape')closeOps();});
 
 // ═══════════════════════════════════════════════════════
 // DEBUG PANEL
