@@ -188,6 +188,9 @@ body.panel-collapsed #panelToggle{right:0;}
 .deval{background:rgba(230,56,98,.06);border:1px solid rgba(230,56,98,.22);border-radius:8px;padding:12px;}
 .devlbl{font-size:8px;letter-spacing:.22em;color:rgba(245,198,36,.85);text-transform:uppercase;margin-bottom:6px;font-weight:700;}
 .devtxt{font-size:11px;line-height:1.65;color:rgba(245,230,218,.82);font-style:italic;}
+.dfpl{background:rgba(249,148,32,.05);border:1px solid rgba(249,148,32,.18);border-radius:8px;padding:10px 12px;margin-bottom:14px;}
+.dfpl-lbl{font-size:8px;letter-spacing:.2em;color:rgba(245,198,36,.85);text-transform:uppercase;margin-bottom:5px;font-weight:700;}
+.dfpl-txt{font-family:var(--fm);font-size:9px;line-height:1.6;color:rgba(245,230,218,.72);word-break:break-word;letter-spacing:.02em;}
 
 
 /* BOTTOM-LEFT TOOLBAR */
@@ -427,6 +430,7 @@ body.panel-collapsed #panelToggle{right:0;}
 <div class="blbar">
   <button class="blbtn" id="dbgBtn" onclick="toggleDebug()">DEBUG</button>
   <button class="blbtn" id="densityBtn" onclick="toggleDensity()">⛁ DENSITY</button>
+  <button class="blbtn on" id="routeBtn" onclick="toggleFiledRoute()" title="Draw filed flight-plan routes (airac.net) vs direct arcs">⤳ FILED ROUTE</button>
   <button class="blbtn" id="opsBtn" onclick="openOps()">▤ OPS REPORT</button>
 </div>
 
@@ -810,6 +814,7 @@ function parseRow(row) {
     airtime:    fmtAirtime(row['Block Time (min)']),
     date:       fmtDate(row['Log Timestamp']),
     eval:       row['Self Evaluation'] || '',
+    route:      pick(row,['route','flight plan','fpl','filed']) || '',
     _rawTimestamp: row['Log Timestamp'] || '',
   };
 }
@@ -908,7 +913,7 @@ function rebuildUI() {} // overridden later
 // ═══════════════════════════════════════════════════════
 // GLOBE GLOBALS
 // ═══════════════════════════════════════════════════════
-let arcH=0.10, autoRot=0.00015, trailsOn=true, cloudsOn=true, densityMode=false;
+let arcH=0.10, autoRot=0.00015, trailsOn=true, cloudsOn=true, densityMode=false, filedRoute=true;
 let flights=[], pulseRings=[], airportMarkers=[];
 let sunLight, globe, camera, renderer, scene;
 let rotX=0.12, rotY=2.83, trgX=0.12, trgY=2.83;
@@ -965,6 +970,161 @@ function buildCurve(latA,lonA,latB,lonB,h){
 function setProgress(pct,msg){
   document.getElementById('ldFill').style.width=pct+'%';
   if(msg) setLdTxt(msg);
+}
+
+// ═══════════════════════════════════════════════════════
+// FILED-ROUTE RESOLUTION (airac.net nav data)
+// Parse the ICAO route string → resolve each fix to lat/lon →
+// draw the arc through the fixes. Falls back to great-circle.
+// ═══════════════════════════════════════════════════════
+const AIRAC_BASE='https://airac.net/api/v1';
+const NAVCACHE_KEY='pirep_navcache_v1';
+let navCache={};
+try{ navCache=JSON.parse(localStorage.getItem(NAVCACHE_KEY)||'{}'); }catch(e){ navCache={}; }
+let _navSaveT=null;
+function persistNavCache(){
+  clearTimeout(_navSaveT);
+  _navSaveT=setTimeout(()=>{ try{ localStorage.setItem(NAVCACHE_KEY,JSON.stringify(navCache)); }catch(e){} },500);
+}
+// airac.net reachability state + debug counters
+let _airacDead=false, _airacFail=0, _airacOK=0;
+let _dbgRoutesTotal=0, _dbgRoutesResolved=0;
+
+function haversineKm(aLat,aLon,bLat,bLon){
+  const R=6371,dLa=(bLat-aLat)*Math.PI/180,dLo=(bLon-aLon)*Math.PI/180;
+  const la1=aLat*Math.PI/180,la2=bLat*Math.PI/180;
+  const x=Math.sin(dLa/2)**2+Math.cos(la1)*Math.cos(la2)*Math.sin(dLo/2)**2;
+  return 2*R*Math.asin(Math.min(1,Math.sqrt(x)));
+}
+// Recursively locate a plausible {lat,lon} pair inside an arbitrary JSON object.
+function findLatLon(o,depth){
+  if(depth>6||!o||typeof o!=='object') return null;
+  let lat=null,lon=null;
+  for(const k of Object.keys(o)){
+    const v=o[k], lk=k.toLowerCase();
+    if(typeof v==='number'){
+      if(lat===null&&/^(lat|latitude|lat_deg|latitude_deg|y)$/.test(lk)) lat=v;
+      else if(lon===null&&/^(lon|lng|long|longitude|lon_deg|longitude_deg|x)$/.test(lk)) lon=v;
+    }
+  }
+  if(lat!==null&&lon!==null&&Math.abs(lat)<=90&&Math.abs(lon)<=180) return {lat,lon};
+  for(const k of Object.keys(o)){ const r=findLatLon(o[k],(depth||0)+1); if(r) return r; }
+  return null;
+}
+// Turn an API response into a list of candidate coordinates.
+function extractCandidates(json){
+  let arr=null;
+  if(Array.isArray(json)) arr=json;
+  else if(json&&typeof json==='object'){
+    for(const k of ['data','results','waypoints','navaids','items','fixes','records']){
+      if(Array.isArray(json[k])){ arr=json[k]; break; }
+    }
+    if(!arr){ const s=findLatLon(json,0); return s?[s]:[]; }
+  }
+  return (arr||[]).map(x=>findLatLon(x,0)).filter(Boolean);
+}
+// Resolve one fix ident to {lat,lon}, choosing the candidate nearest (nearLat,nearLon).
+async function resolveFix(ident,nearLat,nearLon){
+  const key=ident.toUpperCase();
+  if(key in navCache) return navCache[key];
+  if(_airacDead) return null;
+  let cands=[];
+  for(const ep of ['waypoints','navaids']){
+    try{
+      const res=await fetch(`${AIRAC_BASE}/${ep}/${encodeURIComponent(key)}`,{headers:{'Accept':'application/json'}});
+      _airacOK++;                        // a real HTTP response means CORS is fine
+      if(!res.ok) continue;
+      const c=extractCandidates(await res.json());
+      cands=cands.concat(c);
+      if(c.length) break;
+    }catch(e){
+      _airacFail++;
+      if(_airacOK===0&&_airacFail>=4){ _airacDead=true; console.warn('[AIRAC] unreachable (CORS/network) — using direct arcs'); }
+      return null;
+    }
+  }
+  if(!cands.length){ navCache[key]=null; persistNavCache(); return null; }
+  let best=cands[0];
+  if(nearLat!=null){
+    let bd=Infinity;
+    cands.forEach(c=>{ const d=haversineKm(nearLat,nearLon,c.lat,c.lon); if(d<bd){bd=d;best=c;} });
+  }
+  navCache[key]=best; persistNavCache();
+  return best;
+}
+// Tokenize an ICAO route string into an ordered list of fix idents.
+function parseRouteFixes(routeStr){
+  if(!routeStr) return [];
+  const out=[];
+  String(routeStr).trim().split(/\s+/).forEach(raw=>{
+    let tok=raw.split('/')[0].toUpperCase();       // drop /N0494F360 speed-level changes
+    if(!tok||['DCT','SID','STAR'].includes(tok)) return;
+    if(/\d/.test(tok)){
+      const m=tok.match(/^([A-Z]{2,5})\d[A-Z]$/);  // SID/STAR e.g. VETAG1G → VETAG
+      if(m){ if(out[out.length-1]!==m[1]) out.push(m[1]); }
+      return;                                        // airways (M646, Y57…) are connectors → skip
+    }
+    if(/^[A-Z]{2,5}$/.test(tok)&&out[out.length-1]!==tok) out.push(tok);
+  });
+  return out;
+}
+// Resolve every fix in a PIREP's route; store polyline points if enough resolve.
+async function resolveRouteForPirep(p){
+  p._routeTried=true;
+  const fixes=parseRouteFixes(p.route);
+  if(!fixes.length) return;
+  const pts=[]; let near=[p.origin.lat,p.origin.lon];
+  for(const f of fixes){
+    const c=await resolveFix(f,near[0],near[1]);
+    if(c){ pts.push({lat:c.lat,lon:c.lon}); near=[c.lat,c.lon]; }
+    if(_airacDead) break;
+  }
+  if(pts.length>=1&&pts.length>=Math.ceil(fixes.length*0.5)){
+    p._routePts=[{lat:p.origin.lat,lon:p.origin.lon},...pts,{lat:p.dest.lat,lon:p.dest.lon}];
+  }
+}
+// Resolve all routes in the background (bounded concurrency), then rebuild arcs once.
+async function resolveAllRoutes(){
+  if(!filedRoute||_airacDead) return;
+  const list=PIREPS.filter(p=>p.route&&!p._routeTried);
+  _dbgRoutesTotal=PIREPS.filter(p=>p.route).length;
+  if(!list.length){ _dbgRoutesResolved=PIREPS.filter(p=>p._routePts).length; return; }
+  let idx=0, changed=false;
+  async function worker(){
+    while(idx<list.length&&!_airacDead){
+      const p=list[idx++];
+      await resolveRouteForPirep(p);
+      if(p._routePts) changed=true;
+    }
+  }
+  await Promise.all(Array.from({length:4},worker));
+  _dbgRoutesResolved=PIREPS.filter(p=>p._routePts).length;
+  if(changed&&globe&&!densityMode){ buildFlights(); applyFlightVisibility(); }
+  if(document.getElementById('dbgPanel').classList.contains('vis')) refreshDebug();
+}
+// Build a raised CatmullRom curve through an ordered list of {lat,lon} points.
+function buildRouteCurve(points,h){
+  const vs=points.map(pt=>ll2v(pt.lat,pt.lon));
+  const raw=[];
+  for(let s=0;s<vs.length-1;s++){
+    const a=vs[s],b=vs[s+1];
+    for(let i=0;i<20;i++) raw.push(slerp(a.clone(),b.clone(),i/20));
+  }
+  raw.push(vs[vs.length-1].clone());
+  const n=raw.length;
+  const pts=raw.map((v,i)=>{ const t=i/(n-1); return v.clone().normalize().multiplyScalar(1+h*Math.sin(t*Math.PI)); });
+  return new THREE.CatmullRomCurve3(pts);
+}
+// Pick the filed-route curve when available & enabled, else the great-circle arc.
+function curveForPirep(p){
+  if(filedRoute&&p._routePts&&p._routePts.length>=3) return buildRouteCurve(p._routePts,arcH);
+  return buildCurve(p.origin.lat,p.origin.lon,p.dest.lat,p.dest.lon,arcH);
+}
+function toggleFiledRoute(){
+  filedRoute=!filedRoute;
+  document.getElementById('routeBtn').classList.toggle('on',filedRoute);
+  if(globe&&!densityMode){ buildFlights(); applyFlightVisibility(); }
+  if(filedRoute) resolveAllRoutes();
 }
 
 // ═══════════════════════════════════════════════════════
@@ -1081,6 +1241,7 @@ window.addEventListener('load',async function(){
       renderBottomBar();
       updateStats();
       animate();
+      resolveAllRoutes();   // upgrade arcs to filed routes in the background
     },600);
   }
 });
@@ -1201,7 +1362,7 @@ function buildFlights(){
   if(densityMode){buildDensityFlights();return;}
   const seenRoutes=new Set();
   PIREPS.forEach((p,i)=>{
-    const curve=buildCurve(p.origin.lat,p.origin.lon,p.dest.lat,p.dest.lon,arcH);
+    const curve=curveForPirep(p);
     const mat=new THREE.MeshBasicMaterial({color:new THREE.Color(p.color),transparent:true,opacity:0.85,blending:THREE.AdditiveBlending,depthWrite:false});
     const arcMesh=new THREE.Mesh(new THREE.TubeGeometry(curve,80,0.0018,5,false),mat);
     globe.add(arcMesh);
@@ -1631,6 +1792,7 @@ function openDetail(i){
       <div class="df"><div class="dfl">Simulator</div><div class="dfv">${p.sim}</div></div>
       <div class="df"><div class="dfl">Network</div><div class="dfv">${p.network}</div></div>
     </div>
+    ${p.route?`<div class="dfpl"><div class="dfpl-lbl">✈ Filed Route${p._routePts?` · ${p._routePts.length-2} fixes plotted`:''}</div><div class="dfpl-txt">${p.route}</div></div>`:''}
     <div class="deval"><div class="devlbl">⚠ Self-Evaluation</div><div class="devtxt">"${p.eval}"</div></div>`;
   document.body.classList.remove('panel-collapsed');
   document.getElementById('panelToggle').textContent='◀';
@@ -1707,6 +1869,7 @@ rebuildUI=function(){
   if(globe){ buildAirports(); buildFlights(); applyFlightVisibility(); }
   if(document.getElementById('opsOverlay').classList.contains('vis')) renderOps();
   closeDetail();
+  resolveAllRoutes();   // resolve routes for any newly-fetched flights
   if(!_urlPilotApplied){
     _urlPilotApplied=true;
     const pilot=new URLSearchParams(location.search).get('pilot');
@@ -1877,6 +2040,8 @@ function refreshDebug(){
       <span class="dbg-val ${_dbgFleet>0?'dbg-ok':'dbg-err'}">${_dbgFleet>0?_dbgFleet+' airframes':'FAILED'}</span></div>
     <div class="dbg-row"><span class="dbg-lbl">PIREP source</span>
       <span class="dbg-val ${_dbgFallback?'dbg-err':'dbg-ok'}">${_dbgFallback?'FALLBACK ('+FALLBACK_PIREPS.length+')':'LIVE ('+_dbgPireps+')'}</span></div>
+    <div class="dbg-row"><span class="dbg-lbl">Filed routes</span>
+      <span class="dbg-val ${_airacDead?'dbg-err':(_dbgRoutesResolved>0?'dbg-ok':'')}">${_airacDead?'API UNREACHABLE (CORS?)':(_dbgRoutesTotal?_dbgRoutesResolved+' / '+_dbgRoutesTotal+' resolved':'no route field')}</span></div>
     <div class="dbg-row"><span class="dbg-lbl">Last fetch</span>
       <span class="dbg-val">${ago}</span></div>
     ${_dbgErr?`<div class="dbg-row"><span class="dbg-lbl">Error</span><span class="dbg-val dbg-err" style="font-size:8px">${_dbgErr}</span></div>`:''}
