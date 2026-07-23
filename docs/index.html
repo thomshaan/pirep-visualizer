@@ -920,7 +920,7 @@ let rotX=0.12, rotY=2.83, trgX=0.12, trgY=2.83;
 let isDrag=false, px=0, py=0;
 let camZ=2.8, trgZ=2.8;
 const CAM_MIN=1.4, CAM_MAX=5.5;
-let selectedPIREP=null, _savedAutoRot=0.00015, _lastBuildZ=2.8;
+let selectedPIREP=null, _savedAutoRot=0.00015, _lastBuildZ=2.8, _savedTrgZ=2.8;
 let _nextRefreshAt=Date.now()+60000;
 
 function setTrails(on){
@@ -1114,8 +1114,10 @@ async function resolveAllRoutes(){
   if(changed&&globe&&!densityMode){ buildFlights(); applyFlightVisibility(); }
   if(document.getElementById('dbgPanel').classList.contains('vis')) refreshDebug();
 }
-// Build a raised CatmullRom curve through an ordered list of {lat,lon} points.
-function buildRouteCurve(points,h){
+// Build a flat ground-track curve (FlightRadar-style) through {lat,lon} points,
+// hugging the surface with a tiny lift instead of arcing up.
+const ROUTE_LIFT=1.006;
+function buildRouteCurve(points){
   const vs=points.map(pt=>ll2v(pt.lat,pt.lon));
   const raw=[];
   for(let s=0;s<vs.length-1;s++){
@@ -1123,13 +1125,11 @@ function buildRouteCurve(points,h){
     for(let i=0;i<20;i++) raw.push(slerp(a.clone(),b.clone(),i/20));
   }
   raw.push(vs[vs.length-1].clone());
-  const n=raw.length;
-  const pts=raw.map((v,i)=>{ const t=i/(n-1); return v.clone().normalize().multiplyScalar(1+h*Math.sin(t*Math.PI)); });
-  return new THREE.CatmullRomCurve3(pts);
+  return new THREE.CatmullRomCurve3(raw.map(v=>v.clone().normalize().multiplyScalar(ROUTE_LIFT)));
 }
 // Pick the filed-route curve when available & enabled, else the great-circle arc.
 function curveForPirep(p){
-  if(filedRoute&&p._routePts&&p._routePts.length>=3) return buildRouteCurve(p._routePts,arcH);
+  if(filedRoute&&p._routePts&&p._routePts.length>=3) return buildRouteCurve(p._routePts);
   return buildCurve(p.origin.lat,p.origin.lon,p.dest.lat,p.dest.lon,arcH);
 }
 function toggleFiledRoute(){
@@ -1376,7 +1376,8 @@ function buildFlights(){
   PIREPS.forEach((p,i)=>{
     const curve=curveForPirep(p);
     const mat=new THREE.MeshBasicMaterial({color:new THREE.Color(p.color),transparent:true,opacity:0.85,blending:THREE.AdditiveBlending,depthWrite:false});
-    const arcMesh=new THREE.Mesh(new THREE.TubeGeometry(curve,80,0.0018,5,false),mat);
+    const isFiled=filedRoute&&p._routePts&&p._routePts.length>=3;
+    const arcMesh=new THREE.Mesh(new THREE.TubeGeometry(curve,isFiled?120:80,0.0013,5,false),mat);
     globe.add(arcMesh);
     const routeKey=p.origin.icao+'-'+p.dest.icao;
     const isNew=!seenRoutes.has(routeKey);
@@ -1533,16 +1534,18 @@ function animate(){
   const zS=Math.min(Math.max(camZ/2.8,0.35),1.4);
   pulseRings.forEach(r=>{r.userData.t=(r.userData.t+dt*.42)%1;const pt=r.userData.t;r.scale.setScalar((1+pt*3.5*zS)*zS);r.userData.mat.opacity=(1-pt)*.5*Math.min(1,zS);});
   airportMarkers.forEach((mk,i)=>{mk.halo.scale.setScalar((1+.3*Math.abs(Math.sin(t*1.5+i)))*zS);mk.dot.scale.setScalar(zS);});
-  // Arc highlight for selected flight
+  // Declutter: fade the line web and shrink planes when zoomed in (unless isolating one flight)
+  const zoomFade=Math.min(Math.max((camZ-1.0)/1.8,0.4),1);
+  const planeScale=Math.min(Math.max(camZ/2.8,0.5),1.2);
   if(selectedPIREP){
-    flights.forEach(fl=>{
-      if(!fl.mat) return;
-      fl.mat.opacity=fl.pireps.includes(selectedPIREP)?1.0:0.12;
-    });
+    flights.forEach(fl=>{ if(fl.mat) fl.mat.opacity=fl.pireps.includes(selectedPIREP)?1.0:0.12; });
+  } else {
+    flights.forEach(fl=>{ if(fl.mat) fl.mat.opacity=fl.baseOpacity*zoomFade; });
   }
   flights.forEach((fl,i)=>{
     fl.t=(fl.t+dt*fl.speed)%1;
     if(!fl.plane) return;
+    fl.plane.scale.setScalar(planeScale);
     const pos=fl.curve.getPoint(fl.t),tan=fl.curve.getTangent(fl.t).normalize();
     const up=pos.clone().normalize(),right=new THREE.Vector3().crossVectors(tan,up).normalize();
     fl.plane.position.copy(pos);
@@ -1566,17 +1569,20 @@ function projectLabel(mk){
 }
 function updateLabels(){
   if(!globe||!camera)return;
+  const iso=!!selectedPIREP;
   const band=labelBand();
   airportMarkers.forEach(mk=>{
     const visible=projectLabel(mk);
-    mk.lbl.classList.toggle('show',band==='airport'&&visible&&mk.dot.visible);
+    mk.lbl.classList.toggle('show',(iso||band==='airport')&&visible&&mk.dot.visible);
   });
   nationMarkers.forEach(nm=>{
+    if(iso){ nm.lbl.classList.remove('show'); return; }
     const anyVisible=airportMarkers.some(mk=>nm.icaos.includes(mk.icao)&&mk.dot.visible);
     const visible=projectLabel(nm);
     nm.lbl.classList.toggle('show',band==='nation'&&visible&&anyVisible);
   });
   continentMarkers.forEach(cm=>{
+    if(iso){ cm.lbl.classList.remove('show'); return; }
     const anyVisible=airportMarkers.some(mk=>cm.icaos.includes(mk.icao)&&mk.dot.visible);
     const visible=projectLabel(cm);
     cm.lbl.classList.toggle('show',band==='continent'&&visible&&anyVisible);
@@ -1660,6 +1666,22 @@ function renderPilotChips(){
   }).join('');
 }
 function applyFlightVisibility(){
+  // Isolation: when a flight is selected, show only it and its two airports.
+  if(selectedPIREP){
+    const keep=new Set([selectedPIREP.origin.icao,selectedPIREP.dest.icao]);
+    flights.forEach(fl=>{
+      const vis=fl.pireps.includes(selectedPIREP);
+      fl.arcMesh.visible=vis;
+      if(fl.plane) fl.plane.visible=vis;
+      if(fl.trail) fl.trail.line.visible=vis;
+    });
+    airportMarkers.forEach(mk=>{
+      const vis=keep.has(mk.icao);
+      mk.dot.visible=mk.halo.visible=mk.ring.visible=vis;
+      if(!vis) mk.lbl.classList.remove('show');
+    });
+    return;
+  }
   const q=activeFilter.toLowerCase();
   const activeAirports=new Set();
   if(q){
@@ -1814,12 +1836,15 @@ function openDetail(i){
   document.querySelectorAll('.pcard').forEach((c,j)=>c.classList.toggle('active',j===i));
   document.getElementById('apPopup').classList.remove('vis');
   if(globe){
-    _savedAutoRot=autoRot; autoRot=0;
+    _savedAutoRot=autoRot; autoRot=0; _savedTrgZ=trgZ;
     selectedPIREP=p;
     const _va=ll2v(p.origin.lat,p.origin.lon),_vb=ll2v(p.dest.lat,p.dest.lon);
     const _mid=_va.clone().add(_vb).normalize();
     trgY=Math.atan2(-_mid.x,_mid.z);
     trgX=Math.asin(Math.max(-1,Math.min(1,_mid.y)));
+    const ang=Math.acos(Math.max(-1,Math.min(1,_va.clone().normalize().dot(_vb.clone().normalize()))));
+    trgZ=Math.min(Math.max(1.9+ang*0.9,1.9),3.8);   // frame both endpoints
+    applyFlightVisibility();                          // isolate this flight
   }
 }
 
@@ -1828,8 +1853,9 @@ function closeDetail(){
   document.getElementById('flightList').style.display='flex';
   document.getElementById('pagBar').style.display=_filtered.length>PAGE_SIZE?'flex':'none';
   document.querySelectorAll('.pcard').forEach(c=>c.classList.remove('active'));
-  autoRot=_savedAutoRot; selectedPIREP=null;
+  autoRot=_savedAutoRot; trgZ=_savedTrgZ; selectedPIREP=null;
   flights.forEach(fl=>{if(fl.mat) fl.mat.opacity=fl.baseOpacity??0.85;});
+  if(globe) applyFlightVisibility();   // un-hide everything
 }
 
 // ═══════════════════════════════════════════════════════
