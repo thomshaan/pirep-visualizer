@@ -1375,9 +1375,10 @@ function buildFlights(){
   const seenRoutes=new Set();
   PIREPS.forEach((p,i)=>{
     const curve=curveForPirep(p);
-    const mat=new THREE.MeshBasicMaterial({color:new THREE.Color(p.color),transparent:true,opacity:0.85,blending:THREE.AdditiveBlending,depthWrite:false});
     const isFiled=filedRoute&&p._routePts&&p._routePts.length>=3;
-    const arcMesh=new THREE.Mesh(new THREE.TubeGeometry(curve,isFiled?120:80,0.0013,5,false),mat);
+    // Screen-constant thin line (FlightRadar-style) — stays crisp at every zoom.
+    const mat=new THREE.LineBasicMaterial({color:new THREE.Color(p.color),transparent:true,opacity:0.85,blending:THREE.AdditiveBlending,depthWrite:false});
+    const arcMesh=new THREE.Line(new THREE.BufferGeometry().setFromPoints(curve.getPoints(isFiled?220:120)),mat);
     globe.add(arcMesh);
     const routeKey=p.origin.icao+'-'+p.dest.icao;
     const isNew=!seenRoutes.has(routeKey);
@@ -1530,13 +1531,14 @@ function animate(){
     const sl=sunLight.position.clone().normalize().applyMatrix4(new THREE.Matrix4().extractRotation(globe.matrixWorld).invert());
     window._earthMat.userData.shader.uniforms.sunDir.value.copy(sl);
   }
-  // Zoom scale for effects
+  // Zoom scale for effects; fade the airport glow (rings/halos) when zoomed in to declutter
   const zS=Math.min(Math.max(camZ/2.8,0.35),1.4);
-  pulseRings.forEach(r=>{r.userData.t=(r.userData.t+dt*.42)%1;const pt=r.userData.t;r.scale.setScalar((1+pt*3.5*zS)*zS);r.userData.mat.opacity=(1-pt)*.5*Math.min(1,zS);});
-  airportMarkers.forEach((mk,i)=>{mk.halo.scale.setScalar((1+.3*Math.abs(Math.sin(t*1.5+i)))*zS);mk.dot.scale.setScalar(zS);});
+  const ringFade=Math.min(Math.max((camZ-1.3)/1.4,0),1);
+  pulseRings.forEach(r=>{r.userData.t=(r.userData.t+dt*.42)%1;const pt=r.userData.t;r.scale.setScalar((1+pt*3.5*zS)*zS);r.userData.mat.opacity=(1-pt)*.5*Math.min(1,zS)*ringFade;});
+  airportMarkers.forEach((mk,i)=>{mk.halo.scale.setScalar((1+.3*Math.abs(Math.sin(t*1.5+i)))*zS);mk.halo.material.opacity=0.2*ringFade;mk.dot.scale.setScalar(zS);});
   // Declutter: fade the line web and shrink planes when zoomed in (unless isolating one flight)
-  const zoomFade=Math.min(Math.max((camZ-1.0)/1.8,0.4),1);
-  const planeScale=Math.min(Math.max(camZ/2.8,0.5),1.2);
+  const zoomFade=Math.min(Math.max((camZ-1.0)/1.8,0.32),1);
+  const planeScale=Math.min(Math.max((camZ-0.6)/2.2,0.28),1.1);
   if(selectedPIREP){
     flights.forEach(fl=>{ if(fl.mat) fl.mat.opacity=fl.pireps.includes(selectedPIREP)?1.0:0.12; });
   } else {
