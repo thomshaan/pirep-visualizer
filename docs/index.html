@@ -173,6 +173,18 @@ body.panel-collapsed #panelToggle{right:0;}
 .df{background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.05);border-radius:6px;padding:8px 10px;}
 .dfl{font-size:8px;letter-spacing:.2em;color:var(--dim);text-transform:uppercase;margin-bottom:3px;}
 .dfv{font-family:var(--fm);font-size:11px;color:var(--text);font-weight:700;}
+.dmeta{font-family:var(--fm);font-size:8px;color:var(--dim);margin-top:3px;max-width:100px;line-height:1.5;letter-spacing:.03em;}
+
+/* AIRCRAFT IMAGE CARD (in detail view) */
+.dac{margin-bottom:14px;border:1px solid var(--border);border-radius:8px;overflow:hidden;
+  background:rgba(255,255,255,.02);}
+.dac-img{display:block;width:100%;max-height:150px;object-fit:cover;opacity:0;transition:opacity .5s;}
+.dac.ok .dac-img{opacity:1;}
+.dac-cap{display:flex;flex-wrap:wrap;gap:4px 10px;padding:7px 10px;align-items:baseline;}
+.dac-nose{font-family:var(--fd);font-size:9px;color:var(--gold);letter-spacing:.08em;}
+.dac-scheme{font-family:var(--fm);font-size:8px;color:var(--dim);letter-spacing:.04em;}
+.dac-mod{font-family:var(--fm);font-size:8px;color:rgba(245,230,218,.3);letter-spacing:.04em;margin-left:auto;}
+
 .deval{background:rgba(230,56,98,.06);border:1px solid rgba(230,56,98,.22);border-radius:8px;padding:12px;}
 .devlbl{font-size:8px;letter-spacing:.22em;color:rgba(245,198,36,.85);text-transform:uppercase;margin-bottom:6px;font-weight:700;}
 .devtxt{font-size:11px;line-height:1.65;color:rgba(245,230,218,.82);font-style:italic;}
@@ -236,7 +248,9 @@ body.panel-collapsed #panelToggle{right:0;}
 .tl-axis{display:flex;justify-content:space-between;font-family:var(--fm);font-size:8px;
   color:var(--dim);letter-spacing:.1em;padding:0 0 8px;}
 .tl-row{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid rgba(255,255,255,.04);}
-.tl-info{width:140px;flex-shrink:0;}
+.tl-info{width:190px;flex-shrink:0;display:flex;align-items:center;gap:8px;}
+.tl-thumb{width:44px;height:28px;object-fit:cover;border-radius:4px;border:1px solid var(--border);
+  flex-shrink:0;background:rgba(255,255,255,.03);}
 .tl-reg{font-family:var(--fd);font-size:11px;color:var(--text);font-weight:700;}
 .tl-sub{font-family:var(--fm);font-size:8px;color:var(--dim);margin-top:2px;line-height:1.4;}
 .tl-track{flex:1;position:relative;height:22px;background:rgba(255,255,255,.025);border-radius:4px;}
@@ -273,6 +287,10 @@ body.panel-collapsed #panelToggle{right:0;}
   cursor:pointer;pointer-events:none;}
 .albl.show{opacity:1;pointer-events:auto;}
 .albl:hover{border-color:var(--border-hi);background:rgba(62,21,48,.95);}
+.albl.nation{font-size:11px;padding:4px 11px;border-radius:14px;letter-spacing:.2em;
+  border-color:rgba(245,198,36,.5);background:rgba(42,15,34,.92);
+  box-shadow:0 0 14px rgba(249,148,32,.25);}
+.albl-count{margin-left:5px;font-size:8px;color:var(--orange);opacity:.9;}
 
 /* AIRPORT POPUP */
 .ap-popup{position:fixed;z-index:50;min-width:190px;
@@ -485,15 +503,22 @@ async function fetchAirportDB() {
       lon:        header.indexOf('longitude_deg'),
       gps_code:   header.indexOf('gps_code'),
       local_code: header.indexOf('local_code'),
+      type:       header.indexOf('type'),
+      elev:       header.indexOf('elevation_ft'),
+      country:    header.indexOf('iso_country'),
+      region:     header.indexOf('iso_region'),
+      muni:       header.indexOf('municipality'),
     };
     for (let i = 1; i < lines.length; i++) {
       const cols = lines[i].match(/(".*?"|[^,]+|(?<=,)(?=,)|(?<=,)$)/g);
       if (!cols) continue;
-      const clean = c => (cols[c] || '').replace(/"/g,'').trim();
+      const clean = c => (c>=0 ? (cols[c] || '') : '').replace(/"/g,'').trim();
       const lat = parseFloat(clean(idx.lat));
       const lon = parseFloat(clean(idx.lon));
       if (isNaN(lat) || isNaN(lon)) continue;
-      const entry = { lat, lon, name: clean(idx.name) };
+      const entry = { lat, lon, name: clean(idx.name),
+        type: clean(idx.type), elev: clean(idx.elev),
+        country: clean(idx.country), region: clean(idx.region), muni: clean(idx.muni) };
       const icao  = clean(idx.ident);
       if (icao.length === 4)  AIRPORT_COORDS[icao]  = entry;
       const gps   = clean(idx.gps_code);
@@ -507,6 +532,86 @@ async function fetchAirportDB() {
     _dbgAirports=0;
     console.warn('[AirportDB] Failed to load CSV:', err.message);
   }
+}
+
+// ═══════════════════════════════════════════════════════
+// AIRPORT METADATA HELPERS (from OurAirports columns)
+// ═══════════════════════════════════════════════════════
+function countryFlag(iso){
+  if(!iso||iso.length!==2||!/^[A-Za-z]{2}$/.test(iso)) return '';
+  return String.fromCodePoint(...[...iso.toUpperCase()].map(c=>0x1F1E6+c.charCodeAt(0)-65));
+}
+const _AP_TYPE_LABEL={large_airport:'Large Airport',medium_airport:'Medium Airport',
+  small_airport:'Small Airport',heliport:'Heliport',seaplane_base:'Seaplane Base',
+  balloonport:'Balloonport',closed:'Closed'};
+function apTypeLabel(t){ return _AP_TYPE_LABEL[t]||''; }
+function airportMeta(icao){
+  const a=AIRPORT_COORDS[icao];
+  if(!a) return '';
+  const bits=[];
+  const flag=countryFlag(a.country);
+  if(a.muni) bits.push((flag?flag+' ':'')+a.muni);
+  else if(flag) bits.push(flag+' '+(a.country||''));
+  const t=apTypeLabel(a.type); if(t) bits.push(t);
+  if(a.elev&&!isNaN(parseFloat(a.elev))) bits.push(parseFloat(a.elev)+' ft');
+  return bits.join(' · ');
+}
+
+// ═══════════════════════════════════════════════════════
+// FLEET DATABASE (aircraft images via public Google Drive)
+// ═══════════════════════════════════════════════════════
+const FLEET_URL='https://opensheet.elk.sh/1XTljWsk86qbTZq4mfWsfHYojv9Uv5iMoN_ilAkT5WmE/ABEL%20JETS%20EXTENDED%20PACK%20%5B8.0%5D%20UPDATES';
+let FLEET_BY_REG={};
+let _dbgFleet=0;
+
+// Extract a Google Drive file id from any share-link form and build a direct thumbnail URL.
+function driveThumb(url,size){
+  if(!url) return '';
+  let m=String(url).match(/[-\w]{25,}/);
+  if(!m) return '';
+  return 'https://drive.google.com/thumbnail?id='+m[0]+'&sz=w'+(size||800);
+}
+// Normalize a registration for fuzzy matching (strip dashes/spaces, uppercase).
+function normReg(r){ return (r||'').toUpperCase().replace(/[^A-Z0-9]/g,''); }
+// Pick a value from a row by fuzzy header keyword (tolerates bracket suffixes / whitespace).
+function pick(row,keywords){
+  for(const k of Object.keys(row)){
+    const lk=k.toLowerCase();
+    if(keywords.some(w=>lk.includes(w))) { const v=(row[k]||'').toString().trim(); if(v) return v; }
+  }
+  return '';
+}
+async function fetchFleetDB(){
+  try{
+    const res=await fetch(FLEET_URL);
+    const rows=await res.json();
+    const map={};
+    rows.forEach(row=>{
+      const reg=pick(row,['registration']) || row['REGISTRATION'] || '';
+      if(!reg) return;
+      const key=normReg(reg);
+      if(!key||map[key]) return; // first entry wins
+      map[key]={
+        reg, nosename:pick(row,['nosename','nose name']),
+        type:pick(row,['aircraft type']),
+        division:pick(row,['division']),
+        colour:pick(row,['colour','color scheme']),
+        modder:pick(row,['modder']),
+        state:pick(row,['state']),
+        image:driveThumb(pick(row,['aircraft image','image']),800),
+      };
+    });
+    FLEET_BY_REG=map; _dbgFleet=Object.keys(map).length;
+    console.info('[FleetDB] Loaded',_dbgFleet,'airframes');
+  }catch(err){
+    _dbgFleet=0;
+    console.warn('[FleetDB] Failed to load:',err.message);
+  }
+}
+// Look up fleet record for a registration, exact then normalized.
+function fleetFor(reg){
+  if(!reg) return null;
+  return FLEET_BY_REG[normReg(reg)]||null;
 }
 
 // ═══════════════════════════════════════════════════════
@@ -834,6 +939,8 @@ window.addEventListener('load',async function(){
   await fetchAirportDB();
   setProgress(10,'FETCHING FLIGHT DATA…');
   await fetchPIREPs();
+  setProgress(13,'LOADING FLEET DATABASE…');
+  await fetchFleetDB();
   setProgress(15,'INITIALIZING 3D ENGINE…');
 
   renderer=new THREE.WebGLRenderer({antialias:true,alpha:false});
@@ -984,6 +1091,43 @@ function buildAirports(){
     document.body.appendChild(lbl);
 
     airportMarkers.push({icao:ap.icao,dot,halo,ring,pos:v.clone(),lbl});
+  });
+
+  buildNationLabels(seen);
+}
+
+// ═══════════════════════════════════════════════════════
+// NATION LABELS (low-detail view when zoomed out)
+// ═══════════════════════════════════════════════════════
+let nationMarkers=[];
+const NATION_ZOOM=3.6; // camZ beyond this → nation codes instead of airport ICAOs
+
+function buildNationLabels(seen){
+  nationMarkers=[];
+  const byCountry={};
+  Object.values(seen).forEach(ap=>{
+    const meta=AIRPORT_COORDS[ap.icao];
+    const cc=meta&&meta.country;
+    if(!cc) return;
+    (byCountry[cc]=byCountry[cc]||[]).push(ap);
+  });
+  Object.entries(byCountry).forEach(([cc,aps])=>{
+    const centroid=new THREE.Vector3();
+    aps.forEach(ap=>centroid.add(ll2v(ap.lat,ap.lon,1)));
+    centroid.normalize().multiplyScalar(1.02);
+    const lbl=document.createElement('div');
+    lbl.className='albl nation';
+    lbl.innerHTML=`${countryFlag(cc)} ${cc}<span class="albl-count">${aps.length}</span>`;
+    lbl.title=aps.map(a=>a.icao).join(' · ');
+    lbl.addEventListener('click',()=>{
+      // Zoom into this nation
+      trgZ=2.2;
+      const c=centroid.clone().normalize();
+      trgY=Math.atan2(-c.x,c.z);
+      trgX=Math.asin(Math.max(-1,Math.min(1,c.y)));
+    });
+    document.body.appendChild(lbl);
+    nationMarkers.push({cc,pos:centroid,lbl,icaos:aps.map(a=>a.icao)});
   });
 }
 
@@ -1184,13 +1328,23 @@ function animate(){
 
 function updateLabels(){
   if(!globe||!camera)return;
+  const far=camZ>NATION_ZOOM&&nationMarkers.length>0;
   airportMarkers.forEach(mk=>{
     const world=mk.pos.clone().applyMatrix4(globe.matrixWorld);
     const proj=world.clone().project(camera);
     const visible=proj.z<1&&world.clone().normalize().dot(world.clone().sub(camera.position).normalize())<-0.12;
     mk.lbl.style.left=((proj.x+1)/2*innerWidth)+'px';
     mk.lbl.style.top=((-proj.y+1)/2*innerHeight)+'px';
-    mk.lbl.classList.toggle('show',visible&&mk.dot.visible);
+    mk.lbl.classList.toggle('show',!far&&visible&&mk.dot.visible);
+  });
+  nationMarkers.forEach(nm=>{
+    const anyVisible=airportMarkers.some(mk=>nm.icaos.includes(mk.icao)&&mk.dot.visible);
+    const world=nm.pos.clone().applyMatrix4(globe.matrixWorld);
+    const proj=world.clone().project(camera);
+    const visible=proj.z<1&&world.clone().normalize().dot(world.clone().sub(camera.position).normalize())<-0.12;
+    nm.lbl.style.left=((proj.x+1)/2*innerWidth)+'px';
+    nm.lbl.style.top=((-proj.y+1)/2*innerHeight)+'px';
+    nm.lbl.classList.toggle('show',far&&visible&&anyVisible);
   });
 }
 
@@ -1383,6 +1537,20 @@ document.getElementById('pilotFilter').addEventListener('input',function(){
 // ═══════════════════════════════════════════════════════
 function openDetail(i){
   const p=PIREPS[i];
+  const fleet=fleetFor(p.reg);
+  const oMeta=airportMeta(p.origin.icao), dMeta=airportMeta(p.dest.icao);
+  const acBlock=fleet&&fleet.image?`
+    <div class="dac">
+      <img class="dac-img" src="${fleet.image}" alt="${p.reg}" loading="lazy"
+        referrerpolicy="no-referrer"
+        onload="this.parentElement.classList.add('ok')"
+        onerror="this.parentElement.style.display='none'">
+      <div class="dac-cap">
+        ${fleet.nosename?`<span class="dac-nose">✦ ${fleet.nosename}</span>`:''}
+        ${fleet.colour?`<span class="dac-scheme">${fleet.colour}</span>`:''}
+        ${fleet.modder?`<span class="dac-mod">Livery: ${fleet.modder}</span>`:''}
+      </div>
+    </div>`:'';
   document.getElementById('detContent').style.setProperty('--dc',p.color);
   document.getElementById('detContent').innerHTML=`
     <div class="dh">
@@ -1390,10 +1558,11 @@ function openDetail(i){
       <div class="dbadge">${p.network}</div>
     </div>
     <div class="drte">
-      <div class="dap"><div class="dicao">${p.origin.icao}</div><div class="dtime">${p.dep}</div><div class="dname">${p.origin.name}</div></div>
+      <div class="dap"><div class="dicao">${p.origin.icao}</div><div class="dtime">${p.dep}</div><div class="dname">${p.origin.name}</div>${oMeta?`<div class="dmeta">${oMeta}</div>`:''}</div>
       <div class="dline"><div class="dair">${p.airtime}</div><div class="ddiv"></div><div class="dair">${p.date}</div></div>
-      <div class="dap"><div class="dicao">${p.dest.icao}</div><div class="dtime">${p.arr}</div><div class="dname">${p.dest.name}</div></div>
+      <div class="dap"><div class="dicao">${p.dest.icao}</div><div class="dtime">${p.arr}</div><div class="dname">${p.dest.name}</div>${dMeta?`<div class="dmeta">${dMeta}</div>`:''}</div>
     </div>
+    ${acBlock}
     <div class="dgrid">
       <div class="df"><div class="dfl">Aircraft</div><div class="dfv">${p.aircraft}</div></div>
       <div class="df"><div class="dfl">Registration</div><div class="dfv">${p.reg}</div></div>
@@ -1445,7 +1614,8 @@ function handleLabelClick(icao,lblEl){
     // Multiple flights — show popup near the label
     const rect=lblEl.getBoundingClientRect();
     const pop=document.getElementById('apPopup');
-    pop.innerHTML=`<div class="ap-pop-title">${icao} · ${matches.length} flights</div>`+
+    const meta=airportMeta(icao);
+    pop.innerHTML=`<div class="ap-pop-title">${icao} · ${matches.length} flights${meta?`<div style="font-family:var(--fm);font-size:8px;letter-spacing:.06em;color:var(--dim);margin-top:3px;text-transform:none;font-weight:400;">${meta}</div>`:''}</div>`+
       matches.map(p=>{
         const i=PIREPS.indexOf(p);
         return `<div class="ap-pop-item" onclick="openDetail(${i});document.getElementById('apPopup').classList.remove('vis')">
@@ -1600,8 +1770,12 @@ function renderFleetTimeline(){
           title="${p.flight} · ${p.origin.icao}→${p.dest.icao} · ${p.date} · ${p.airtime}"
           onclick="closeOps();openDetail(${i})"></div>`;
       }).join('');
+      const fleet=fleetFor(reg);
+      const thumb=fleet&&fleet.image
+        ?`<img class="tl-thumb" src="${driveThumb(fleet.image,200)||fleet.image}" alt="${reg}" loading="lazy" referrerpolicy="no-referrer" onerror="this.style.display='none'">`
+        :'';
       return `<div class="tl-row">
-        <div class="tl-info"><div class="tl-reg">${reg}</div><div class="tl-sub">${[...r.types].join(' / ')||'&nbsp;'}</div></div>
+        <div class="tl-info">${thumb}<div><div class="tl-reg">${reg}</div><div class="tl-sub">${fleet&&fleet.nosename?fleet.nosename+' · ':''}${[...r.types].join(' / ')||'&nbsp;'}</div></div></div>
         <div class="tl-track">${dots}</div>
         <div class="tl-hours">${minutesToHM(r.mins)}<br><span style="color:var(--dim)">${r.list.length} FLT${r.list.length>1?'S':''}</span></div>
       </div>`;
@@ -1628,6 +1802,8 @@ function refreshDebug(){
   document.getElementById('dbgContent').innerHTML=`
     <div class="dbg-row"><span class="dbg-lbl">Airport DB</span>
       <span class="dbg-val ${_dbgAirports>0?'dbg-ok':'dbg-err'}">${_dbgAirports>0?_dbgAirports+' airports':'FAILED'}</span></div>
+    <div class="dbg-row"><span class="dbg-lbl">Fleet DB</span>
+      <span class="dbg-val ${_dbgFleet>0?'dbg-ok':'dbg-err'}">${_dbgFleet>0?_dbgFleet+' airframes':'FAILED'}</span></div>
     <div class="dbg-row"><span class="dbg-lbl">PIREP source</span>
       <span class="dbg-val ${_dbgFallback?'dbg-err':'dbg-ok'}">${_dbgFallback?'FALLBACK ('+FALLBACK_PIREPS.length+')':'LIVE ('+_dbgPireps+')'}</span></div>
     <div class="dbg-row"><span class="dbg-lbl">Last fetch</span>
@@ -1638,7 +1814,7 @@ function refreshDebug(){
 async function forceRefresh(){
   document.getElementById('dbgRefresh').textContent='FETCHING…';
   lastFetched=0;
-  await fetchPIREPs();
+  await Promise.allSettled([fetchPIREPs(),fetchFleetDB()]);
   rebuildUI();
   refreshDebug();
   document.getElementById('dbgRefresh').textContent='⟳ FORCE REFRESH NOW';
