@@ -978,7 +978,7 @@ function setProgress(pct,msg){
 // draw the arc through the fixes. Falls back to great-circle.
 // ═══════════════════════════════════════════════════════
 const AIRAC_BASE='https://airac.net/api/v1';
-const NAVCACHE_KEY='pirep_navcache_v1';
+const NAVCACHE_KEY='pirep_navcache_v2';   // v2: caches candidate lists, not single picks
 let navCache={};
 try{ navCache=JSON.parse(localStorage.getItem(NAVCACHE_KEY)||'{}'); }catch(e){ navCache={}; }
 let _navSaveT=null;
@@ -1023,8 +1023,9 @@ function extractCandidates(json){
   }
   return (arr||[]).map(x=>findLatLon(x,0)).filter(Boolean);
 }
-// Resolve one fix ident to {lat,lon}, choosing the candidate nearest (nearLat,nearLon).
-async function resolveFix(ident,nearLat,nearLon){
+// Fetch ALL candidate coordinates for a fix ident (idents aren't globally unique),
+// cached as an array so each route can pick its own correct duplicate.
+async function fetchCandidates(ident){
   const key=ident.toUpperCase();
   if(key in navCache) return navCache[key];
   if(_airacDead) return null;
@@ -1043,13 +1044,21 @@ async function resolveFix(ident,nearLat,nearLon){
       return null;
     }
   }
-  if(!cands.length){ navCache[key]=null; persistNavCache(); return null; }
-  let best=cands[0];
-  if(nearLat!=null){
-    let bd=Infinity;
-    cands.forEach(c=>{ const d=haversineKm(nearLat,nearLon,c.lat,c.lon); if(d<bd){bd=d;best=c;} });
-  }
-  navCache[key]=best; persistNavCache();
+  navCache[key]=cands; persistNavCache();
+  return cands;
+}
+// Choose the candidate that fits this leg best: minimise the origin→fix→dest
+// detour, and reject picks that would balloon the path (a wrong-hemisphere twin).
+function pickCandidate(cands,oLat,oLon,dLat,dLon){
+  if(!cands||!cands.length) return null;
+  const direct=haversineKm(oLat,oLon,dLat,dLon);
+  let best=null,bestDetour=Infinity;
+  cands.forEach(c=>{
+    const detour=haversineKm(oLat,oLon,c.lat,c.lon)+haversineKm(c.lat,c.lon,dLat,dLon);
+    if(detour<bestDetour){ bestDetour=detour; best=c; }
+  });
+  // A fix on the direct path has detour ≈ direct distance; a wrong twin is far off.
+  if(bestDetour>direct*1.7+500) return null;
   return best;
 }
 // Tokenize an ICAO route string into an ordered list of fix idents.
@@ -1073,14 +1082,17 @@ async function resolveRouteForPirep(p){
   p._routeTried=true;
   const fixes=parseRouteFixes(p.route);
   if(!fixes.length) return;
-  const pts=[]; let near=[p.origin.lat,p.origin.lon];
+  const O=[p.origin.lat,p.origin.lon], D=[p.dest.lat,p.dest.lon];
+  const pts=[];
   for(const f of fixes){
-    const c=await resolveFix(f,near[0],near[1]);
-    if(c){ pts.push({lat:c.lat,lon:c.lon}); near=[c.lat,c.lon]; }
+    const cands=await fetchCandidates(f);
     if(_airacDead) break;
+    const c=pickCandidate(cands,O[0],O[1],D[0],D[1]);   // anchor to the corridor, no chaining
+    if(c) pts.push({lat:c.lat,lon:c.lon});
   }
   if(pts.length>=1&&pts.length>=Math.ceil(fixes.length*0.5)){
     p._routePts=[{lat:p.origin.lat,lon:p.origin.lon},...pts,{lat:p.dest.lat,lon:p.dest.lon}];
+    p._routeFixes=pts.length;
   }
 }
 // Resolve all routes in the background (bounded concurrency), then rebuild arcs once.
