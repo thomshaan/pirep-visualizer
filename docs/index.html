@@ -505,6 +505,7 @@ async function fetchAirportDB() {
       local_code: header.indexOf('local_code'),
       type:       header.indexOf('type'),
       elev:       header.indexOf('elevation_ft'),
+      continent:  header.indexOf('continent'),
       country:    header.indexOf('iso_country'),
       region:     header.indexOf('iso_region'),
       muni:       header.indexOf('municipality'),
@@ -517,7 +518,7 @@ async function fetchAirportDB() {
       const lon = parseFloat(clean(idx.lon));
       if (isNaN(lat) || isNaN(lon)) continue;
       const entry = { lat, lon, name: clean(idx.name),
-        type: clean(idx.type), elev: clean(idx.elev),
+        type: clean(idx.type), elev: clean(idx.elev), continent: clean(idx.continent),
         country: clean(idx.country), region: clean(idx.region), muni: clean(idx.muni) };
       const icao  = clean(idx.ident);
       if (icao.length === 4)  AIRPORT_COORDS[icao]  = entry;
@@ -560,9 +561,26 @@ function airportMeta(icao){
 // ═══════════════════════════════════════════════════════
 // FLEET DATABASE (aircraft images via public Google Drive)
 // ═══════════════════════════════════════════════════════
-const FLEET_URL='https://opensheet.elk.sh/1XTljWsk86qbTZq4mfWsfHYojv9Uv5iMoN_ilAkT5WmE/ABEL%20JETS%20EXTENDED%20PACK%20%5B8.0%5D%20UPDATES';
+// Headers live on row 6 of the fleet sheet (rows 1-5 are banners), so opensheet
+// can't parse it — use Google's GViz CSV export with an explicit range instead.
+const FLEET_URL='https://docs.google.com/spreadsheets/d/1XTljWsk86qbTZq4mfWsfHYojv9Uv5iMoN_ilAkT5WmE/gviz/tq?tqx=out:csv&sheet=ABEL%20JETS%20EXTENDED%20PACK%20%5B8.0%5D%20UPDATES&range=A6:P';
 let FLEET_BY_REG={};
 let _dbgFleet=0;
+
+// Minimal CSV parser (handles quoted fields, escaped quotes, newlines in cells)
+function parseCSV(text){
+  const rows=[];let row=[],cur='',inQ=false;
+  for(let i=0;i<text.length;i++){
+    const ch=text[i];
+    if(inQ){ if(ch==='"'){ if(text[i+1]==='"'){cur+='"';i++;} else inQ=false; } else cur+=ch; }
+    else if(ch==='"') inQ=true;
+    else if(ch===','){row.push(cur);cur='';}
+    else if(ch==='\n'){row.push(cur);rows.push(row);row=[];cur='';}
+    else if(ch!=='\r') cur+=ch;
+  }
+  if(cur!==''||row.length){row.push(cur);rows.push(row);}
+  return rows;
+}
 
 // Extract a Google Drive file id from any share-link form and build a direct thumbnail URL.
 function driveThumb(url,size){
@@ -584,7 +602,15 @@ function pick(row,keywords){
 async function fetchFleetDB(){
   try{
     const res=await fetch(FLEET_URL);
-    const rows=await res.json();
+    const text=await res.text();
+    const grid=parseCSV(text);
+    if(grid.length<2) throw new Error('Fleet sheet empty or unreadable');
+    const headers=grid[0].map(h=>h.trim());
+    const rows=grid.slice(1).map(cells=>{
+      const o={};
+      headers.forEach((h,i)=>{ if(h) o[h]=cells[i]||''; });
+      return o;
+    });
     const map={};
     rows.forEach(row=>{
       const reg=pick(row,['registration']) || row['REGISTRATION'] || '';
@@ -1097,19 +1123,34 @@ function buildAirports(){
 }
 
 // ═══════════════════════════════════════════════════════
-// NATION LABELS (low-detail view when zoomed out)
+// LEVEL-OF-DETAIL LABELS
+// close → airport ICAOs · mid → country pills · far → continent pills
 // ═══════════════════════════════════════════════════════
-let nationMarkers=[];
-const NATION_ZOOM=3.6; // camZ beyond this → nation codes instead of airport ICAOs
+let nationMarkers=[], continentMarkers=[];
+const ZOOM_NATION=3.2;    // camZ beyond this → country pills
+const ZOOM_CONTINENT=4.6; // camZ beyond this → continent pills
+const CONTINENT_NAMES={AS:'ASIA',EU:'EUROPE',NA:'N AMERICA',SA:'S AMERICA',
+  AF:'AFRICA',OC:'OCEANIA',AN:'ANTARCTICA'};
 
+function labelBand(){
+  if(camZ>ZOOM_CONTINENT&&continentMarkers.length) return 'continent';
+  if(camZ>ZOOM_NATION&&nationMarkers.length) return 'nation';
+  return 'airport';
+}
+function focusCentroid(centroid,zoom){
+  trgZ=zoom;
+  const c=centroid.clone().normalize();
+  trgY=Math.atan2(-c.x,c.z);
+  trgX=Math.asin(Math.max(-1,Math.min(1,c.y)));
+}
 function buildNationLabels(seen){
-  nationMarkers=[];
-  const byCountry={};
+  nationMarkers=[]; continentMarkers=[];
+  const byCountry={}, byContinent={};
   Object.values(seen).forEach(ap=>{
     const meta=AIRPORT_COORDS[ap.icao];
-    const cc=meta&&meta.country;
-    if(!cc) return;
-    (byCountry[cc]=byCountry[cc]||[]).push(ap);
+    if(!meta) return;
+    if(meta.country) (byCountry[meta.country]=byCountry[meta.country]||[]).push(ap);
+    if(meta.continent) (byContinent[meta.continent]=byContinent[meta.continent]||[]).push(ap);
   });
   Object.entries(byCountry).forEach(([cc,aps])=>{
     const centroid=new THREE.Vector3();
@@ -1119,15 +1160,21 @@ function buildNationLabels(seen){
     lbl.className='albl nation';
     lbl.innerHTML=`${countryFlag(cc)} ${cc}<span class="albl-count">${aps.length}</span>`;
     lbl.title=aps.map(a=>a.icao).join(' · ');
-    lbl.addEventListener('click',()=>{
-      // Zoom into this nation
-      trgZ=2.2;
-      const c=centroid.clone().normalize();
-      trgY=Math.atan2(-c.x,c.z);
-      trgX=Math.asin(Math.max(-1,Math.min(1,c.y)));
-    });
+    lbl.addEventListener('click',()=>focusCentroid(centroid,2.2));
     document.body.appendChild(lbl);
     nationMarkers.push({cc,pos:centroid,lbl,icaos:aps.map(a=>a.icao)});
+  });
+  Object.entries(byContinent).forEach(([code,aps])=>{
+    const centroid=new THREE.Vector3();
+    aps.forEach(ap=>centroid.add(ll2v(ap.lat,ap.lon,1)));
+    centroid.normalize().multiplyScalar(1.02);
+    const lbl=document.createElement('div');
+    lbl.className='albl nation';
+    lbl.innerHTML=`${CONTINENT_NAMES[code]||code}<span class="albl-count">${aps.length}</span>`;
+    lbl.title=aps.map(a=>a.icao).join(' · ');
+    lbl.addEventListener('click',()=>focusCentroid(centroid,3.8));
+    document.body.appendChild(lbl);
+    continentMarkers.push({code,pos:centroid,lbl,icaos:aps.map(a=>a.icao)});
   });
 }
 
@@ -1326,25 +1373,30 @@ function animate(){
   updateLabels();
 }
 
+function projectLabel(mk){
+  const world=mk.pos.clone().applyMatrix4(globe.matrixWorld);
+  const proj=world.clone().project(camera);
+  const visible=proj.z<1&&world.clone().normalize().dot(world.clone().sub(camera.position).normalize())<-0.12;
+  mk.lbl.style.left=((proj.x+1)/2*innerWidth)+'px';
+  mk.lbl.style.top=((-proj.y+1)/2*innerHeight)+'px';
+  return visible;
+}
 function updateLabels(){
   if(!globe||!camera)return;
-  const far=camZ>NATION_ZOOM&&nationMarkers.length>0;
+  const band=labelBand();
   airportMarkers.forEach(mk=>{
-    const world=mk.pos.clone().applyMatrix4(globe.matrixWorld);
-    const proj=world.clone().project(camera);
-    const visible=proj.z<1&&world.clone().normalize().dot(world.clone().sub(camera.position).normalize())<-0.12;
-    mk.lbl.style.left=((proj.x+1)/2*innerWidth)+'px';
-    mk.lbl.style.top=((-proj.y+1)/2*innerHeight)+'px';
-    mk.lbl.classList.toggle('show',!far&&visible&&mk.dot.visible);
+    const visible=projectLabel(mk);
+    mk.lbl.classList.toggle('show',band==='airport'&&visible&&mk.dot.visible);
   });
   nationMarkers.forEach(nm=>{
     const anyVisible=airportMarkers.some(mk=>nm.icaos.includes(mk.icao)&&mk.dot.visible);
-    const world=nm.pos.clone().applyMatrix4(globe.matrixWorld);
-    const proj=world.clone().project(camera);
-    const visible=proj.z<1&&world.clone().normalize().dot(world.clone().sub(camera.position).normalize())<-0.12;
-    nm.lbl.style.left=((proj.x+1)/2*innerWidth)+'px';
-    nm.lbl.style.top=((-proj.y+1)/2*innerHeight)+'px';
-    nm.lbl.classList.toggle('show',far&&visible&&anyVisible);
+    const visible=projectLabel(nm);
+    nm.lbl.classList.toggle('show',band==='nation'&&visible&&anyVisible);
+  });
+  continentMarkers.forEach(cm=>{
+    const anyVisible=airportMarkers.some(mk=>cm.icaos.includes(mk.icao)&&mk.dot.visible);
+    const visible=projectLabel(cm);
+    cm.lbl.classList.toggle('show',band==='continent'&&visible&&anyVisible);
   });
 }
 
