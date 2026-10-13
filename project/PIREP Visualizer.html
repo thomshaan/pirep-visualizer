@@ -352,6 +352,13 @@ body.panel-collapsed #panelToggle{right:0;}
  .hdr{padding:10px 10px!important}.hdr-brand{max-width:calc(100vw - 100px)}.hdr-sub{max-width:190px}
  .zulu-clock{gap:5px!important;font-size:9px!important}.wx-toggle{top:105px}.wx-panel{top:149px}
 }
+/* WEATHER MAP MARKERS + VOLCANIC ASH BOUNDARIES */
+.wx-map-badge{position:fixed;z-index:18;display:none;transform:translate(-50%,-100%);width:25px;height:25px;border:1px solid rgba(255,125,91,.85);border-radius:50%;background:rgba(35,12,25,.96);color:#ff9479;box-shadow:0 0 14px rgba(255,92,72,.48);font:700 14px/23px var(--fm);text-align:center;cursor:help;pointer-events:auto}
+.wx-map-badge:hover,.wx-map-badge:focus{z-index:60;outline:1px solid #ffd6a5}
+.wx-map-tip{position:absolute;left:30px;top:-7px;display:none;width:min(300px,70vw);padding:10px 12px;border:1px solid rgba(255,125,91,.55);border-radius:8px;background:rgba(24,9,20,.98);box-shadow:0 10px 32px #0009;color:#f5e6da;text-align:left;white-space:normal;font:10px/1.5 var(--fm);overflow-wrap:anywhere}
+.wx-map-badge:hover .wx-map-tip,.wx-map-badge:focus .wx-map-tip{display:block}
+.wx-map-tip strong{display:block;color:#ffb39a;font-size:11px;margin-bottom:4px}.wx-map-tip .wx-tip-raw{color:#b9c9c6;margin-top:5px}
+.wx-map-status{font:9px/1.5 var(--fm);color:#ffbf84;margin-top:8px}.wx-map-status.ok{color:#8de8cb}
 </style>
 </head>
 <body>
@@ -376,9 +383,9 @@ body.panel-collapsed #panelToggle{right:0;}
 <button class="wx-toggle" id="wxToggle" type="button" aria-expanded="false" aria-controls="wxPanel" onclick="toggleWeatherPanel()"><span class="wx-led"></span><span>LIVE WEATHER</span><span id="wxToggleCount">WX</span></button>
 <section class="wx-panel" id="wxPanel" hidden aria-label="Live airport weather">
   <div class="wx-head"><div class="wx-title">FLIGHT WEATHER</div><button class="wx-close" type="button" aria-label="Close weather panel" onclick="toggleWeatherPanel(false)">×</button></div>
-  <div class="wx-sub" id="wxStatus">LIVE METAR · SELECT A FLIGHT TO UPDATE</div><div id="wxStations"><div class="wx-note">Open the weather panel to fetch current METAR observations for this flight's departure and arrival airports.</div></div>
+  <div class="wx-sub" id="wxStatus">LIVE METAR · SELECT A FLIGHT TO UPDATE</div><div class="wx-map-status" id="wxMapStatus">GLOBE OVERLAYS · OPEN WEATHER TO LOAD</div><div id="wxStations"><div class="wx-note">Open the weather panel to fetch current METAR observations for this flight's departure and arrival airports.</div></div>
   <button class="wx-refresh" id="wxRefresh" type="button" onclick="refreshFlightWeather()">↻ REFRESH METAR</button>
-  <div class="wx-note">Source: Aviation Weather Center. METAR is an airport observation, not a forecast. Global storm and volcanic-ash polygons are a possible next phase.</div>
+  <div class="wx-note">Source: Aviation Weather Center. Airport icons appear only for adverse observations. Ash boundaries use active aviation SIGMET geometry when available.</div>
 </section>
 
 <!-- HEADER -->
@@ -981,7 +988,7 @@ function buildAirports(){
   // Remove old markers
   airportMarkers.forEach(m=>{globe.remove(m.dot);globe.remove(m.halo);globe.remove(m.ring);});
   airportMarkers=[]; pulseRings=[];
-  document.querySelectorAll('.albl').forEach(el=>el.remove());
+  document.querySelectorAll('.albl,.wx-map-badge').forEach(el=>el.remove());
 
   // Collect unique airports from current PIREPs
   const seen={};
@@ -1015,7 +1022,8 @@ function buildAirports(){
     lbl.addEventListener('click',()=>handleLabelClick(ap.icao,lbl));
     document.body.appendChild(lbl);
 
-    airportMarkers.push({icao:ap.icao,dot,halo,ring,pos:v.clone(),lbl,filterVisible:true,hemisphereVisible:true});
+    const wxBadge=document.createElement('button');wxBadge.type='button';wxBadge.className='wx-map-badge';wxBadge.id='wx-badge-'+ap.icao;wxBadge.setAttribute('aria-label','Weather alert at '+ap.icao);wxBadge.innerHTML='⚠<span class="wx-map-tip"><strong>'+wxEsc(ap.icao)+' · WEATHER ALERT</strong>Waiting for the latest METAR…</span>';document.body.appendChild(wxBadge);
+    airportMarkers.push({icao:ap.icao,lat:Number(ap.lat),lon:Number(ap.lon),name:ap.name||ap.icao,dot,halo,ring,pos:v.clone(),lbl,wxBadge,wxData:null,wxBad:false,filterVisible:true,hemisphereVisible:true});
   });
 }
 
@@ -1292,7 +1300,7 @@ function toggleWeatherPanel(force){
  const panel=document.getElementById('wxPanel'),button=document.getElementById('wxToggle');
  const open=typeof force==='boolean'?force:panel.hidden;
  panel.hidden=!open;button.setAttribute('aria-expanded',String(open));
- if(open)refreshFlightWeather();
+ if(open){weatherMapOn=true;refreshFlightWeather();refreshGlobeWeather();}else{weatherMapOn=false;airportMarkers.forEach(m=>{if(m.wxBadge)m.wxBadge.style.display='none';});clearAshOverlay();}
 }
 function wxIconFor(raw){
  const s=String(raw||'').toUpperCase();let file='cloudy';
@@ -1336,6 +1344,44 @@ async function refreshFlightWeather(){
 // ═══════════════════════════════════════════════════════
 // HEADER STATS
 // ═══════════════════════════════════════════════════════
+/* Globe weather overlays: adverse airport METAR badges + SIGMET volcanic-ash boundaries. */
+let weatherMapOn=false,_wxMapLoading=false,_wxMapLastFetch=0,ashOverlay=null;
+function setWxMapStatus(msg,ok=false){const el=document.getElementById('wxMapStatus');if(el){el.textContent=msg;el.classList.toggle('ok',!!ok);}}
+function clearAshOverlay(){if(ashOverlay&&globe){globe.remove(ashOverlay);ashOverlay.traverse(o=>{if(o.geometry)o.geometry.dispose();if(o.material){if(Array.isArray(o.material))o.material.forEach(m=>m.dispose());else o.material.dispose();}});}ashOverlay=null;}
+function isAdverseMetar(m){const cat=String(m.fltCat||'').toUpperCase(),wx=String(m.wxString||'').toUpperCase(),raw=String(m.rawOb||'').toUpperCase();return ['LIFR','IFR','MVFR'].includes(cat)||/(\+RA|\+SN|\+TS|\bTS|\bFG\b|\bFZ|\bSQ\b|\bVA\b|\bDS\b|\bSS\b|\bGR\b|\bGS\b)/.test(wx+' '+raw);}
+function renderAirportWeather(data){
+ const byId={};(Array.isArray(data)?data:[]).forEach(m=>{if(m.icaoId)byId[String(m.icaoId).toUpperCase()]=m;});
+ airportMarkers.forEach(mk=>{const m=byId[mk.icao];mk.wxData=m||null;mk.wxBad=!!m&&isAdverseMetar(m);if(!mk.wxBadge)return;
+ if(!m){mk.wxBadge.innerHTML='⚠<span class="wx-map-tip"><strong>'+wxEsc(mk.icao)+' · NO RECENT METAR</strong>No observation returned in the last two hours.</span>';return;}
+ const cat=String(m.fltCat||'UNKNOWN').toUpperCase(),raw=m.rawOb||'METAR unavailable',wx=m.wxString||'No significant weather',obs=m.obsTime?new Date(m.obsTime*1000).toISOString().replace('T',' ').slice(0,16)+'Z':'Time unavailable';
+ const icon=/TS/.test(wx)?'⛈':/(RA|DZ|SN|SH)/.test(wx)?'🌧':/(FG|BR|HZ)/.test(wx)?'🌫':'⚠';
+ mk.wxBadge.innerHTML=icon+'<span class="wx-map-tip"><strong>'+wxEsc(mk.icao)+' · '+wxEsc(cat)+'</strong>'+wxEsc(mk.name||mk.icao)+'<br>'+wxEsc(wx)+' · '+wxEsc(m.temp===undefined?'—':Math.round(Number(m.temp))+'°C')+'<br>Wind '+wxEsc(m.wdir??'VRB')+'° / '+wxEsc(m.wspd??'—')+' kt<br>Observed '+wxEsc(obs)+'<div class="wx-tip-raw">'+wxEsc(raw)+'</div></span>';
+ mk.wxBadge.setAttribute('aria-label',mk.icao+' '+cat+' '+raw);});
+}
+async function refreshGlobeWeather(force=false){
+ if(_wxMapLoading||(!force&&Date.now()-_wxMapLastFetch<300000)||!weatherMapOn)return;
+ _wxMapLoading=true;setWxMapStatus('LOADING AIRPORT METAR + SIGMET HAZARDS…');
+ try{
+  const ids=[...new Set(airportMarkers.map(m=>m.icao).filter(id=>/^[A-Z0-9]{4}$/.test(id)))].slice(0,390);
+  if(ids.length){const r=await fetch('https://aviationweather.gov/api/data/metar?ids='+encodeURIComponent(ids.join(','))+'&format=json&hours=2',{cache:'no-store'});if(!r.ok)throw Error('METAR HTTP '+r.status);renderAirportWeather(await r.json());}
+  let ashCount=0;
+  try{
+   const r=await fetch('https://aviationweather.gov/api/data/airsigmet?format=geojson',{cache:'no-store'});if(!r.ok)throw Error('SIGMET HTTP '+r.status);const geo=await r.json();
+   const features=(geo.features||[]).filter(f=>{const p=f.properties||{},txt=Object.entries(p).map(([k,v])=>k+' '+String(v??'')).join(' ');return /volcanic ash|\bVA\b|ASH CLOUD/i.test(txt)&&f.geometry&&['Polygon','MultiPolygon'].includes(f.geometry.type);});
+   clearAshOverlay();
+   if(features.length&&globe){ashOverlay=new THREE.Group();ashOverlay.name='Volcanic Ash Advisory Boundaries';
+    features.forEach(f=>{const polys=f.geometry.type==='Polygon'?[f.geometry.coordinates]:f.geometry.coordinates,p=f.properties||{},title=Object.entries(p).filter(([k])=>/volcano|phenom|hazard|raw|valid|start|end|fir|sigmet|alt|time/i.test(k)).map(([k,v])=>k+': '+String(v??'')).join(' · ').slice(0,700)||'Volcanic ash SIGMET';
+     polys.forEach(poly=>{const ring=poly&&poly[0];if(!Array.isArray(ring)||ring.length<3)return;const points=ring.map(c=>ll2v(Number(c[1]),Number(c[0]),1.018));
+      const line=new THREE.LineLoop(new THREE.BufferGeometry().setFromPoints(points),new THREE.LineBasicMaterial({color:0xff7b55,transparent:true,opacity:.95,depthWrite:false}));line.userData.ashInfo=title;ashOverlay.add(line);
+      const center=points.reduce((a,v)=>a.add(v),new THREE.Vector3()).normalize().multiplyScalar(1.016),verts=[];for(let i=0;i<points.length;i++){const a=points[i],b=points[(i+1)%points.length];verts.push(center.x,center.y,center.z,a.x,a.y,a.z,b.x,b.y,b.z);}
+      const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(verts,3));g.computeVertexNormals();const fill=new THREE.Mesh(g,new THREE.MeshBasicMaterial({color:0xff684d,transparent:true,opacity:.12,side:THREE.DoubleSide,depthWrite:false}));fill.userData.ashInfo=title;ashOverlay.add(fill);});
+    });globe.add(ashOverlay);ashCount=features.length;}
+   setWxMapStatus('GLOBE OVERLAYS ON · '+ids.length+' AIRPORTS · '+ashCount+' ASH ADVISORY AREA(S)',true);
+  }catch(e){setWxMapStatus('AIRPORT METAR LOADED · ASH FEED UNAVAILABLE ('+wxEsc(e.message)+')');}
+  _wxMapLastFetch=Date.now();
+ }catch(e){setWxMapStatus('WEATHER MAP FEED UNAVAILABLE ('+wxEsc(e.message)+')');}finally{_wxMapLoading=false;}
+}
+
 function updateStats(){
   const set=activeFilter?PIREPS.filter(p=>p.pilot.toLowerCase().includes(activeFilter.toLowerCase())):PIREPS;
   document.getElementById('statFlights').textContent=String(set.length).padStart(2,'0');
