@@ -360,20 +360,23 @@ body.panel-collapsed #panelToggle{right:0;}
 .wx-map-tip strong{display:block;color:#ffb39a;font-size:11px;margin-bottom:4px}.wx-map-tip .wx-tip-raw{color:#b9c9c6;margin-top:5px}
 .wx-map-status{font:9px/1.5 var(--fm);color:#ffbf84;margin-top:8px}.wx-map-status.ok{color:#8de8cb}
 
-/* POST-LOAD WEATHER/TIME CONTROLS + METAR CHECK */
-.zulu-clock{top:58px!important;opacity:0;visibility:hidden;transition:opacity .35s ease,visibility .35s ease}
-.wx-toggle{top:118px!important;opacity:0;visibility:hidden;transition:opacity .35s ease,visibility .35s ease}
-body.map-ready .zulu-clock,body.map-ready .wx-toggle{opacity:1;visibility:visible}
-.wx-panel{top:166px!important}
-.metar-check{display:flex;gap:7px;margin:10px 0 12px}
-.metar-check input{min-width:0;width:100%;flex:1;border:1px solid rgba(92,218,193,.3);border-radius:7px;background:#101c22;color:#e9f5f4;padding:10px;font:700 11px var(--fm);text-transform:uppercase;outline:none}
-.metar-check input:focus{border-color:#65e5ca}
-.metar-check button{border:1px solid rgba(92,218,193,.4);border-radius:7px;background:#15302f;color:#c4fff2;padding:0 11px;font:700 9px var(--fm);letter-spacing:.06em;cursor:pointer;white-space:nowrap}
-.metar-check-result{border:1px solid rgba(92,218,193,.2);border-radius:8px;padding:11px;margin-bottom:12px;background:rgba(18,34,37,.55);font:10px/1.6 var(--fm);overflow-wrap:anywhere}
-.metar-check-result:empty{display:none}
-.metar-check-result strong{color:#baf8e9}
-@media(max-width:760px){.zulu-clock{top:54px!important;font-size:10px!important;padding:7px 12px!important}.wx-toggle{top:104px!important;left:12px!important}.wx-panel{top:150px!important;left:12px!important;width:calc(100vw - 24px)!important;max-height:calc(100dvh - 170px)!important}}
-
+/* POST-LOAD ZULU CLOCK + SIMPLE METAR CHECK */
+ .zulu-clock{top:14px!important;left:50%!important;transform:translateX(-50%);opacity:0;visibility:hidden;transition:opacity .35s ease,visibility .35s ease}
+ body.map-ready .zulu-clock{opacity:1;visibility:visible}
+ .wx-toggle{opacity:0;visibility:hidden;transition:opacity .35s ease,visibility .35s ease}
+ body.map-ready .wx-toggle{opacity:1;visibility:visible}
+ .wx-panel{top:66px!important}
+ .metar-check{display:flex;gap:7px;margin:10px 0 12px}
+ .metar-check input{min-width:0;width:100%;flex:1;border:1px solid rgba(92,218,193,.3);border-radius:7px;background:#101c22;color:#e9f5f4;padding:10px;font:700 11px var(--fm);text-transform:uppercase;outline:none}
+ .metar-check input:focus{border-color:#65e5ca}
+ .metar-check button{border:1px solid rgba(92,218,193,.4);border-radius:7px;background:#15302f;color:#c4fff2;padding:0 11px;font:700 9px var(--fm);letter-spacing:.06em;cursor:pointer;white-space:nowrap}
+ .metar-check-result{border:1px solid rgba(92,218,193,.2);border-radius:8px;padding:11px;margin-bottom:12px;background:rgba(18,34,37,.55);font:10px/1.6 var(--fm);overflow-wrap:anywhere}
+ .metar-check-result:empty{display:none}
+ .metar-check-result strong{color:#baf8e9}
+ /* Weather-map overlays are disabled; METAR remains a manual lookup only. */
+ .wx-map-badge{display:none!important}
+ @media(max-width:760px){.zulu-clock{top:12px!important;left:50%!important;max-width:calc(100vw - 170px);padding:7px 9px!important;gap:5px!important;font-size:9px!important;letter-spacing:.03em!important}.zulu-clock #zuluDate{font-size:7px!important;letter-spacing:0!important}.wx-panel{top:62px!important;left:12px!important;width:calc(100vw - 24px)!important;max-height:calc(100dvh - 80px)!important}}
+ @media(max-width:420px){.zulu-clock{left:auto!important;right:10px!important;transform:none!important;max-width:calc(100vw - 170px);font-size:8px!important;padding:6px 7px!important}.zulu-clock #zuluDate{display:none!important}}
 </style>
 </head>
 <body>
@@ -394,14 +397,15 @@ body.map-ready .zulu-clock,body.map-ready .wx-toggle{opacity:1;visibility:visibl
   <span id="zuluDate" style="color:var(--dim);font-weight:400;font-size:10px;letter-spacing:.12em"></span>
 </div>
 
-<!-- LIVE WEATHER: METAR drawer, opt-in to keep the globe uncluttered -->
-<button class="wx-toggle" id="wxToggle" type="button" aria-expanded="false" aria-controls="wxPanel" onclick="toggleWeatherPanel()"><span class="wx-led"></span><span>METAR CHECK</span><span id="wxToggleCount">WX</span></button>
-<section class="wx-panel" id="wxPanel" hidden aria-label="Live airport weather">
-  <div class="wx-head"><div class="wx-title">METAR CHECK</div><button class="wx-close" type="button" aria-label="Close weather panel" onclick="toggleWeatherPanel(false)">×</button></div>
-  <div class="wx-sub" id="wxStatus">LIVE METAR · SELECT A FLIGHT TO UPDATE</div><div class="wx-map-status" id="wxMapStatus">GLOBE OVERLAYS · OPEN WEATHER TO LOAD</div><form class="metar-check" onsubmit="event.preventDefault();checkMetarByCode();"><input id="metarIcaoInput" aria-label="Airport ICAO code" maxlength="4" minlength="4" pattern="[A-Za-z0-9]{4}" placeholder="AIRPORT ICAO · e.g. WIII" autocomplete="off" required><button type="submit">CHECK</button></form><div class="metar-check-result" id="metarCheckResult" aria-live="polite"></div><div id="wxStations"><div class="wx-note">Open the weather panel to fetch current METAR observations for this flight's departure and arrival airports.</div></div>
-  <button class="wx-refresh" id="wxRefresh" type="button" onclick="refreshFlightWeather()">↻ REFRESH METAR</button>
-  <div class="wx-note">Source: Aviation Weather Center. Airport icons appear only for adverse observations. Ash boundaries use active aviation SIGMET geometry when available.</div>
-</section>
+<!-- MANUAL METAR CHECK (direct browser lookup currently blocked by source CORS policy) -->
+ <button class="wx-toggle" id="wxToggle" type="button" aria-expanded="false" aria-controls="wxPanel" onclick="toggleWeatherPanel()"><span class="wx-led"></span><span>METAR CHECK</span></button>
+ <section class="wx-panel" id="wxPanel" hidden aria-label="METAR checker">
+   <div class="wx-head"><div class="wx-title">METAR CHECK</div><button class="wx-close" type="button" aria-label="Close METAR checker" onclick="toggleWeatherPanel(false)">×</button></div>
+   <div class="wx-sub">AIRPORT OBSERVATION · ICAO CODE</div>
+   <form class="metar-check" onsubmit="event.preventDefault();checkMetarByCode();"><input id="metarIcaoInput" aria-label="Airport ICAO code" maxlength="4" minlength="4" pattern="[A-Za-z0-9]{4}" placeholder="ICAO · e.g. WIII" autocomplete="off" required><button type="submit">CHECK</button></form>
+   <div class="metar-check-result" id="metarCheckResult" aria-live="polite"></div>
+   <div class="wx-note">Live lookup is temporarily unavailable in this browser because the source API does not permit cross-origin reads. A backend proxy is needed to enable results.</div>
+ </section>
 
 <!-- HEADER -->
 <div class="hdr">
@@ -1038,7 +1042,7 @@ function buildAirports(){
     lbl.addEventListener('click',()=>handleLabelClick(ap.icao,lbl));
     document.body.appendChild(lbl);
 
-    const wxBadge=document.createElement('button');wxBadge.type='button';wxBadge.className='wx-map-badge';wxBadge.id='wx-badge-'+ap.icao;wxBadge.setAttribute('aria-label','Weather alert at '+ap.icao);wxBadge.innerHTML='⚠<span class="wx-map-tip"><strong>'+wxEsc(ap.icao)+' · WEATHER ALERT</strong>Waiting for the latest METAR…</span>';document.body.appendChild(wxBadge);
+    const wxBadge=null;
     airportMarkers.push({icao:ap.icao,lat:Number(ap.lat),lon:Number(ap.lon),name:ap.name||ap.icao,dot,halo,ring,pos:v.clone(),lbl,wxBadge,wxData:null,wxBad:false,filterVisible:true,hemisphereVisible:true});
   });
 }
@@ -1278,7 +1282,7 @@ function updateLabels(){
     mk.lbl.style.left=((proj.x+1)/2*innerWidth)+'px';
     mk.lbl.style.top=((-proj.y+1)/2*innerHeight)+'px';
     mk.lbl.classList.toggle('show',visible&&mk.dot.visible);
-    if(mk.wxBadge){mk.wxBadge.style.left=mk.lbl.style.left;mk.wxBadge.style.top=(parseFloat(mk.lbl.style.top||'0')-18)+'px';mk.wxBadge.style.display=weatherMapOn&&mk.wxBad&&visible&&mk.dot.visible?'block':'none';}
+    
   });
 }
 
@@ -1311,69 +1315,23 @@ function updateZulu(){
 updateZulu();
 setInterval(()=>{updateZulu();renderBottomBar();},1000);
 
-/* Optional live weather panel: only fetches METAR when opened/refreshed. */
-let _wxLoading=false;
-function toggleWeatherPanel(force){
- const panel=document.getElementById('wxPanel'),button=document.getElementById('wxToggle');
- const open=typeof force==='boolean'?force:panel.hidden;
- panel.hidden=!open;button.setAttribute('aria-expanded',String(open));
- if(open){weatherMapOn=true;refreshFlightWeather();refreshGlobeWeather();}else{weatherMapOn=false;airportMarkers.forEach(m=>{if(m.wxBadge)m.wxBadge.style.display='none';});clearAshOverlay();}
-}
-function wxIconFor(raw){
- const s=String(raw||'').toUpperCase();let file='cloudy';
- if(/TS|THUNDER/.test(s))file='thunderstorms';
- else if(/SN|SG|PL|IC/.test(s))file='snow';
- else if(/RA|DZ|SH/.test(s))file='rain';
- else if(/FG|BR|HZ|FU/.test(s))file='fog';
- else if(/SKC|CLR|CAVOK/.test(s))file='clear-day';
- else if(/FEW|SCT/.test(s))file='partly-cloudy-day';
- return 'https://raw.githubusercontent.com/Makin-Things/weather-icons/main/animated/'+file+'.svg';
-}
-function wxTemp(v){return v===undefined||v===null||v===''?'—':Math.round(Number(v))+'°C'}
-function wxEsc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
-async function checkMetarByCode(){
- const input=document.getElementById('metarIcaoInput'),out=document.getElementById('metarCheckResult');
- const code=String(input.value||'').trim().toUpperCase();
- if(!/^[A-Z0-9]{4}$/.test(code)){out.innerHTML='<strong>INVALID ICAO CODE</strong><br>Enter a four-character airport ICAO code.';return;}
- input.value=code;out.innerHTML='FETCHING METAR FOR '+wxEsc(code)+'…';
- try{
-  const response=await fetch('https://aviationweather.gov/api/data/metar?ids='+encodeURIComponent(code)+'&format=json&hours=2',{cache:'no-store'});
-  if(!response.ok)throw new Error('METAR service returned '+response.status);
-  const data=await response.json(),m=(Array.isArray(data)?data:[]).find(x=>String(x.icaoId||'').toUpperCase()===code);
-  if(!m){out.innerHTML='<strong>'+wxEsc(code)+' · NO RECENT METAR</strong><br>No observation was returned within the last two hours.';return;}
-  const obs=m.obsTime?new Date(m.obsTime*1000).toISOString().replace('T',' ').slice(0,16)+'Z':'Time unavailable';
-  out.innerHTML='<strong>'+wxEsc(code)+' · '+wxEsc(m.fltCat||'CATEGORY UNKNOWN')+'</strong><br>'+wxEsc(m.wxString||'No significant weather reported')+'<br>Temperature '+wxEsc(wxTemp(m.temp))+' · Dew point '+wxEsc(wxTemp(m.dewp))+'<br>Wind '+wxEsc(m.wdir??'VRB')+'° / '+wxEsc(m.wspd??'—')+' kt<br>Visibility '+wxEsc(m.visib??'—')+' · Altimeter '+wxEsc(m.altim??'—')+'<br>Observed '+wxEsc(obs)+'<div class="wx-tip-raw">'+wxEsc(m.rawOb||'Raw METAR unavailable')+'</div>';
- }catch(e){out.innerHTML='<strong>METAR LOOKUP FAILED</strong><br>'+wxEsc(e.message)+'<br>Browser access to the weather service may be blocked; a small proxy may be required.';}
-}
-async function refreshFlightWeather(){
- if(_wxLoading)return;
- const btn=document.getElementById('wxRefresh'),status=document.getElementById('wxStatus'),stations=document.getElementById('wxStations');
- const flight=selectedPIREP||(typeof PIREPS!=='undefined'&&PIREPS[0])||(typeof FALLBACK_PIREPS!=='undefined'&&FALLBACK_PIREPS[0]);
- const airports=[flight&&flight.origin,flight&&flight.dest].filter(a=>a&&/^[A-Z0-9]{4}$/.test(String(a.icao||'').toUpperCase()));
- const ids=[...new Set(airports.map(a=>String(a.icao).toUpperCase()))];
- if(!ids.length){status.textContent='NO AIRPORT SELECTED';stations.innerHTML='<div class="wx-note">Select a flight with valid ICAO departure and arrival codes to view its latest observations.</div>';return}
- _wxLoading=true;btn.disabled=true;btn.textContent='FETCHING OBSERVATIONS…';status.textContent='CONTACTING AVIATION WEATHER CENTER…';
- try{
-  const response=await fetch('https://aviationweather.gov/api/data/metar?ids='+encodeURIComponent(ids.join(','))+'&format=json&hours=2',{cache:'no-store'});
-  if(!response.ok)throw new Error('METAR service returned '+response.status);
-  const data=await response.json(),byId={};
-  (Array.isArray(data)?data:[]).forEach(m=>{if(m.icaoId)byId[String(m.icaoId).toUpperCase()]=m});
-  stations.innerHTML=airports.map(a=>{
-   const icao=String(a.icao).toUpperCase(),m=byId[icao];
-   if(!m)return '<div class="wx-station"><div class="wx-station-top"><span class="wx-icao">'+wxEsc(icao)+' · '+wxEsc(a.name||'Airport')+'</span><span class="wx-category">NO REPORT</span></div><div class="wx-note">No METAR observation returned in the last two hours.</div></div>';
-   const raw=m.rawOb||'METAR unavailable',wx=m.wxString||'',cat=m.fltCat||'—';
-   const categoryColor=cat==='VFR'?'#72e3c4':cat==='MVFR'?'#8ecbff':cat==='IFR'?'#ff9f80':cat==='LIFR'?'#ff6c91':'#b4c7c7';
-   const obs=m.obsTime?new Date(m.obsTime*1000).toISOString().replace('T',' ').slice(0,16)+'Z':'Time unavailable';
-   return '<div class="wx-station"><div class="wx-station-top"><span class="wx-icao">'+wxEsc(icao)+' · '+wxEsc(a.name||'Airport')+'</span><span class="wx-category" style="color:'+categoryColor+'">'+wxEsc(cat)+'</span></div><div class="wx-observation"><img class="wx-icon" src="'+wxIconFor(wx)+'" alt="" onerror="this.style.display=\'none\'"><div><div class="wx-temp">'+wxTemp(m.temp)+'</div><div class="wx-desc">'+wxEsc(wx||'No significant weather')+' · Wind '+wxEsc(m.wdir===null||m.wdir===undefined?'VRB':m.wdir)+'°/'+wxEsc(m.wspd??0)+' kt</div></div></div><div class="wx-metar">'+wxEsc(raw)+'</div><div class="wx-note">Observed '+wxEsc(obs)+' · Visibility '+wxEsc(m.visib??'—')+' · Altimeter '+wxEsc(m.altim??'—')+'</div></div>';
-  }).join('');
-  status.textContent='UPDATED '+new Date().toISOString().slice(11,16)+'Z · '+ids.length+' STATION'+(ids.length===1?'':'S');
-  document.getElementById('wxToggleCount').textContent=ids.length+' METAR';
- }catch(e){status.textContent='WEATHER FEED UNAVAILABLE';stations.innerHTML='<div class="wx-note">Could not load live METAR right now. Check your connection or try again shortly. ('+wxEsc(e.message)+')</div>'}
- finally{_wxLoading=false;btn.disabled=false;btn.textContent='↻ REFRESH METAR'}
-}
+/* Manual METAR checker. The source currently blocks direct browser reads via CORS. */
+ function toggleWeatherPanel(force){
+  const panel=document.getElementById('wxPanel'),button=document.getElementById('wxToggle');
+  const open=typeof force==='boolean'?force:panel.hidden;
+  panel.hidden=!open;button.setAttribute('aria-expanded',String(open));
+ }
+ function wxEsc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+ function checkMetarByCode(){
+  const input=document.getElementById('metarIcaoInput'),out=document.getElementById('metarCheckResult');
+  const code=String(input.value||'').trim().toUpperCase();
+  if(!/^[A-Z0-9]{4}$/.test(code)){out.innerHTML='<strong>INVALID ICAO CODE</strong><br>Enter a four-character airport ICAO code.';return;}
+  input.value=code;
+  out.innerHTML='<strong>'+wxEsc(code)+' · LOOKUP NOT CONNECTED</strong><br>The Aviation Weather Center request is blocked by browser CORS policy. The request can return HTTP 200, but JavaScript cannot read the response. A small backend proxy is required before live METAR results can be shown.';
+ }
 
-// ═══════════════════════════════════════════════════════
-// HEADER STATS
+ // ═══════════════════════════════════════════════════════
+ // HEADER STATS
 // ═══════════════════════════════════════════════════════
 /* Globe weather overlays: adverse airport METAR badges + SIGMET volcanic-ash boundaries. */
 let weatherMapOn=false,_wxMapLoading=false,_wxMapLastFetch=0,ashOverlay=null;
