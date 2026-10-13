@@ -2608,7 +2608,7 @@ function renderPilotReport(){
   {name:'Thomas Septian Eliezer Siahaan',aliases:['Thomas Septian','Thomas Septian Eliezer Siahaan'],airport:'RCTP'},
   {name:'Lalu Muhamad Alhadad',aliases:['Lalu Muhammad Alhadad','Lalu Muhamad Alhadad'],airport:'OMAA'}
  ];
- const normalizePilotName=v=>String(v||'').toLowerCase().normalize('NFD').replace(/[\\u0300-\\u036f]/g,'').replace(/[^a-z0-9]/g,'');
+ const normalizePilotName=v=>String(v||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]/g,'');
  const isJomokPilot=jomokPilotProfiles.some(p=>p.aliases.some(n=>normalizePilotName(n)===normalizePilotName(name)));
  const jomokProfile=jomokPilotProfiles.find(p=>p.aliases.some(n=>normalizePilotName(n)===normalizePilotName(name)));
  const jomokGifs=['https://media.giphy.com/media/cEC8Yk946EcyiUlReU/giphy.gif','https://media.giphy.com/media/W46SPXpuxdSWflpOnF/giphy.gif','https://media.giphy.com/media/ETsG1pevQK80mA7sDV/giphy.gif','https://media.giphy.com/media/bTnjjJn4pJLFUa0CLP/giphy.gif','https://media.giphy.com/media/XFYr5mJDMz3mxB8gFC/giphy.gif'];
