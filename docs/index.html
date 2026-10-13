@@ -574,7 +574,38 @@ body.panel-collapsed #panelToggle{right:0;}
 .ph-wx-observed{font:10px/1.6 var(--fm);color:#9eb4b4;margin-top:7px}
 @media(max-width:760px){.ph-airport-summary{grid-template-columns:1fr}.ph-wx-visual{grid-template-columns:74px minmax(0,1fr);gap:10px}.ph-wx-visual .wx-scene{height:82px}.ph-wx-temp{font-size:25px}}
 
- </style>
+ 
+/* Pilot Journey readability — align text sizing with the Pilot Handbook */
+#opsReport{font-size:14px}
+#opsReport .ops-sub{font-size:13px;line-height:1.7;color:#b0c0c1}
+#opsReport .ops-kicker{font-size:10px}
+#opsReport .ops-select-wrap label{font-size:11px}
+#opsReport #pilotReportSelect{font-size:14px;padding:12px}
+#opsReport .ops-close{font-size:12px}
+#opsReport .ops-reward-label{font-size:13px!important;line-height:1.5}
+#opsReport .ops-reward-note{font-size:12px!important;line-height:1.65}
+#opsReport .ops-metric-label{font-size:10px;line-height:1.5}
+#opsReport .ops-metric-value{font-size:clamp(18px,2.3vw,26px)}
+#opsReport .ops-metric-note{font-size:11px;line-height:1.65}
+#opsReport .ops-panel-title{font-size:12px;line-height:1.6}
+#opsReport .ops-stat-row{font-size:13px;line-height:1.65}
+#opsReport .ops-stat-value{font-size:12px}
+#opsReport .ops-bar-head{font-size:12px;line-height:1.6}
+#opsReport .ops-bar-value{font-size:12px}
+#opsReport .ops-empty{font-size:13px;line-height:1.7}
+#opsReport .ops-personality-copy,#opsReport .ops-secret-desc{font-size:13px;line-height:1.75}
+#opsReport .ops-personality-title{font-size:18px}
+#opsReport .ops-personality-tag{font-size:10px}
+#opsReport .ops-section-title{font-size:13px}
+#opsReport .ops-badge,#opsReport .ops-achievement{font-size:12px;line-height:1.6}
+@media(max-width:760px){
+ #opsReport .ops-header-reward-art{width:132px;height:96px}
+ #opsReport .ops-reward-label{font-size:13px!important}
+ #opsReport .ops-reward-note{font-size:11px!important}
+ #opsReport .ops-stat-row{font-size:12px}
+}
+
+</style>
 </head>
 <body>
 
@@ -2572,12 +2603,18 @@ function openOpsReport(){const sel=document.getElementById('pilotReportSelect'),
 function closeOpsReport(){document.getElementById('opsReport').classList.remove('vis');}
 function renderPilotReport(){
  const name=document.getElementById('pilotReportSelect').value,all=PIREPS.filter(p=>p.pilot===name),el=document.getElementById('opsReportContent');
- const jomokPilots=['Muhammad Faza Abel Jonggara','Thomas Septian','Lalu Muhammad Alhadad'];
- const isJomokPilot=jomokPilots.some(n=>n.toLowerCase()===String(name||'').trim().toLowerCase());
+ const jomokPilotProfiles=[
+  {name:'Muhammad Faza Abel Jonggara Marpaung',aliases:['Muhammad Faza Abel Jonggara','Muhammad Faza Abel Jonggara Marpaung'],airport:'EGTC'},
+  {name:'Thomas Septian Eliezer Siahaan',aliases:['Thomas Septian','Thomas Septian Eliezer Siahaan'],airport:'RCTP'},
+  {name:'Lalu Muhamad Alhadad',aliases:['Lalu Muhammad Alhadad','Lalu Muhamad Alhadad'],airport:'OMAA'}
+ ];
+ const normalizePilotName=v=>String(v||'').toLowerCase().normalize('NFD').replace(/[\\u0300-\\u036f]/g,'').replace(/[^a-z0-9]/g,'');
+ const isJomokPilot=jomokPilotProfiles.some(p=>p.aliases.some(n=>normalizePilotName(n)===normalizePilotName(name)));
+ const jomokProfile=jomokPilotProfiles.find(p=>p.aliases.some(n=>normalizePilotName(n)===normalizePilotName(name)));
  const jomokGifs=['https://media.giphy.com/media/cEC8Yk946EcyiUlReU/giphy.gif','https://media.giphy.com/media/W46SPXpuxdSWflpOnF/giphy.gif','https://media.giphy.com/media/ETsG1pevQK80mA7sDV/giphy.gif','https://media.giphy.com/media/bTnjjJn4pJLFUa0CLP/giphy.gif','https://media.giphy.com/media/XFYr5mJDMz3mxB8gFC/giphy.gif'];
  const jomokReward={min:0,label:'JOMOK CLASSIFIED',emoji:'💀',gifUrl:jomokGifs[Math.floor(Math.random()*jomokGifs.length)]};
  const leaderboard=leaderboardHtml(name);
- if(!all.length){const noFlightReward=isJomokPilot?jomokReward:PILOT_GIF_TIERS[0],noFlightEvo=isJomokPilot?5:0;document.getElementById('opsHeaderReward').className='ops-header-reward evo-'+noFlightEvo;document.getElementById('opsHeaderReward').innerHTML='<div class="ops-header-reward-art">'+(noFlightReward.gifUrl?'<img src="'+escapeOps(noFlightReward.gifUrl)+'" alt="'+escapeOps(noFlightReward.label)+' GIF" loading="lazy">':'<span>'+noFlightReward.emoji+'</span>')+'</div><div class="ops-header-reward-copy"><div class="ops-reward-label">'+noFlightReward.label+'</div><div class="ops-reward-note">'+(isJomokPilot?'JOMOK OVERRIDE · PLANE PRIVILEGES REVOKED':'No flights loaded for this pilot yet.')+'</div></div>';el.innerHTML=leaderboard+'<div class="ops-empty">No pilot PIREPs found in the currently loaded data.</div>';return;}
+ if(!all.length){const noFlightReward=isJomokPilot?jomokReward:PILOT_GIF_TIERS[0],noFlightEvo=isJomokPilot?5:0;document.getElementById('opsHeaderReward').className='ops-header-reward evo-'+noFlightEvo;document.getElementById('opsHeaderReward').innerHTML='<div class="ops-header-reward-art">'+(noFlightReward.gifUrl?'<img src="'+escapeOps(noFlightReward.gifUrl)+'" alt="'+escapeOps(noFlightReward.label)+' GIF" loading="lazy">':'<span>'+noFlightReward.emoji+'</span>')+'</div><div class="ops-header-reward-copy"><div class="ops-reward-label">'+noFlightReward.label+'</div><div class="ops-reward-note">'+(isJomokPilot?'JOMOK OVERRIDE · '+jomokProfile.airport+' · PLANE PRIVILEGES REVOKED':'No flights loaded for this pilot yet.')+'</div></div>';el.innerHTML=leaderboard+'<div class="ops-empty">No pilot PIREPs found in the currently loaded data.</div>';return;}
  const fleet={},airports={},countries={},routes={},regs={},subs={},months={};let longest=null,shortest=null;
  let mins=0;all.forEach(p=>{mins+=airtimeToMinutes(p.airtime);const ac=(p.aircraft||'Unknown aircraft').trim();fleet[ac]=(fleet[ac]||0)+1;if(p.reg)regs[p.reg]=(regs[p.reg]||0)+1;if(p.subsidiary)subs[p.subsidiary]=(subs[p.subsidiary]||0)+1;
  [p.origin,p.dest].forEach(ap=>{const code=ap.icao||'?';if(!airports[code])airports[code]={n:0,name:ap.name||code};airports[code].n++;const cc=ap.country||AIRPORT_COORDS[code]?.country||inferCountryFromICAO(code)||'Unknown';countries[cc]=(countries[cc]||0)+1;});
@@ -2589,7 +2626,7 @@ function renderPilotReport(){
  const milestones=FLIGHT_MILESTONES.filter(n=>all.length>=n),days=new Set(all.map(p=>opsDate(p)?.toISOString().slice(0,10)).filter(Boolean)).size,sorted=[...all].sort((a,b)=>(opsDate(a)?.getTime()||0)-(opsDate(b)?.getTime()||0)),fbar=Object.entries(fleet).sort((a,b)=>b[1]-a[1]).slice(0,6),rbar=Object.entries(regs).sort((a,b)=>b[1]-a[1]).slice(0,5),journey=sorted.slice(-18).reverse();
  const routeText=x=>x?x.p.origin.icao+' → '+x.p.dest.icao+' · '+Math.round(x.km).toLocaleString()+' km':'—';
  const airportText=ap?airports[ap[0]].name+' ('+ap[0]+') · '+ap[1]+' visits':'—';
- const evo=isJomokPilot?5:PILOT_GIF_TIERS.findIndex(t=>t.min===reward.min);document.getElementById('opsHeaderReward').className='ops-header-reward evo-'+Math.max(0,evo);document.getElementById('opsHeaderReward').innerHTML='<div class="ops-header-reward-art">'+(reward.gifUrl?'<img src="'+escapeOps(reward.gifUrl)+'" alt="'+escapeOps(reward.label)+' plane reward" loading="lazy">':'<span>'+reward.emoji+'</span>')+'</div><div class="ops-header-reward-copy"><div class="ops-reward-label">'+reward.label+'</div><div class="ops-reward-note">'+(isJomokPilot?'JOMOK OVERRIDE · PLANE PRIVILEGES REVOKED':totalPoints.toLocaleString()+' pts · evolution stage '+(evo+1)+'/'+PILOT_GIF_TIERS.length)+'</div><div class="ops-reward-note">'+(isJomokPilot?'The algorithm has concerns.':'The GIF gets progressively more cursed as your score rises.')+'</div></div>';;const personality=pilotPersonality(all,totalKm,fleet,airports,routes),secrets=secretAchievements(all,totalKm,fleet,airports,routes,totalPoints);el.innerHTML=leaderboard+'<section class="ops-personality"><div class="ops-personality-icon">'+personality.icon+'</div><div><div class="ops-personality-tag">PILOT PSYCH EVALUATION</div><div class="ops-personality-title">'+personality.name+'</div><div class="ops-personality-tag">'+personality.tag+'</div><div class="ops-personality-copy">'+personality.copy+'</div></div></section>'+'<div class="ops-grid">'+
+ const evo=isJomokPilot?5:PILOT_GIF_TIERS.findIndex(t=>t.min===reward.min);document.getElementById('opsHeaderReward').className='ops-header-reward evo-'+Math.max(0,evo);document.getElementById('opsHeaderReward').innerHTML='<div class="ops-header-reward-art">'+(reward.gifUrl?'<img src="'+escapeOps(reward.gifUrl)+'" alt="'+escapeOps(reward.label)+' plane reward" loading="lazy">':'<span>'+reward.emoji+'</span>')+'</div><div class="ops-header-reward-copy"><div class="ops-reward-label">'+reward.label+'</div><div class="ops-reward-note">'+(isJomokPilot?'JOMOK OVERRIDE · '+jomokProfile.airport+' · PLANE PRIVILEGES REVOKED':totalPoints.toLocaleString()+' pts · evolution stage '+(evo+1)+'/'+PILOT_GIF_TIERS.length)+'</div><div class="ops-reward-note">'+(isJomokPilot?'The algorithm has concerns.':'The GIF gets progressively more cursed as your score rises.')+'</div></div>';;const personality=pilotPersonality(all,totalKm,fleet,airports,routes),secrets=secretAchievements(all,totalKm,fleet,airports,routes,totalPoints);el.innerHTML=leaderboard+'<section class="ops-personality"><div class="ops-personality-icon">'+personality.icon+'</div><div><div class="ops-personality-tag">PILOT PSYCH EVALUATION</div><div class="ops-personality-title">'+personality.name+'</div><div class="ops-personality-tag">'+personality.tag+'</div><div class="ops-personality-copy">'+personality.copy+'</div></div></section>'+'<div class="ops-grid">'+
  '<div class="ops-metric"><div class="ops-metric-label">Lifetime flights</div><div class="ops-metric-value">'+all.length.toLocaleString()+'</div><div class="ops-metric-note">'+days+' active days</div></div>'+
  '<div class="ops-metric"><div class="ops-metric-label">Total airtime</div><div class="ops-metric-value">'+opsMinutes(mins)+'</div><div class="ops-metric-note">Average '+opsMinutes(mins/all.length)+' per PIREP</div></div>'+
  '<div class="ops-metric"><div class="ops-metric-label">Fleet types</div><div class="ops-metric-value">'+Object.keys(fleet).length+'</div><div class="ops-metric-note">'+Object.keys(regs).length+' registrations</div></div>'+
