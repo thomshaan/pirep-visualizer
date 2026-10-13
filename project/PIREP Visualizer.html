@@ -259,12 +259,30 @@ body.panel-collapsed #panelToggle{right:0;}
 /* OPS REPORT */
 .ops-nav-btn{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);z-index:31;pointer-events:auto;background:rgba(26,10,21,.94);backdrop-filter:blur(8px);border:1px solid rgba(249,148,32,.55);color:var(--gold);padding:9px 13px;border-radius:7px;font:700 9px var(--fm);letter-spacing:.15em;cursor:pointer;white-space:nowrap;box-shadow:0 4px 18px rgba(0,0,0,.4)}
 .ops-nav-btn:hover{background:rgba(249,148,32,.2);border-color:var(--gold)}
-#opsReport{position:fixed;inset:0;z-index:120;background:rgba(12,4,10,.88);backdrop-filter:blur(18px);display:none;align-items:center;justify-content:center;padding:20px}
-#opsReport.vis{display:flex}.ops-shell{width:min(1120px,100%);max-height:calc(100vh - 40px);overflow:auto;background:linear-gradient(145deg,rgba(42,15,34,.99),rgba(20,7,17,.99));border:1px solid rgba(249,148,32,.3);border-radius:15px;padding:22px;box-shadow:0 24px 90px #0009}
-.ops-top{display:flex;justify-content:space-between;gap:16px;margin-bottom:18px}.ops-kicker{font:700 9px var(--fm);letter-spacing:.2em;color:var(--orange);margin-bottom:8px}.ops-title{font:900 clamp(19px,3vw,28px) var(--fd);color:var(--gold)}.ops-sub{font-size:11px;color:var(--dim);margin-top:6px}.ops-close{background:transparent;border:1px solid var(--border);color:var(--dim);border-radius:7px;padding:8px 12px;cursor:pointer}
+#opsReport{position:fixed;inset:0;z-index:120;background:rgba(12,4,10,.88);backdrop-filter:blur(18px);display:none;align-items:flex-start;justify-content:center;padding:20px;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
+#opsReport.vis{display:flex}.ops-shell{width:min(1120px,100%);max-height:calc(100dvh - 40px);overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;flex:0 0 auto;margin:auto 0;background:linear-gradient(145deg,rgba(42,15,34,.99),rgba(20,7,17,.99));border:1px solid rgba(249,148,32,.3);border-radius:15px;padding:22px;box-shadow:0 24px 90px #0009}
+.ops-top{display:flex;justify-content:space-between;gap:16px;margin-bottom:18px;align-items:flex-start}.ops-kicker{font:700 9px var(--fm);letter-spacing:.2em;color:var(--orange);margin-bottom:8px}.ops-title{font:900 clamp(19px,3vw,28px) var(--fd);color:var(--gold)}.ops-sub{font-size:11px;color:var(--dim);margin-top:6px}.ops-close{background:rgba(249,148,32,.08);border:1px solid var(--border-hi);color:var(--text);border-radius:9px;padding:13px 17px;min-width:112px;min-height:46px;font:700 11px var(--fm);letter-spacing:.08em;cursor:pointer;flex-shrink:0;touch-action:manipulation}.ops-close:hover{background:rgba(249,148,32,.18);color:var(--gold);border-color:var(--gold)}
 .ops-select-wrap{display:flex;align-items:center;gap:10px;margin-bottom:15px;flex-wrap:wrap}.ops-select-wrap label{font:700 9px var(--fm);color:var(--dim);letter-spacing:.16em}#pilotReportSelect{min-width:240px;max-width:100%;background:#2A0F22;border:1px solid var(--border-hi);border-radius:7px;padding:10px;color:var(--text);font:600 12px var(--fb)}
 .ops-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:12px}.ops-metric,.ops-panel{background:rgba(249,148,32,.04);border:1px solid rgba(249,148,32,.15);border-radius:10px;padding:14px;min-width:0}.ops-metric-label{font:700 8px var(--fm);letter-spacing:.14em;color:var(--dim);margin-bottom:9px}.ops-metric-value{font:700 clamp(16px,2.2vw,24px) var(--fd);color:var(--gold);overflow-wrap:anywhere}.ops-metric-note{font:9px var(--fm);color:var(--dim);margin-top:6px;line-height:1.5}.ops-columns{display:grid;grid-template-columns:1.1fr .9fr;gap:12px;margin-top:12px}.ops-panel-title{font:700 10px var(--fd);letter-spacing:.13em;color:var(--orange);margin-bottom:12px}.ops-stat-row{display:flex;justify-content:space-between;gap:12px;padding:9px 0;border-bottom:1px solid #ffffff0b;font-size:11px}.ops-stat-name{color:var(--dim)}.ops-stat-value{text-align:right;font:700 10px var(--fm);color:var(--text);overflow-wrap:anywhere}.ops-bar-row{margin:12px 0}.ops-bar-head{display:flex;justify-content:space-between;gap:12px;font-size:10px;margin-bottom:5px}.ops-bar-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.ops-bar-value{font:10px var(--fm);color:var(--orange)}.ops-bar-track{height:5px;background:#ffffff10;border-radius:8px;overflow:hidden}.ops-bar-fill{height:100%;background:linear-gradient(90deg,var(--magenta),var(--orange),var(--gold))}.ops-badges{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}.ops-badge{font:700 8px var(--fm);color:var(--gold);background:#f9942014;border:1px solid #f9942033;padding:6px 8px;border-radius:5px}.ops-journey-item{display:grid;grid-template-columns:70px 1fr auto;gap:10px;padding:10px 0;border-bottom:1px solid #ffffff0b;align-items:center}.ops-journey-date{font:9px var(--fm);color:var(--dim)}.ops-journey-route{font:700 11px var(--fm)}.ops-journey-meta{font-size:9px;color:var(--dim);margin-top:4px;line-height:1.5}.ops-journey-time{font:10px var(--fm);color:var(--orange);white-space:nowrap}.ops-empty{font-size:11px;color:var(--dim);padding:12px 0;line-height:1.6}.ops-footnote{font-size:9px;color:#f5e6da66;line-height:1.6;margin-top:14px}
-@media(max-width:760px){.ops-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.ops-columns{grid-template-columns:1fr}#opsReport{padding:8px}.ops-shell{padding:14px;max-height:calc(100vh - 16px)}.hdr-stats{gap:10px}.hdr-stats .stat:nth-child(3){display:none}.ops-nav-btn{padding:8px;font-size:8px}.ops-journey-item{grid-template-columns:55px 1fr}.ops-journey-time{grid-column:2}}
+.ops-score-layout{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,.95fr);gap:12px;margin-bottom:12px}
+.ops-leaderboard-list{display:flex;flex-direction:column;gap:6px}
+.ops-leader-row{display:grid;grid-template-columns:28px minmax(0,1fr) auto;align-items:center;gap:9px;padding:8px 9px;border:1px solid #ffffff0b;border-radius:7px;background:#ffffff03}
+.ops-leader-rank{font:700 10px var(--fm);color:var(--orange);text-align:center}
+.ops-leader-name{font:700 10px var(--fb);overflow-wrap:anywhere}
+.ops-leader-meta{font:9px var(--fm);color:var(--dim);margin-top:3px}
+.ops-leader-score{font:700 10px var(--fm);color:var(--gold);text-align:right;white-space:nowrap}
+.ops-leader-row.top-one{border-color:#f5c62455;background:#f5c6240a}
+.ops-achievement-badges{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.ops-badge.unlocked{color:var(--gold);border-color:#f5c62466;background:#f5c62415}
+.ops-badge.locked{opacity:.42}
+.ops-reward-card{display:flex;align-items:center;gap:13px;margin-bottom:12px;padding:12px;background:rgba(249,148,32,.04);border:1px solid rgba(249,148,32,.18);border-radius:10px}
+.ops-reward-art{width:76px;height:66px;display:flex;align-items:center;justify-content:center;flex-shrink:0;background:radial-gradient(circle,rgba(249,148,32,.16),transparent 70%);border-radius:8px;overflow:hidden}
+.ops-reward-art img{width:100%;height:100%;object-fit:contain}
+.ops-reward-emoji{font-size:38px;filter:drop-shadow(0 0 10px #f9942044);animation:ops-plane-bob 2s ease-in-out infinite}
+@keyframes ops-plane-bob{0%,100%{transform:translateY(2px) rotate(-7deg)}50%{transform:translateY(-3px) rotate(7deg)}}
+.ops-reward-label{font:700 10px var(--fm);color:var(--gold);letter-spacing:.08em}
+.ops-reward-note{font-size:10px;color:var(--dim);line-height:1.5;margin-top:5px}
+@media(max-width:760px){.ops-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.ops-columns{grid-template-columns:1fr}.ops-score-layout{grid-template-columns:1fr}#opsReport{padding:8px}.ops-shell{padding:14px;max-height:calc(100dvh - 16px);margin:auto 0}.ops-close{min-width:96px;min-height:48px;padding:12px;font-size:10px}.ops-nav-btn{padding:8px;font-size:8px}.ops-journey-item{grid-template-columns:55px 1fr}.ops-journey-time{grid-column:2}}
 </style>
 </head>
 <body>
@@ -346,7 +364,6 @@ body.panel-collapsed #panelToggle{right:0;}
 
   <div class="panel-footer">
     <span class="pf-status" id="footerUpdate">–</span>
-    AIRCRAFT ICONS · <a class="aircraft-credit" href="https://github.com/VATSIM-Radar/vatsim-radar/tree/next/app/assets/icons/aircraft" target="_blank" rel="noopener noreferrer">VATSIM Radar aircraft icons</a> · <a class="aircraft-credit" href="https://github.com/VATSIM-Radar/vatsim-radar" target="_blank" rel="noopener noreferrer">Source repository</a>
     <div class="pf-dot"></div>
   </div>
 </div>
@@ -1451,7 +1468,20 @@ const COUNTRY_NAMES={ID:'Indonesia',TH:'Thailand',MY:'Malaysia',SG:'Singapore',P
 function inferCountryFromICAO(icao){const c=String(icao||'').toUpperCase();if(/^(WI|WA|WO|WR|WQ)/.test(c))return'ID';if(/^VT/.test(c))return'TH';if(/^WM/.test(c))return'MY';if(/^WS/.test(c))return'SG';if(/^RP/.test(c))return'PH';if(/^VV/.test(c))return'VN';if(/^VY/.test(c))return'MM';if(/^RJ|^RO/.test(c))return'JP';if(/^RK/.test(c))return'KR';if(/^Z/.test(c))return'CN';if(/^RC/.test(c))return'TW';if(/^Y/.test(c))return'AU';if(/^NZ/.test(c))return'NZ';if(/^K/.test(c))return'US';if(/^C/.test(c))return'CA';if(/^EG/.test(c))return'GB';if(/^LF/.test(c))return'FR';if(/^ED|^ET/.test(c))return'DE';if(/^EH/.test(c))return'NL';if(/^LE/.test(c))return'ES';if(/^LI/.test(c))return'IT';if(/^OM/.test(c))return'AE';return'';}
 function countryLabel(c){c=String(c||'').toUpperCase();return COUNTRY_NAMES[c]||c||'Unknown';}
 function escapeOps(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
-function routeDistanceKm(p){const a=p.origin,b=p.dest,rad=n=>n*Math.PI/180,dLat=rad(b.lat-a.lat),dLon=rad(b.lon-a.lon),h=Math.sin(dLat/2)**2+Math.cos(rad(a.lat))*Math.cos(rad(b.lat))*Math.sin(dLon/2)**2;return 6371*2*Math.atan2(Math.sqrt(h),Math.sqrt(Math.max(0,1-h)));}
+function routeDistanceKm(p){const a=p.origin||{},b=p.dest||{},rad=n=>n*Math.PI/180;const vals=[a.lat,a.lon,b.lat,b.lon].map(Number);if(vals.some(v=>!Number.isFinite(v)))return 0;const dLat=rad(vals[2]-vals[0]),dLon=rad(vals[3]-vals[1]),h=Math.sin(dLat/2)**2+Math.cos(rad(vals[0]))*Math.cos(rad(vals[2]))*Math.sin(dLon/2)**2;return 6371*2*Math.atan2(Math.sqrt(h),Math.sqrt(Math.max(0,1-h)));}
+const FLIGHT_MILESTONES=[1,2,5,10,20,50,100,200,300,500,1000];
+const PILOT_GIF_TIERS=[
+ {min:0,label:'RUNWAY ROOKIE',emoji:'🛩️',gifUrl:''},
+ {min:500,label:'REGIONAL MENACE',emoji:'✈️',gifUrl:''},
+ {min:1500,label:'CARGO CHAOS',emoji:'📦✈️',gifUrl:''},
+ {min:5000,label:'LONG-HAUL GOBLIN',emoji:'🛸',gifUrl:''},
+ {min:10000,label:'SKY GREMLIN',emoji:'👾✈️',gifUrl:''},
+ {min:25000,label:'AIRSPACE ANOMALY',emoji:'🌀✈️',gifUrl:''}
+];
+function flightPoints(p){const km=Math.max(0,routeDistanceKm(p)||0);return 100+Math.min(150,Math.round(km/20));}
+function pilotLeaderboard(){const byPilot=new Map();PIREPS.forEach(p=>{if(!p.pilot)return;let r=byPilot.get(p.pilot);if(!r){r={pilot:p.pilot,flights:0,km:0,points:0};byPilot.set(p.pilot,r);}const km=Math.max(0,routeDistanceKm(p)||0);r.flights++;r.km+=km;r.points+=flightPoints(p);});return [...byPilot.values()].sort((a,b)=>b.points-a.points||b.flights-a.flights||b.km-a.km||a.pilot.localeCompare(b.pilot));}
+function pilotRewardTier(points){let tier=PILOT_GIF_TIERS[0];PILOT_GIF_TIERS.forEach(t=>{if(points>=t.min)tier=t;});return tier;}
+function leaderboardHtml(selectedName){const rows=pilotLeaderboard(),top=rows.slice(0,10);if(!top.length)return '<section class="ops-panel"><div class="ops-panel-title">Pilot leaderboard</div><div class="ops-empty">No pilot PIREPs loaded yet.</div></section>';const myRank=rows.findIndex(r=>r.pilot===selectedName)+1;return '<div class="ops-score-layout"><section class="ops-panel"><div class="ops-panel-title">✦ Pilot leaderboard · top 10</div><div class="ops-leaderboard-list">'+top.map((r,i)=>'<div class="ops-leader-row '+(i===0?'top-one':'')+'"><div class="ops-leader-rank">#'+(i+1)+'</div><div><div class="ops-leader-name">'+escapeOps(r.pilot)+'</div><div class="ops-leader-meta">'+r.flights.toLocaleString()+' flights · '+Math.round(r.km).toLocaleString()+' km</div></div><div class="ops-leader-score">'+r.points.toLocaleString()+' pts</div></div>').join('')+'</div></section><section class="ops-panel"><div class="ops-panel-title">How scoring works</div><div class="ops-stat-row"><span class="ops-stat-name">Each flight</span><span class="ops-stat-value">100 pts</span></div><div class="ops-stat-row"><span class="ops-stat-name">Distance bonus</span><span class="ops-stat-value">1 pt / 20 km</span></div><div class="ops-stat-row"><span class="ops-stat-name">Bonus cap</span><span class="ops-stat-value">150 pts / flight</span></div><div class="ops-empty">Short-haul frequency stays competitive; distance helps, but can’t overwhelm consistency.</div><div class="ops-footnote">'+(myRank?'Selected pilot rank: #'+myRank+' of '+rows.length:'Select a pilot to see their rank')+' · scores use the currently loaded PIREPs.</div></section></div>';}
 function opsDate(p){const d=new Date(p._rawTimestamp||p.date||'');return Number.isNaN(d.getTime())?null:d;}
 function opsMinutes(m){m=Math.max(0,Math.round(m||0));return Math.floor(m/60)+'h '+String(m%60).padStart(2,'0')+'m';}
 function opsTop(o){return Object.entries(o).sort((a,b)=>b[1]-a[1])[0]||null;}
@@ -1461,7 +1491,8 @@ function openOpsReport(){const sel=document.getElementById('pilotReportSelect'),
 function closeOpsReport(){document.getElementById('opsReport').classList.remove('vis');}
 function renderPilotReport(){
  const name=document.getElementById('pilotReportSelect').value,all=PIREPS.filter(p=>p.pilot===name),el=document.getElementById('opsReportContent');
- if(!all.length){el.innerHTML='<div class="ops-empty">No pilot PIREPs found in the currently loaded data.</div>';return;}
+ const leaderboard=leaderboardHtml(name);
+ if(!all.length){el.innerHTML=leaderboard+'<div class="ops-empty">No pilot PIREPs found in the currently loaded data.</div>';return;}
  const fleet={},airports={},countries={},routes={},regs={},subs={},months={};let longest=null,shortest=null;
  let mins=0;all.forEach(p=>{mins+=airtimeToMinutes(p.airtime);const ac=(p.aircraft||'Unknown aircraft').trim();fleet[ac]=(fleet[ac]||0)+1;if(p.reg)regs[p.reg]=(regs[p.reg]||0)+1;if(p.subsidiary)subs[p.subsidiary]=(subs[p.subsidiary]||0)+1;
  [p.origin,p.dest].forEach(ap=>{const code=ap.icao||'?';if(!airports[code])airports[code]={n:0,name:ap.name||code};airports[code].n++;const cc=ap.country||AIRPORT_COORDS[code]?.country||inferCountryFromICAO(code)||'Unknown';countries[cc]=(countries[cc]||0)+1;});
@@ -1469,14 +1500,18 @@ function renderPilotReport(){
  const d=opsDate(p);if(d){const mo=d.toLocaleDateString('en-CA',{year:'numeric',month:'short',timeZone:'UTC'});months[mo]=(months[mo]||0)+1;}
  });
  const ap=opsTop(Object.fromEntries(Object.entries(airports).map(([k,v])=>[k,v.n]))),co=opsTop(countries),ac=opsTop(fleet),rt=opsTop(routes),su=opsTop(subs),mo=opsTop(months);
- const days=new Set(all.map(p=>opsDate(p)?.toISOString().slice(0,10)).filter(Boolean)).size,sorted=[...all].sort((a,b)=>(opsDate(a)?.getTime()||0)-(opsDate(b)?.getTime()||0)),milestones=[10,25,50,100,250,500,1000].filter(n=>all.length>=n),fbar=Object.entries(fleet).sort((a,b)=>b[1]-a[1]).slice(0,6),rbar=Object.entries(regs).sort((a,b)=>b[1]-a[1]).slice(0,5),journey=sorted.slice(-18).reverse();
+ const totalKm=all.reduce((sum,p)=>sum+Math.max(0,routeDistanceKm(p)||0),0),totalPoints=all.reduce((sum,p)=>sum+flightPoints(p),0),reward=pilotRewardTier(totalPoints),nextMilestone=FLIGHT_MILESTONES.find(n=>n>all.length);
+ const days=new Set(all.map(p=>opsDate(p)?.toISOString().slice(0,10)).filter(Boolean)).size,sorted=[...all].sort((a,b)=>(opsDate(a)?.getTime()||0)-(opsDate(b)?.getTime()||0)),fbar=Object.entries(fleet).sort((a,b)=>b[1]-a[1]).slice(0,6),rbar=Object.entries(regs).sort((a,b)=>b[1]-a[1]).slice(0,5),journey=sorted.slice(-18).reverse();
  const routeText=x=>x?x.p.origin.icao+' → '+x.p.dest.icao+' · '+Math.round(x.km).toLocaleString()+' km':'—';
  const airportText=ap?airports[ap[0]].name+' ('+ap[0]+') · '+ap[1]+' visits':'—';
- el.innerHTML='<div class="ops-grid">'+
+ el.innerHTML=leaderboard+'<div class="ops-reward-card"><div class="ops-reward-art">'+(reward.gifUrl?'<img src="'+escapeOps(reward.gifUrl)+'" alt="'+escapeOps(reward.label)+' plane reward" loading="lazy">':'<span class="ops-reward-emoji">'+reward.emoji+'</span>')+'</div><div><div class="ops-reward-label">'+reward.label+'</div><div class="ops-reward-note">'+totalPoints.toLocaleString()+' points · reward tier based on score'+(reward.gifUrl?' · animated GIF reward':' · GIF URL can be added to this tier')+'</div></div></div><div class="ops-grid">'+
  '<div class="ops-metric"><div class="ops-metric-label">Lifetime flights</div><div class="ops-metric-value">'+all.length.toLocaleString()+'</div><div class="ops-metric-note">'+days+' active days</div></div>'+
  '<div class="ops-metric"><div class="ops-metric-label">Total airtime</div><div class="ops-metric-value">'+opsMinutes(mins)+'</div><div class="ops-metric-note">Average '+opsMinutes(mins/all.length)+' per PIREP</div></div>'+
  '<div class="ops-metric"><div class="ops-metric-label">Fleet types</div><div class="ops-metric-value">'+Object.keys(fleet).length+'</div><div class="ops-metric-note">'+Object.keys(regs).length+' registrations</div></div>'+
- '<div class="ops-metric"><div class="ops-metric-label">Global footprint</div><div class="ops-metric-value">'+Object.keys(countries).filter(c=>c!=='Unknown').length+' countries</div><div class="ops-metric-note">'+Object.keys(airports).length+' unique airports</div></div></div>'+
+ '<div class="ops-metric"><div class="ops-metric-label">Global footprint</div><div class="ops-metric-value">'+Object.keys(countries).filter(c=>c!=='Unknown').length+' countries</div><div class="ops-metric-note">'+Object.keys(airports).length+' unique airports</div></div>'+
+ '<div class="ops-metric"><div class="ops-metric-label">Journey points</div><div class="ops-metric-value">'+totalPoints.toLocaleString()+'</div><div class="ops-metric-note">100 per flight + distance bonus</div></div>'+
+ '<div class="ops-metric"><div class="ops-metric-label">Total distance</div><div class="ops-metric-value">'+Math.round(totalKm).toLocaleString()+' km</div><div class="ops-metric-note">Great-circle route distance</div></div></div>'+
+ '<section class="ops-panel" style="margin-top:12px"><div class="ops-panel-title">Flight achievements</div><div class="ops-empty">'+(nextMilestone?'Next milestone: '+nextMilestone+' flights · '+Math.max(0,nextMilestone-all.length)+' to go':'All flight-count milestones unlocked!')+'</div><div class="ops-achievement-badges">'+FLIGHT_MILESTONES.map(n=>'<span class="ops-badge '+(all.length>=n?'unlocked':'locked')+'">'+(all.length>=n?'✓':'🔒')+' '+n.toLocaleString()+' FLIGHT'+(n===1?'':'S')+'</span>').join('')+'</div></section>'+
  '<div class="ops-columns"><section class="ops-panel"><div class="ops-panel-title">Journey highlights</div>'+
  opsRow('Most visited airport',airportText)+opsRow('Most visited country',co?countryLabel(co[0])+' · '+co[1]+' airport visits':'—')+opsRow('Favorite aircraft',ac?ac[0]+' · '+ac[1]+' flights':'—')+opsRow('Favorite route',rt?rt[0].replace('-',' → ')+' · '+rt[1]+' flights':'—')+opsRow('Longest route',routeText(longest))+opsRow('Shortest route',routeText(shortest))+opsRow('Most active month',mo?mo[0]+' · '+mo[1]+' flights':'—')+opsRow('Most flown subsidiary',su?su[0]+' · '+su[1]+' flights':'—')+
  '<div class="ops-badges">'+(milestones.length?milestones.map(n=>'<span class="ops-badge">✦ '+n+' FLIGHTS</span>').join(''):'<span class="ops-badge">FIRST MILESTONE: 10 FLIGHTS</span>')+'</div></section>'+
@@ -1507,7 +1542,8 @@ function refreshDebug(){
     <div class="dbg-row"><span class="dbg-lbl">Last fetch</span>
       <span class="dbg-val">${ago}</span></div>
     ${_dbgErr?`<div class="dbg-row"><span class="dbg-lbl">Error</span><span class="dbg-val dbg-err" style="font-size:8px">${_dbgErr}</span></div>`:''}
-    <div class="dbg-keys"><span class="dbg-lbl" style="display:block;margin-bottom:4px">Sheet column keys:</span>${keyHtml}</div>`;
+    <div class="dbg-keys"><span class="dbg-lbl" style="display:block;margin-bottom:4px">Sheet column keys:</span>${keyHtml}</div>
+    <div class="dbg-keys"><span class="dbg-lbl" style="display:block;margin-bottom:4px">Aircraft icon credits:</span><a class="aircraft-credit" href="https://github.com/VATSIM-Radar/vatsim-radar/tree/next/app/assets/icons/aircraft" target="_blank" rel="noopener noreferrer">VATSIM Radar aircraft icons</a> · <a class="aircraft-credit" href="https://github.com/VATSIM-Radar/vatsim-radar" target="_blank" rel="noopener noreferrer">Source repository</a></div>`;
 }
 async function forceRefresh(){
   document.getElementById('dbgRefresh').textContent='FETCHING…';
