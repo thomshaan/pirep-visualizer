@@ -490,14 +490,14 @@ body.panel-collapsed #panelToggle{right:0;}
   <span id="zuluDate" style="color:var(--dim);font-weight:400;font-size:10px;letter-spacing:.12em"></span>
 </div>
 
-<!-- MANUAL METAR CHECK (direct browser lookup currently blocked by source CORS policy) -->
+<!-- MANUAL METAR CHECK (live lookup through Cloudflare Worker proxy) -->
  <button class="wx-toggle" id="wxToggle" type="button" aria-expanded="false" aria-controls="wxPanel" onclick="toggleWeatherPanel()"><span class="wx-led"></span><span>METAR CHECK</span></button>
  <section class="wx-panel" id="wxPanel" hidden aria-label="METAR checker">
    <div class="wx-head"><div class="wx-title">METAR CHECK</div><button class="wx-close" type="button" aria-label="Close METAR checker" onclick="toggleWeatherPanel(false)">×</button></div>
    <div class="wx-sub">AIRPORT OBSERVATION · ICAO CODE</div>
    <form class="metar-check" onsubmit="event.preventDefault();checkMetarByCode();"><input id="metarIcaoInput" aria-label="Airport ICAO code" maxlength="4" minlength="4" pattern="[A-Za-z0-9]{4}" placeholder="ICAO · e.g. WIII" autocomplete="off" required><button type="submit">CHECK</button></form>
    <div class="metar-check-result" id="metarCheckResult" aria-live="polite"></div>
-   <div class="wx-note">Live lookup is temporarily unavailable in this browser because the source API does not permit cross-origin reads. A backend proxy is needed to enable results.</div>
+   <div class="wx-note">Live METAR lookup via Cloudflare Worker · Results are fetched only when you press CHECK.</div>
  </section>
 
 <!-- HEADER -->
@@ -1849,19 +1849,49 @@ function updateZulu(){
 updateZulu();
 setInterval(()=>{updateZulu();renderBottomBar();},1000);
 
-/* Manual METAR checker. The source currently blocks direct browser reads via CORS. */
+/* Manual METAR checker via the Cloudflare Worker proxy. No background polling. */
  function toggleWeatherPanel(force){
   const panel=document.getElementById('wxPanel'),button=document.getElementById('wxToggle');
   const open=typeof force==='boolean'?force:panel.hidden;
   panel.hidden=!open;button.setAttribute('aria-expanded',String(open));
  }
  function wxEsc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
- function checkMetarByCode(){
+ async function checkMetarByCode(){
   const input=document.getElementById('metarIcaoInput'),out=document.getElementById('metarCheckResult');
+  const button=document.querySelector('.metar-check button');
   const code=String(input.value||'').trim().toUpperCase();
-  if(!/^[A-Z0-9]{4}$/.test(code)){out.innerHTML='<strong>INVALID ICAO CODE</strong><br>Enter a four-character airport ICAO code.';return;}
+  if(!/^[A-Z]{4}$/.test(code)){out.innerHTML='<strong>INVALID ICAO CODE</strong><br>Enter a four-letter airport ICAO code, such as WITT.';return;}
   input.value=code;
-  out.innerHTML='<strong>'+wxEsc(code)+' · LOOKUP NOT CONNECTED</strong><br>The Aviation Weather Center request is blocked by browser CORS policy. The request can return HTTP 200, but JavaScript cannot read the response. A small backend proxy is required before live METAR results can be shown.';
+  if(button){button.disabled=true;button.textContent='LOADING…';}
+  out.innerHTML='<strong>'+wxEsc(code)+' · FETCHING METAR</strong><br>Contacting the weather service…';
+  try{
+   const response=await fetch('https://pirep-metar-api.thomassiahaan31.workers.dev/metar?icao='+encodeURIComponent(code),{method:'GET',headers:{'Accept':'application/json'}});
+   let data;
+   try{data=await response.json()}catch{throw new Error('The weather service returned an unreadable response.');}
+   if(!response.ok)throw new Error(data.error||('Request failed (HTTP '+response.status+').'));
+   const reports=Array.isArray(data.reports)?data.reports:[];
+   if(!reports.length)throw new Error('No METAR report is currently available for '+code+'.');
+   const r=reports[0]||{};
+   const raw=String(r.rawOb||r.raw_text||r.metar||r.raw||'').trim();
+   const obs=Number(r.obsTime);
+   const obsDate=Number.isFinite(obs)&&obs>0?new Date(obs*1000):null;
+   const obsText=obsDate&&!Number.isNaN(obsDate.getTime())?obsDate.toISOString().replace('T',' ').replace(/\.\d{3}Z$/,' UTC'):'Observation time unavailable';
+   const details=[];
+   if(r.wdir!==undefined&&r.wdir!==null)details.push('Wind: '+(Number(r.wdir)===0?'Calm':r.wdir+'°')+(r.wspd!==undefined&&r.wspd!==null?' at '+r.wspd+' kt':''));
+   if(r.visib!==undefined&&r.visib!==null)details.push('Visibility: '+r.visib+(String(r.visib).match(/^\d+(\.\d+)?$/)?' SM':''));
+   if(r.temp!==undefined&&r.temp!==null)details.push('Temperature: '+r.temp+'°C');
+   if(r.dewp!==undefined&&r.dewp!==null)details.push('Dew point: '+r.dewp+'°C');
+   if(r.altim!==undefined&&r.altim!==null)details.push('Altimeter: '+r.altim);
+   out.innerHTML='<strong>'+wxEsc(code)+' · METAR RECEIVED</strong><br><span style="color:#82999a">OBSERVED: '+wxEsc(obsText)+'</span>'+
+    (r.name?'<br><span style="color:#b4c7c7">'+wxEsc(r.name)+'</span>':'')+
+    (raw?'<div style="margin-top:9px;padding:9px;border-radius:6px;background:rgba(0,0,0,.22);color:#e7f7f4">'+wxEsc(raw)+'</div>':'')+
+    (details.length?'<div style="margin-top:8px;color:#b4c7c7">'+details.map(wxEsc).join('<br>')+'</div>':'')+
+    (!raw&&!details.length?'<br>Report received, but no displayable fields were returned.':'');
+  }catch(error){
+   out.innerHTML='<strong>'+wxEsc(code)+' · LOOKUP FAILED</strong><br>'+wxEsc(error&&error.message?error.message:'Unable to retrieve METAR. Please try again.');
+  }finally{
+   if(button){button.disabled=false;button.textContent='CHECK';}
+  }
  }
 
  // ═══════════════════════════════════════════════════════
