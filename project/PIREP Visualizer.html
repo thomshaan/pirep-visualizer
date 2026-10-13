@@ -133,6 +133,7 @@ body.panel-collapsed #panelToggle{right:0;}
 .pag-info{font-family:var(--fm);font-size:9px;color:var(--dim);letter-spacing:.1em;}
 
 /* Panel footer */
+.aircraft-credit{font:7px var(--fm);letter-spacing:.04em;color:var(--dim);text-decoration:none;opacity:.7;white-space:nowrap}.aircraft-credit:hover{color:var(--orange);opacity:1}
 .panel-footer{padding:7px 14px;border-top:1px solid rgba(249,148,32,.07);flex-shrink:0;
   display:flex;justify-content:space-between;align-items:center;}
 .pf-status{font-family:var(--fm);font-size:8px;letter-spacing:.1em;color:rgba(245,230,218,.22);}
@@ -256,7 +257,7 @@ body.panel-collapsed #panelToggle{right:0;}
 .tw-btn.on{background:rgba(249,148,32,.12);border-color:var(--orange);color:var(--orange);}
 
 /* OPS REPORT */
-.ops-nav-btn{pointer-events:auto;background:rgba(249,148,32,.1);border:1px solid rgba(249,148,32,.42);color:var(--gold);padding:9px 13px;border-radius:7px;font:700 9px var(--fm);letter-spacing:.15em;cursor:pointer;white-space:nowrap}
+.ops-nav-btn{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);z-index:31;pointer-events:auto;background:rgba(26,10,21,.94);backdrop-filter:blur(8px);border:1px solid rgba(249,148,32,.55);color:var(--gold);padding:9px 13px;border-radius:7px;font:700 9px var(--fm);letter-spacing:.15em;cursor:pointer;white-space:nowrap;box-shadow:0 4px 18px rgba(0,0,0,.4)}
 .ops-nav-btn:hover{background:rgba(249,148,32,.2);border-color:var(--gold)}
 #opsReport{position:fixed;inset:0;z-index:120;background:rgba(12,4,10,.88);backdrop-filter:blur(18px);display:none;align-items:center;justify-content:center;padding:20px}
 #opsReport.vis{display:flex}.ops-shell{width:min(1120px,100%);max-height:calc(100vh - 40px);overflow:auto;background:linear-gradient(145deg,rgba(42,15,34,.99),rgba(20,7,17,.99));border:1px solid rgba(249,148,32,.3);border-radius:15px;padding:22px;box-shadow:0 24px 90px #0009}
@@ -293,7 +294,7 @@ body.panel-collapsed #panelToggle{right:0;}
       <div class="hdr-sub">Abel Jets Virtual Group · Flight Operations</div>
     </div>
   </div>
-  <button class="ops-nav-btn" onclick="openOpsReport()">✦ OPS REPORT</button>
+  <button class="ops-nav-btn" onclick="openOpsReport()">✦ PILOT REPORT</button>
   <div class="hdr-stats">
     <div class="stat"><div class="stat-val" id="statFlights">–</div><div class="stat-lbl">Total Flights</div></div>
     <div class="stat"><div class="stat-val" id="statAirtime">–</div><div class="stat-lbl">Total Airtime</div></div>
@@ -345,6 +346,7 @@ body.panel-collapsed #panelToggle{right:0;}
 
   <div class="panel-footer">
     <span class="pf-status" id="footerUpdate">–</span>
+    AIRCRAFT SVGs · <a class="aircraft-credit" href="https://github.com/RexKramer1/AircraftShapesSVG" target="_blank" rel="noopener noreferrer">RexKramer1</a> · <a class="aircraft-credit" href="https://github.com/RexKramer1/AircraftShapesSVG/blob/main/LICENSE" target="_blank" rel="noopener noreferrer">GPL-3.0 license</a>
     <div class="pf-dot"></div>
   </div>
 </div>
@@ -926,10 +928,46 @@ function buildAirports(){
 // ═══════════════════════════════════════════════════════
 // FLIGHT ARC BUILDING
 // ═══════════════════════════════════════════════════════
+/* Aircraft silhouette assets from RexKramer1/AircraftShapesSVG (GPL-3.0). */
+const AIRCRAFT_SHAPE_CODES=new Set('A10 A124 A19N A20N A21N A225 A306 A310 A318 A320 A321 A332 A333 A337 A338 A339 A342 A343 A345 A346 A359 A35K A388 A3ST A4 A400 AJET AN12 AN26 AS21 AS32 AS65 AT45 AT75 ATP B190 B29 B350 B38M B39M B52 B703 B712 B722 B733 B734 B735 B737 B738 B739 B742 B744 B748 B74S B752 B753 B762 B763 B764 B772 B773 B779 B77L B77W B788 B789 B78X BALL BCS1 BCS3 BLCF BN2P C130 C160 C17 C172 C2 C208 C25B C295 C5M C750 CL2T CN35 CRJ2 CRJ7 CRJ9 CRJX CVN-65 D228 D328 DA42 DC10 DC3 DC87 DH8C DH8D DO27 DO28 E170 E195 E300 E35L E390 E3CF E3TF E737 E8 EC20 EC35 EC45 EUFI F15 F16 F18H F18S F22 F35 F406 F5 F50 FA7X GAZL GL5T GLF6 GYRO H47 H60 H64 HAWK HUNT IL62 IL76 J328 K35E KC2 KC46 L159 LJ35 LYNX M326 MD11 MI24 MIRA MRF1 NH90 P1 P180 P28A P3 P8 PA46 PC12 PC6T PC9 Q4 R135 R44 RFAL RJ85 S61 SB39 SC7 SF25 SF34 SGUP SR22 ST75 SU95 T204 T38 TIGR U2 UH1 VF35'.split(' '));
+const AIRCRAFT_SHAPE_TEXTURES=new Map();
+function aircraftShapeCode(aircraft){
+ const raw=String(aircraft||'').trim().toUpperCase(),model=raw.replace(/\bBOEING\s*/g,'B').replace(/\bAIRBUS\s*/g,'A').replace(/\bMCDONNELL\s+DOUGLAS\s*/g,'MD').replace(/\bDOUGLAS\s*/g,'DC'),direct=raw.replace(/[^A-Z0-9]/g,'');
+ if(AIRCRAFT_SHAPE_CODES.has(direct))return direct;
+ const rules=[
+ [/A.?350.?1000|A35K/,'A35K'],[/A350|A359|AIRBUS.*350/,'A359'],[/A380|A388|AIRBUS.*380/,'A388'],
+ [/A340.?600|A346/,'A346'],[/A340.?500|A345/,'A345'],[/A340.?300|A343/,'A343'],[/A340.?200|A342/,'A342'],
+ [/A330.?900|A339/,'A339'],[/A330.?800|A338/,'A338'],[/A330.?300|A333/,'A333'],[/A330|A332|AIRBUS.*330/,'A332'],
+ [/A321.?NEO|A21N/,'A21N'],[/A320.?NEO|A20N/,'A20N'],[/A321|AIRBUS.*321/,'A321'],[/A320|AIRBUS.*320|A319|A318/,'A320'],
+ [/B787.?10|B78X/,'B78X'],[/B787.?9|B789/,'B789'],[/B787.?8|B788/,'B788'],[/B777.?9|B779/,'B779'],[/B777.?300.?ER|B77W/,'B77W'],[/B777.?300|B773/,'B773'],[/B777.?200.?LR|B77L/,'B77L'],[/B777.?200|B772/,'B772'],
+ [/B747.?8|B748/,'B748'],[/B747.?400|B744/,'B744'],[/B747.?200|B742/,'B742'],[/B747/,'B744'],
+ [/B737.?MAX.?9|B39M/,'B39M'],[/B737.?MAX.?8|B38M/,'B38M'],[/B737.?900|B739/,'B739'],[/B737.?800|B738/,'B738'],[/B737.?700|B737/,'B737'],[/B737|BOEING.*737/,'B738'],
+ [/B757.?300|B753/,'B753'],[/B757|B752|BOEING.*757/,'B752'],[/B767.?400|B764/,'B764'],[/B767.?300|B763/,'B763'],[/B767|B762/,'B762'],
+ [/B727.?200|B722/,'B722'],[/B727|B721/,'B722'],[/B717|B712/,'B712'],[/MD.?11|MD11/,'MD11'],[/DC.?10|DC10/,'DC10'],
+ [/A220.?300|BCS3/,'BCS3'],[/A220|BCS1/,'BCS1'],[/E.?195|E195/,'E195'],[/E.?170|E170/,'E170'],[/CRJ.?900|CRJ9/,'CRJ9'],[/CRJ.?700|CRJ7/,'CRJ7'],[/CRJ.?200|CRJ2/,'CRJ2'],
+ [/ATR.?72|AT75/,'AT75'],[/ATR.?42|AT45/,'AT45'],[/DASH.?8.?400|DH8D|Q400/,'DH8D'],[/DASH.?8.?300|DH8C/,'DH8C'],
+ [/CESSNA.?172|C172/,'C172'],[/CESSNA.?208|CARAVAN|C208/,'C208'],[/PC.?12|PILATUS.*12/,'PC12'],[/KING.?AIR.?350|B350/,'B350'],[/BEECH.?1900|B190/,'B190'],
+ [/AN.?124|AN124/,'A124'],[/AN.?225|AN225/,'A225'],[/A.?400M|A400/,'A400'],[/C.?130|HERCULES/,'C130'],[/C.?17|GLOBEMASTER/,'C17']];
+ for(const [pattern,code] of rules)if(pattern.test(model)&&AIRCRAFT_SHAPE_CODES.has(code))return code;
+ return '';
+}
+function loadAircraftShape(code){
+ if(!AIRCRAFT_SHAPE_TEXTURES.has(code)){
+  const url='https://raw.githubusercontent.com/RexKramer1/AircraftShapesSVG/main/Shapes%20SVG/'+encodeURIComponent(code)+'.svg';
+  const promise=fetch(url).then(r=>{if(!r.ok)throw new Error('Aircraft SVG '+r.status);return r.text();}).then(svg=>{
+   svg=svg.replace(/#000000|#000|black/gi,'#ffffff');
+   const objectURL=URL.createObjectURL(new Blob([svg],{type:'image/svg+xml;charset=utf-8'}));
+   return new Promise((resolve,reject)=>new THREE.TextureLoader().load(objectURL,texture=>{URL.revokeObjectURL(objectURL);texture.needsUpdate=true;resolve(texture);},undefined,error=>{URL.revokeObjectURL(objectURL);reject(error);}));
+  }).catch(error=>{AIRCRAFT_SHAPE_TEXTURES.delete(code);throw error;});
+  AIRCRAFT_SHAPE_TEXTURES.set(code,promise);
+ }
+ return AIRCRAFT_SHAPE_TEXTURES.get(code);
+}
+
 function buildFlights(){
   flights.forEach(f=>{
     if(f.arcMesh){globe.remove(f.arcMesh);f.arcMesh.geometry.dispose();if(f.mat)f.mat.dispose();}
-    if(f.plane){globe.remove(f.plane);if(f.plane.material.map)f.plane.material.map.dispose();f.plane.material.dispose();}
+    if(f.plane){globe.remove(f.plane);if(f.plane.userData.fallbackMap)f.plane.userData.fallbackMap.dispose();f.plane.material.dispose();}
     if(f.trail){globe.remove(f.trail.line);if(f.trail.line.geometry)f.trail.line.geometry.dispose();}
   });
   flights=[];
@@ -943,19 +981,25 @@ function buildFlights(){
     const routeKey=p.origin.icao+'-'+p.dest.icao;
     const isNew=!seenRoutes.has(routeKey);
     if(isNew) seenRoutes.add(routeKey);
-    const plane=isNew?makePlane(p.color):null; if(plane) globe.add(plane);
+    const plane=isNew?makePlane(p.color,p.aircraft):null; if(plane) globe.add(plane);
     const trail=isNew?new Trail(p.color,60):null; if(trail) globe.add(trail.line);
     flights.push({curve,arcMesh,plane,trail,t:Math.random(),speed:0.007+Math.random()*0.004,color:p.color,mat});
   });
 }
 
-function makePlane(color){
-  // Lightweight 2D vector aircraft sprite instead of a multi-mesh 3D model.
-  const canvas=document.createElement('canvas');canvas.width=64;canvas.height=64;
-  const ctx=canvas.getContext('2d');ctx.translate(32,32);ctx.fillStyle=color;ctx.shadowColor=color;ctx.shadowBlur=8;
-  ctx.beginPath();ctx.moveTo(0,-29);ctx.lineTo(4,-7);ctx.lineTo(23,5);ctx.lineTo(23,10);ctx.lineTo(4,4);ctx.lineTo(3,20);ctx.lineTo(10,25);ctx.lineTo(10,29);ctx.lineTo(0,26);ctx.lineTo(-10,29);ctx.lineTo(-10,25);ctx.lineTo(-3,20);ctx.lineTo(-4,4);ctx.lineTo(-23,10);ctx.lineTo(-23,5);ctx.lineTo(-4,-7);ctx.closePath();ctx.fill();
-  const texture=new THREE.CanvasTexture(canvas),material=new THREE.SpriteMaterial({map:texture,transparent:true,depthWrite:false,depthTest:true});
-  const sprite=new THREE.Sprite(material);sprite.scale.set(.055,.055,1);return sprite;
+function makePlane(color,aircraft){
+ const canvas=document.createElement('canvas');canvas.width=64;canvas.height=64;
+ const ctx=canvas.getContext('2d');ctx.translate(32,32);ctx.fillStyle='#ffffff';
+ ctx.beginPath();ctx.moveTo(0,-29);ctx.lineTo(4,-7);ctx.lineTo(23,5);ctx.lineTo(23,10);ctx.lineTo(4,4);ctx.lineTo(3,20);ctx.lineTo(10,25);ctx.lineTo(10,29);ctx.lineTo(0,26);ctx.lineTo(-10,29);ctx.lineTo(-10,25);ctx.lineTo(-3,20);ctx.lineTo(-4,4);ctx.lineTo(-23,10);ctx.lineTo(-23,5);ctx.lineTo(-4,-7);ctx.closePath();ctx.fill();
+ const fallback=new THREE.CanvasTexture(canvas),material=new THREE.SpriteMaterial({map:fallback,color:new THREE.Color(color),transparent:true,depthWrite:false,depthTest:true});
+ const sprite=new THREE.Sprite(material);sprite.scale.set(.011,.011,1);sprite.userData.fallbackMap=fallback;
+ const code=aircraftShapeCode(aircraft);sprite.userData.aircraftShapeCode=code;
+ if(code)loadAircraftShape(code).then(texture=>{
+  if(!sprite.material)return;
+  sprite.material.map=texture;sprite.material.color.set(color);sprite.material.needsUpdate=true;
+  if(sprite.userData.fallbackMap){sprite.userData.fallbackMap.dispose();delete sprite.userData.fallbackMap;}
+ }).catch(error=>console.warn('[Aircraft SVG] Generic icon fallback for',aircraft,error));
+ return sprite;
 }
 
 class Trail{
