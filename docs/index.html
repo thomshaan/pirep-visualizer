@@ -2262,9 +2262,11 @@ function openOpsReport(){const sel=document.getElementById('pilotReportSelect'),
 function closeOpsReport(){document.getElementById('opsReport').classList.remove('vis');}
 function renderPilotReport(){
  const name=document.getElementById('pilotReportSelect').value,all=PIREPS.filter(p=>p.pilot===name),el=document.getElementById('opsReportContent');
- const jomokPilots=['Muhammad Faza Abel Jonggara','Thomas Septian','Lalu Muhammad Alhadad'];
- const isJomokPilot=jomokPilots.some(n=>n.toLowerCase()===String(name||'').trim().toLowerCase());
- const jomokGifs=['https://media.giphy.com/media/cEC8Yk946EcyiUlReU/giphy.gif','https://media.giphy.com/media/W46SPXpuxdSWflpOnF/giphy.gif','https://media.giphy.com/media/ETsG1pevQK80mA7sDV/giphy.gif','https://media.giphy.com/media/bTnjjJn4pJLFUa0CLP/giphy.gif','https://media.giphy.com/media/XFYr5mJDMz3mxB8gFC/giphy.gif'];
+ const jomokPilots=['muhammad faza abel jonggara marpaung','thomas septian eliezer siahaan','lalu muhamad alhadad','lalu muhammad alhadad'];
+ const normalizeJomokName=s=>String(s||'').toLowerCase().normalize('NFD').replace(/[\\u0300-\\u036f]/g,'').replace(/[^a-z]/g,'');
+ const selectedJomokName=normalizeJomokName(name);
+ const isJomokPilot=jomokPilots.some(n=>{const target=normalizeJomokName(n);return selectedJomokName===target||selectedJomokName.startsWith(target)});
+ const jomokGifs=['https://media.giphy.com/media/cEC8Yk946EcyiUlReU/giphy.gif','https://media.giphy.com/media/ETsG1pevQK80mA7sDV/giphy.gif','https://media.giphy.com/media/XFYr5mJDMz3mxB8gFC/giphy.gif','https://media.giphy.com/media/wgQTGjJMReIsbLnB3G/giphy.gif','https://media.giphy.com/media/gNjSEUHYeGVAiSRwyt/giphy.gif'];
  const jomokReward={min:0,label:'JOMOK CLASSIFIED',emoji:'💀',gifUrl:jomokGifs[Math.floor(Math.random()*jomokGifs.length)]};
  const leaderboard=leaderboardHtml(name);
  if(!all.length){const noFlightReward=isJomokPilot?jomokReward:PILOT_GIF_TIERS[0],noFlightEvo=isJomokPilot?5:0;document.getElementById('opsHeaderReward').className='ops-header-reward evo-'+noFlightEvo;document.getElementById('opsHeaderReward').innerHTML='<div class="ops-header-reward-art">'+(noFlightReward.gifUrl?'<img src="'+escapeOps(noFlightReward.gifUrl)+'" alt="'+escapeOps(noFlightReward.label)+' GIF" loading="lazy">':'<span>'+noFlightReward.emoji+'</span>')+'</div><div class="ops-header-reward-copy"><div class="ops-reward-label">'+noFlightReward.label+'</div><div class="ops-reward-note">'+(isJomokPilot?'JOMOK OVERRIDE · PLANE PRIVILEGES REVOKED':'No flights loaded for this pilot yet.')+'</div></div>';el.innerHTML=leaderboard+'<div class="ops-empty">No pilot PIREPs found in the currently loaded data.</div>';return;}
