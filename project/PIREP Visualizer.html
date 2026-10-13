@@ -935,7 +935,7 @@ function aircraftShapeCode(aircraft){
  const raw=String(aircraft||'').trim().toUpperCase(),direct=raw.replace(/[^A-Z0-9]/g,'');
  if(AIRCRAFT_SHAPE_CODES.has(direct))return direct;
  const rules=[
- [/A\\s?350\\s?[- ]?1000|A35K|A350.?1000/,'A35K'],[/A350|A359|AIRBUS.*350/,'A359'],[/A380|A388|AIRBUS.*380/,'A388'],
+ [/A.?350.?1000|A35K/,'A35K'],[/A350|A359|AIRBUS.*350/,'A359'],[/A380|A388|AIRBUS.*380/,'A388'],
  [/A340.?600|A346/,'A346'],[/A340.?500|A345/,'A345'],[/A340.?300|A343/,'A343'],[/A340.?200|A342/,'A342'],
  [/A330.?900|A339/,'A339'],[/A330.?800|A338/,'A338'],[/A330.?300|A333/,'A333'],[/A330|A332|AIRBUS.*330/,'A332'],
  [/A321.?NEO|A21N/,'A21N'],[/A320.?NEO|A20N/,'A20N'],[/A321|AIRBUS.*321/,'A321'],[/A320|AIRBUS.*320|A319|A318/,'A320'],
@@ -1000,21 +1000,6 @@ function makePlane(color,aircraft){
   if(sprite.userData.fallbackMap){sprite.userData.fallbackMap.dispose();delete sprite.userData.fallbackMap;}
  }).catch(error=>console.warn('[Aircraft SVG] Generic icon fallback for',aircraft,error));
  return sprite;
-}
-  // Canvas-rendered 2D aircraft silhouette: far fewer draw calls than the old multi-mesh model.
-  const canvas=document.createElement('canvas');canvas.width=64;canvas.height=64;
-  const ctx=canvas.getContext('2d');ctx.translate(32,32);ctx.fillStyle=color;ctx.shadowColor=color;ctx.shadowBlur=8;
-  ctx.beginPath();ctx.moveTo(0,-29);ctx.lineTo(4,-7);ctx.lineTo(23,5);ctx.lineTo(23,10);ctx.lineTo(4,4);ctx.lineTo(3,20);ctx.lineTo(10,25);ctx.lineTo(10,29);ctx.lineTo(0,26);ctx.lineTo(-10,29);ctx.lineTo(-10,25);ctx.lineTo(-3,20);ctx.lineTo(-4,4);ctx.lineTo(-23,10);ctx.lineTo(-23,5);ctx.lineTo(-4,-7);ctx.closePath();ctx.fill();
-  const texture=new THREE.CanvasTexture(canvas);
-  const material=new THREE.SpriteMaterial({map:texture,transparent:true,depthWrite:false,depthTest:true});
-  const sprite=new THREE.Sprite(material);sprite.scale.set(.055,.055,1);return sprite;
-}
-  // Lightweight 2D vector aircraft sprite instead of a multi-mesh 3D model.
-  const canvas=document.createElement('canvas');canvas.width=64;canvas.height=64;
-  const ctx=canvas.getContext('2d');ctx.translate(32,32);ctx.fillStyle=color;ctx.shadowColor=color;ctx.shadowBlur=8;
-  ctx.beginPath();ctx.moveTo(0,-29);ctx.lineTo(4,-7);ctx.lineTo(23,5);ctx.lineTo(23,10);ctx.lineTo(4,4);ctx.lineTo(3,20);ctx.lineTo(10,25);ctx.lineTo(10,29);ctx.lineTo(0,26);ctx.lineTo(-10,29);ctx.lineTo(-10,25);ctx.lineTo(-3,20);ctx.lineTo(-4,4);ctx.lineTo(-23,10);ctx.lineTo(-23,5);ctx.lineTo(-4,-7);ctx.closePath();ctx.fill();
-  const texture=new THREE.CanvasTexture(canvas),material=new THREE.SpriteMaterial({map:texture,transparent:true,depthWrite:false,depthTest:true});
-  const sprite=new THREE.Sprite(material);sprite.scale.set(.055,.055,1);return sprite;
 }
 
 class Trail{
