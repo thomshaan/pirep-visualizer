@@ -1333,44 +1333,7 @@ setInterval(()=>{updateZulu();renderBottomBar();},1000);
  // ═══════════════════════════════════════════════════════
  // HEADER STATS
 // ═══════════════════════════════════════════════════════
-/* Globe weather overlays: adverse airport METAR badges + SIGMET volcanic-ash boundaries. */
-let weatherMapOn=false,_wxMapLoading=false,_wxMapLastFetch=0,ashOverlay=null;
-function setWxMapStatus(msg,ok=false){const el=document.getElementById('wxMapStatus');if(el){el.textContent=msg;el.classList.toggle('ok',!!ok);}}
-function clearAshOverlay(){if(ashOverlay&&globe){globe.remove(ashOverlay);ashOverlay.traverse(o=>{if(o.geometry)o.geometry.dispose();if(o.material){if(Array.isArray(o.material))o.material.forEach(m=>m.dispose());else o.material.dispose();}});}ashOverlay=null;}
-function isAdverseMetar(m){const cat=String(m.fltCat||'').toUpperCase(),wx=String(m.wxString||'').toUpperCase(),raw=String(m.rawOb||'').toUpperCase();return ['LIFR','IFR','MVFR'].includes(cat)||/(\+RA|\+SN|\+TS|\bTS|\bFG\b|\bFZ|\bSQ\b|\bVA\b|\bDS\b|\bSS\b|\bGR\b|\bGS\b)/.test(wx+' '+raw);}
-function renderAirportWeather(data){
- const byId={};(Array.isArray(data)?data:[]).forEach(m=>{if(m.icaoId)byId[String(m.icaoId).toUpperCase()]=m;});
- airportMarkers.forEach(mk=>{const m=byId[mk.icao];mk.wxData=m||null;mk.wxBad=!!m&&isAdverseMetar(m);if(!mk.wxBadge)return;
- if(!m){mk.wxBadge.innerHTML='⚠<span class="wx-map-tip"><strong>'+wxEsc(mk.icao)+' · NO RECENT METAR</strong>No observation returned in the last two hours.</span>';return;}
- const cat=String(m.fltCat||'UNKNOWN').toUpperCase(),raw=m.rawOb||'METAR unavailable',wx=m.wxString||'No significant weather',obs=m.obsTime?new Date(m.obsTime*1000).toISOString().replace('T',' ').slice(0,16)+'Z':'Time unavailable';
- const icon=/TS/.test(wx)?'⛈':/(RA|DZ|SN|SH)/.test(wx)?'🌧':/(FG|BR|HZ)/.test(wx)?'🌫':'⚠';
- mk.wxBadge.innerHTML=icon+'<span class="wx-map-tip"><strong>'+wxEsc(mk.icao)+' · '+wxEsc(cat)+'</strong>'+wxEsc(mk.name||mk.icao)+'<br>'+wxEsc(wx)+' · '+wxEsc(m.temp===undefined?'—':Math.round(Number(m.temp))+'°C')+'<br>Wind '+wxEsc(m.wdir??'VRB')+'° / '+wxEsc(m.wspd??'—')+' kt<br>Observed '+wxEsc(obs)+'<div class="wx-tip-raw">'+wxEsc(raw)+'</div></span>';
- mk.wxBadge.setAttribute('aria-label',mk.icao+' '+cat+' '+raw);});
-}
-async function refreshGlobeWeather(force=false){
- if(_wxMapLoading||(!force&&Date.now()-_wxMapLastFetch<300000)||!weatherMapOn)return;
- _wxMapLoading=true;setWxMapStatus('LOADING AIRPORT METAR + SIGMET HAZARDS…');
- try{
-  const ids=[...new Set(airportMarkers.map(m=>m.icao).filter(id=>/^[A-Z0-9]{4}$/.test(id)))].slice(0,390);
-  if(ids.length){const r=await fetch('https://aviationweather.gov/api/data/metar?ids='+encodeURIComponent(ids.join(','))+'&format=json&hours=2',{cache:'no-store'});if(!r.ok)throw Error('METAR HTTP '+r.status);renderAirportWeather(await r.json());}
-  let ashCount=0;
-  try{
-   const r=await fetch('https://aviationweather.gov/api/data/airsigmet?format=geojson',{cache:'no-store'});if(!r.ok)throw Error('SIGMET HTTP '+r.status);const geo=await r.json();
-   const features=(geo.features||[]).filter(f=>{const p=f.properties||{},txt=Object.entries(p).map(([k,v])=>k+' '+String(v??'')).join(' ');return /volcanic ash|\bVA\b|ASH CLOUD/i.test(txt)&&f.geometry&&['Polygon','MultiPolygon'].includes(f.geometry.type);});
-   clearAshOverlay();
-   if(features.length&&globe){ashOverlay=new THREE.Group();ashOverlay.name='Volcanic Ash Advisory Boundaries';
-    features.forEach(f=>{const polys=f.geometry.type==='Polygon'?[f.geometry.coordinates]:f.geometry.coordinates,p=f.properties||{},title=Object.entries(p).filter(([k])=>/volcano|phenom|hazard|raw|valid|start|end|fir|sigmet|alt|time/i.test(k)).map(([k,v])=>k+': '+String(v??'')).join(' · ').slice(0,700)||'Volcanic ash SIGMET';
-     polys.forEach(poly=>{const ring=poly&&poly[0];if(!Array.isArray(ring)||ring.length<3)return;const points=ring.map(c=>ll2v(Number(c[1]),Number(c[0]),1.018));
-      const line=new THREE.LineLoop(new THREE.BufferGeometry().setFromPoints(points),new THREE.LineBasicMaterial({color:0xff7b55,transparent:true,opacity:.95,depthWrite:false}));line.userData.ashInfo=title;ashOverlay.add(line);
-      const center=points.reduce((a,v)=>a.add(v),new THREE.Vector3()).normalize().multiplyScalar(1.016),verts=[];for(let i=0;i<points.length;i++){const a=points[i],b=points[(i+1)%points.length];verts.push(center.x,center.y,center.z,a.x,a.y,a.z,b.x,b.y,b.z);}
-      const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(verts,3));g.computeVertexNormals();const fill=new THREE.Mesh(g,new THREE.MeshBasicMaterial({color:0xff684d,transparent:true,opacity:.12,side:THREE.DoubleSide,depthWrite:false}));fill.userData.ashInfo=title;ashOverlay.add(fill);});
-    });globe.add(ashOverlay);ashCount=features.length;}
-   setWxMapStatus('GLOBE OVERLAYS ON · '+ids.length+' AIRPORTS · '+ashCount+' ASH ADVISORY AREA(S)',true);
-  }catch(e){setWxMapStatus('AIRPORT METAR LOADED · ASH FEED UNAVAILABLE ('+wxEsc(e.message)+')');}
-  _wxMapLastFetch=Date.now();
- }catch(e){setWxMapStatus('WEATHER MAP FEED UNAVAILABLE ('+wxEsc(e.message)+')');}finally{_wxMapLoading=false;}
-}
-
+/* Globe weather overlays and automated METAR polling intentionally removed. */
 function updateStats(){
   const set=activeFilter?PIREPS.filter(p=>p.pilot.toLowerCase().includes(activeFilter.toLowerCase())):PIREPS;
   document.getElementById('statFlights').textContent=String(set.length).padStart(2,'0');
