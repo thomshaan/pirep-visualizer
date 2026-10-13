@@ -283,6 +283,30 @@ body.panel-collapsed #panelToggle{right:0;}
 .ops-reward-label{font:700 10px var(--fm);color:var(--gold);letter-spacing:.08em}
 .ops-reward-note{font-size:10px;color:var(--dim);line-height:1.5;margin-top:5px}.ops-personality{display:grid;grid-template-columns:auto 1fr;gap:14px;align-items:center;margin:12px 0 20px;padding:16px;background:linear-gradient(125deg,rgba(174,53,125,.13),rgba(249,148,32,.05));border:1px solid rgba(214,91,165,.3);border-radius:12px}.ops-personality-icon{font-size:42px}.ops-personality-title{font:900 17px var(--fd);color:var(--gold)}.ops-personality-tag{font:700 8px var(--fm);color:#e99acb;letter-spacing:.16em;margin-bottom:5px}.ops-personality-copy{font-size:11px;line-height:1.6;color:var(--dim);margin-top:5px}.ops-secret-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}.ops-secret{padding:10px;border:1px solid rgba(249,148,32,.18);border-radius:8px;background:#f9942008;min-width:0}.ops-secret.locked{filter:saturate(.25);opacity:.58}.ops-secret-name{font:700 9px var(--fm);color:var(--gold);margin-bottom:5px}.ops-secret-desc{font-size:10px;color:var(--dim);line-height:1.5}.ops-secret-status{font:700 8px var(--fm);margin-top:8px;color:var(--orange)}.ops-header-reward.evo-1 .ops-header-reward-art img{filter:hue-rotate(22deg) saturate(1.2)}.ops-header-reward.evo-2 .ops-header-reward-art img{filter:hue-rotate(65deg) saturate(1.6)}.ops-header-reward.evo-3 .ops-header-reward-art img{filter:hue-rotate(125deg) saturate(1.8) contrast(1.15)}.ops-header-reward.evo-4 .ops-header-reward-art img{filter:hue-rotate(190deg) saturate(2) contrast(1.25)}.ops-header-reward.evo-5 .ops-header-reward-art img{filter:hue-rotate(270deg) saturate(2.2) contrast(1.3);transform:scale(1.08)}
 @media(max-width:760px){.ops-top{display:flex;flex-wrap:wrap;align-items:stretch;gap:12px}.ops-heading{flex:1 1 100%;text-align:left;padding:0 100px 0 0}.ops-header-reward{order:3;width:100%;min-width:0;flex:1 1 100%}.ops-header-reward-art{width:132px;height:96px}.ops-close{order:2}.ops-select-wrap{order:4;width:100%;max-width:none;flex:1 1 100%;margin-top:0}.ops-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.ops-columns{grid-template-columns:1fr}.ops-score-layout{grid-template-columns:1fr}#opsReport{padding:8px}.ops-shell{padding:14px;max-height:calc(100dvh - 16px);margin:auto 0}.ops-close{min-width:96px;min-height:48px;padding:12px;font-size:10px}.ops-nav-btn{padding:8px;font-size:8px}.ops-journey-item{grid-template-columns:55px 1fr}.ops-journey-time{grid-column:2}}
+
+/* PILOT JOURNEY HEADER — centered, stacked layout */
+.ops-top{display:grid!important;grid-template-columns:minmax(0,1fr)!important;grid-template-rows:auto auto auto!important;gap:16px!important;align-items:center!important;margin-bottom:22px!important}
+.ops-heading{grid-column:1!important;grid-row:1!important;text-align:center!important;padding:0 125px!important;width:100%}
+.ops-close{position:absolute!important;top:0!important;right:0!important;z-index:3!important}
+.ops-select-wrap{grid-column:1!important;grid-row:2!important;justify-self:center!important;align-self:center!important;display:flex!important;justify-content:center!important;align-items:center!important;gap:10px!important;width:min(100%,520px)!important;max-width:520px!important;margin:0!important;flex-wrap:wrap!important}
+.ops-select-wrap label{white-space:nowrap}
+.ops-select-wrap select{flex:1 1 260px!important;width:auto!important;min-width:0!important;max-width:100%!important}
+.ops-header-reward{grid-column:1!important;grid-row:3!important;justify-self:center!important;align-self:center!important;display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;gap:10px!important;width:min(100%,520px)!important;max-width:520px!important;min-width:0!important;padding:14px 18px!important;text-align:center!important}
+.ops-header-reward-art{width:min(100%,300px)!important;height:168px!important;flex:0 0 auto!important}
+.ops-header-reward-copy{width:100%!important;text-align:center!important}
+.ops-header-reward-copy .ops-reward-label{font-size:12px!important;letter-spacing:.12em}
+.ops-header-reward-copy .ops-reward-note{font-size:10px!important;line-height:1.6}
+.ops-personality{margin:14px 0 24px!important}
+@media(max-width:760px){
+ .ops-top{display:grid!important;grid-template-columns:minmax(0,1fr)!important;grid-template-rows:auto auto auto!important;gap:14px!important}
+ .ops-heading{grid-column:1!important;grid-row:1!important;text-align:center!important;padding:0 84px!important}
+ .ops-close{top:0!important;right:0!important;min-width:76px!important;min-height:42px!important;padding:10px!important;font-size:9px!important}
+ .ops-select-wrap{grid-column:1!important;grid-row:2!important;width:100%!important;max-width:520px!important;flex-direction:column!important;gap:8px!important}
+ .ops-select-wrap select{width:100%!important;flex:0 1 auto!important}
+ .ops-header-reward{grid-column:1!important;grid-row:3!important;width:min(100%,520px)!important}
+ .ops-header-reward-art{width:min(100%,280px)!important;height:158px!important}
+}
+
 </style>
 </head>
 <body>
@@ -1516,7 +1540,8 @@ function renderPilotReport(){
  const name=document.getElementById('pilotReportSelect').value,all=PIREPS.filter(p=>p.pilot===name),el=document.getElementById('opsReportContent');
  const jomokPilots=['Muhammad Faza Abel Jonggara','Thomas Septian','Lalu Muhammad Alhadad'];
  const isJomokPilot=jomokPilots.some(n=>n.toLowerCase()===String(name||'').trim().toLowerCase());
- const jomokReward={min:0,label:'JOMOK CLASSIFIED',emoji:'💀',gifUrl:'https://media.giphy.com/media/XFYr5mJDMz3mxB8gFC/giphy.gif'};
+ const jomokGifs=['https://media.giphy.com/media/cEC8Yk946EcyiUlReU/giphy.gif','https://media.giphy.com/media/W46SPXpuxdSWflpOnF/giphy.gif','https://media.giphy.com/media/ETsG1pevQK80mA7sDV/giphy.gif','https://media.giphy.com/media/bTnjjJn4pJLFUa0CLP/giphy.gif','https://media.giphy.com/media/XFYr5mJDMz3mxB8gFC/giphy.gif'];
+ const jomokReward={min:0,label:'JOMOK CLASSIFIED',emoji:'💀',gifUrl:jomokGifs[Math.floor(Math.random()*jomokGifs.length)]};
  const leaderboard=leaderboardHtml(name);
  if(!all.length){const noFlightReward=isJomokPilot?jomokReward:PILOT_GIF_TIERS[0],noFlightEvo=isJomokPilot?5:0;document.getElementById('opsHeaderReward').className='ops-header-reward evo-'+noFlightEvo;document.getElementById('opsHeaderReward').innerHTML='<div class="ops-header-reward-art">'+(noFlightReward.gifUrl?'<img src="'+escapeOps(noFlightReward.gifUrl)+'" alt="'+escapeOps(noFlightReward.label)+' GIF" loading="lazy">':'<span>'+noFlightReward.emoji+'</span>')+'</div><div class="ops-header-reward-copy"><div class="ops-reward-label">'+noFlightReward.label+'</div><div class="ops-reward-note">'+(isJomokPilot?'JOMOK OVERRIDE · PLANE PRIVILEGES REVOKED':'No flights loaded for this pilot yet.')+'</div></div>';el.innerHTML=leaderboard+'<div class="ops-empty">No pilot PIREPs found in the currently loaded data.</div>';return;}
  const fleet={},airports={},countries={},routes={},regs={},subs={},months={};let longest=null,shortest=null;
