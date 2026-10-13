@@ -1412,7 +1412,7 @@ function aircraftShapeCode(aircraft){
  [/CESSNA.?172|C172/,'C172'],[/CESSNA.?208|CARAVAN|C208/,'C208'],[/PC.?12|PILATUS.*12/,'PC12'],[/KING.?AIR.?350|B350/,'B350'],[/BEECH.?1900|B190/,'B190'],
  [/AN.?124|AN124/,'A124'],[/AN.?225|AN225/,'A225'],[/A.?400M|A400/,'A400'],[/C.?130|HERCULES/,'C130'],[/C.?17|GLOBEMASTER/,'C17']];
  for(const [pattern,code] of rules)if(pattern.test(model)&&AIRCRAFT_SHAPE_CODES.has(code))return code;
- return '';
+ return 'A320';
 }
 function loadAircraftShape(code){
  if(!AIRCRAFT_SHAPE_TEXTURES.has(code)){
@@ -1512,7 +1512,14 @@ function makePlane(color,aircraft){
   if(!sprite.material)return;
   sprite.material.map=texture;sprite.material.color.set('#FFFFFF');sprite.material.needsUpdate=true;
   if(sprite.userData.fallbackMap){sprite.userData.fallbackMap.dispose();delete sprite.userData.fallbackMap;}
- }).catch(error=>console.warn('[Aircraft SVG] Generic icon fallback for',aircraft,error));
+ }).catch(error=>{
+  if(code!=='A320')loadAircraftShape('A320').then(texture=>{
+   if(!sprite.material)return;
+   sprite.material.map=texture;sprite.material.color.set('#FFFFFF');sprite.material.needsUpdate=true;
+   if(sprite.userData.fallbackMap){sprite.userData.fallbackMap.dispose();delete sprite.userData.fallbackMap;}
+  }).catch(fallbackError=>console.warn('[Aircraft SVG] A320 fallback failed; using generic icon',fallbackError));
+  else console.warn('[Aircraft SVG] A320 icon failed; using generic icon',error);
+ });
  return sprite;
 }
 
@@ -1612,7 +1619,9 @@ function animate(){
     fl.plane.scale.setScalar(planeScale*0.05);
     const pos=fl.curve.getPoint(fl.t),tan=fl.curve.getTangent(fl.t).normalize();
     fl.plane.position.copy(pos);
-    fl.plane.material.rotation=Math.atan2(tan.z,tan.x)-Math.PI/2;
+    const screenPos=pos.clone().project(camera),screenAhead=pos.clone().addScaledVector(tan,0.001).project(camera);
+    const screenDX=screenAhead.x-screenPos.x,screenDY=screenAhead.y-screenPos.y;
+    if(Math.abs(screenDX)+Math.abs(screenDY)>1e-9)fl.plane.material.rotation=Math.atan2(-screenDX,screenDY);
     if(trailsOn&&fl.trail) fl.trail.push(pos);
   });
   renderer.render(scene,camera);
