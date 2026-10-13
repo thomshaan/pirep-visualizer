@@ -2615,14 +2615,14 @@ async function lookupHandbookLiveWeather(){
   const r=await phFetchMetar(code),raw=String(r.rawOb||r.raw_text||r.metar||r.raw||'').trim();
   const wxText=(Array.isArray(r.wxString)?r.wxString.join(' '):String(r.wxString||r.wx||'')).toUpperCase();
   const cloudText=(Array.isArray(r.clouds)?r.clouds.map(c=>String(c.cover||c.coverage||'')).join(' '):String(r.skyCover||'')).toUpperCase();
-  const rawCloud=(raw.match(/\\b(FEW|SCT|BKN|OVC|VV)\\d{3}\\b/g)||[]).join(' '),allClouds=cloudText+' '+rawCloud,wt=wxText+' '+raw;
-  const storm=/TS|\\+RA|VCTS/.test(wt),snow=/SN|SG|PL|IC/.test(wt),wet=/RA|DZ|SH|FZ/.test(wt),fog=/FG|BR|HZ|FU|DU|SA/.test(wt),covered=/BKN|OVC|VV/.test(allClouds),partly=/FEW|SCT/.test(allClouds);
+  const rawCloud=(raw.match(/\b(FEW|SCT|BKN|OVC|VV)\d{3}\b/g)||[]).join(' '),allClouds=cloudText+' '+rawCloud,wt=wxText+' '+raw;
+  const storm=/TS|\+RA|VCTS/.test(wt),snow=/SN|SG|PL|IC/.test(wt),wet=/RA|DZ|SH|FZ/.test(wt),fog=/FG|BR|HZ|FU|DU|SA/.test(wt),covered=/BKN|OVC|VV/.test(allClouds),partly=/FEW|SCT/.test(allClouds);
   const scene=storm?'storm':snow?'snow':wet?'rain':fog?'fog':covered||partly?'cloudy':'clear',glyph=storm?'⛈️':snow?'🌨️':wet?'🌧️':fog?'🌫️':covered?'☁️':partly?'🌤️':'☀️';
   const condition=storm?'Thunderstorm reported':snow?'Snow / frozen precipitation':wet?'Rain / drizzle reported':fog?'Fog / mist / reduced clarity':covered?'Overcast / low cloud':partly?'Few / scattered cloud':'Clear / fair conditions';
   const temp=r.temp!=null?Math.round(Number(r.temp))+'°C':'—',wind=(r.wdir!=null?Number(r.wdir)+'°':'VRB')+(r.wspd!=null?' · '+r.wspd+' kt':''),angle=Number.isFinite(Number(r.wdir))?Number(r.wdir):0;
-  const visibility=r.visib!=null?String(r.visib)+(String(r.visib).match(/^\\d+(\\.\\d+)?$/)?' SM':''):'—',category=String(r.fltCat||r.flightCategory||r.flight_category||'').toUpperCase(),details=[];
+  const visibility=r.visib!=null?String(r.visib)+(String(r.visib).match(/^\d+(\.\d+)?$/)?' SM':''):'—',category=String(r.fltCat||r.flightCategory||r.flight_category||'').toUpperCase(),details=[];
   if(r.dewp!=null)details.push('DEW '+r.dewp+'°C');if(r.altim!=null)details.push('ALT '+r.altim);
-  const obs=Number(r.obsTime),date=Number.isFinite(obs)&&obs>0?new Date(obs*1000).toISOString().replace('T',' ').replace(/\\.\\d{3}Z$/,' UTC'):'Observation time unavailable';
+  const obs=Number(r.obsTime),date=Number.isFinite(obs)&&obs>0?new Date(obs*1000).toISOString().replace('T',' ').replace(/\.\d{3}Z$/,' UTC'):'Observation time unavailable';
   phMetars[code]=phMetarSummary(r);
   out.innerHTML='<div style="font:700 10px var(--fm);letter-spacing:.1em;color:#baf8e9;margin-top:10px">'+phEsc(code)+' · LIVE OBSERVATION</div>'+
    '<div class="wx-live"><div class="wx-scene '+scene+'" role="img" aria-label="'+phEsc(condition)+'"><span class="wx-glyph">'+glyph+'</span></div><div class="wx-live-data"><div class="wx-live-top"><span class="wx-live-condition">'+phEsc(condition)+'</span>'+(category?'<span class="wx-live-category">'+phEsc(category)+'</span>':'')+'</div><div class="wx-live-temp">'+phEsc(temp)+'</div><div class="wx-live-meta"><span class="wx-wind-arrow" style="--wind-angle:'+angle+'deg">↑</span> WIND '+phEsc(wind)+'<br>VIS '+phEsc(visibility)+(details.length?'<br>'+details.map(phEsc).join(' · '):'')+'</div></div></div>'+
