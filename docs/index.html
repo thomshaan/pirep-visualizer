@@ -522,6 +522,24 @@ body.panel-collapsed #panelToggle{right:0;}
 .ph-muted{font:9px/1.6 var(--fm);color:var(--dim);margin-top:10px}
 @media(max-width:700px){.nav-dock{bottom:10px;gap:6px;max-width:calc(100vw - 20px)}.nav-dock .ops-nav-btn,.nav-dock .handbook-nav-btn{padding:9px 8px;font-size:8px;letter-spacing:.04em}.ph-shell{padding:13px;max-height:calc(100dvh - 16px)}#pilotHandbook{padding:8px}.ph-grid,.ph-fields,.ph-checklist,.ph-resource-grid{grid-template-columns:1fr}.ph-card.wide{grid-column:auto}.ph-top{gap:10px}.ph-close{padding:9px;font-size:9px}.ph-airport-summary{grid-template-columns:1fr 1fr}}
 
+
+/* PILOT HANDBOOK NOTEPAD + LIVE FLIGHT DECK */
+.ph-notepad-columns{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:12px;align-items:start}
+.ph-notepad-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.ph-subhead{font:700 9px var(--fm);letter-spacing:.1em;color:var(--gold);padding:10px 0 7px;margin-top:6px;border-bottom:1px solid rgba(249,148,32,.17)}
+.ph-flight-details{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.ph-detail{padding:9px;border:1px solid rgba(249,148,32,.14);border-radius:7px;background:rgba(0,0,0,.12);min-width:0}
+.ph-detail label{display:block;font:700 8px var(--fm);letter-spacing:.06em;color:var(--dim);margin-bottom:5px}
+.ph-detail strong{display:block;font:600 10px/1.5 var(--fm);color:var(--text);overflow-wrap:anywhere;white-space:pre-wrap}
+.ph-weatherbox{min-height:154px;background:linear-gradient(145deg,rgba(101,229,202,.08),rgba(12,30,33,.3));border-color:rgba(101,229,202,.25)}
+.ph-weatherbox strong{display:flex;align-items:center;justify-content:space-between}
+.ph-weather-main{font:600 10px/1.65 var(--fm)!important;color:#d7fff4!important;margin-bottom:6px}
+.ph-weather-raw{font:9px/1.6 var(--fm);color:var(--dim);overflow-wrap:anywhere;margin-top:7px}
+#phSectionNotepad .ph-field input,#phSectionNotepad .ph-field textarea{padding:8px 9px;border-color:rgba(249,148,32,.17);border-radius:4px;background:rgba(10,5,10,.35);font-size:10px}
+#phSectionNotepad .ph-field label{font-size:7px}
+@media(max-width:760px){.ph-notepad-columns{grid-template-columns:1fr}.ph-flight-details{grid-template-columns:repeat(2,minmax(0,1fr))}.ph-notepad-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:420px){.ph-notepad-grid{grid-template-columns:1fr}.ph-flight-details{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
 </style>
 </head>
 <body>
@@ -578,45 +596,148 @@ body.panel-collapsed #panelToggle{right:0;}
  </div>
 </div>
 
-<!-- PILOT HANDBOOK: sections are hidden until explicitly selected; no third-party iframes -->
+<!-- PILOT HANDBOOK: lazily opened sections; no embedded third-party pages -->
 <div id="pilotHandbook" role="dialog" aria-modal="true" aria-label="Pilot Handbook" onclick="if(event.target===this)closePilotHandbook()">
  <div class="ph-shell">
-  <div class="ph-top"><div><div class="ph-kicker">ABEL JETS · FLIGHT OPERATIONS</div><div class="ph-title">PILOT HANDBOOK</div><div class="ph-sub">A lightweight flight workspace. Live data is requested only when you press a lookup button; external resources open in a separate tab.</div></div><button class="ph-close" onclick="closePilotHandbook()">✕ CLOSE</button></div>
+  <div class="ph-top"><div><div class="ph-kicker">ABEL JETS · FLIGHT OPERATIONS</div><div class="ph-title">PILOT HANDBOOK</div><div class="ph-sub">Flight workspace · VATSIM flight plan lookup · airport weather · ATC notes. Data is requested only when you ask.</div></div><button class="ph-close" onclick="closePilotHandbook()">✕ CLOSE</button></div>
   <nav class="ph-nav" aria-label="Pilot Handbook sections">
-   <button class="ph-tab on" id="phTabDeck" onclick="showHandbookSection('deck')">01 · FLIGHT DECK<span>Route & live ATC</span></button>
-   <button class="ph-tab" id="phTabTools" onclick="showHandbookSection('tools')">02 · FLIGHT TOOLS<span>METAR & checklists</span></button>
-   <button class="ph-tab" id="phTabLinks" onclick="showHandbookSection('links')">03 · RESOURCES<span>Quick links</span></button>
+   <button class="ph-tab on" id="phTabDeck" onclick="showHandbookSection('deck')">01 · FLIGHT DECK<span>Callsign & live flight data</span></button>
+   <button class="ph-tab" id="phTabNotepad" onclick="showHandbookSection('notepad')">02 · ATC NOTEPAD<span>Departure · cruise · arrival</span></button>
+   <button class="ph-tab" id="phTabTools" onclick="showHandbookSection('tools')">03 · FLIGHT TOOLS<span>METAR & checklists</span></button>
+   <button class="ph-tab" id="phTabLinks" onclick="showHandbookSection('links')">04 · QUICK LINKS<span>External resources</span></button>
   </nav>
+
   <section class="ph-section" id="phSectionDeck">
-   <div class="ph-grid">
-    <div class="ph-card">
-     <div class="ph-card-title">FLIGHT WORKSPACE</div>
-     <div class="ph-fields">
-      <div class="ph-field"><label for="phDeparture">DEPARTURE ICAO</label><input id="phDeparture" maxlength="4" value="WIII" placeholder="WIII" autocomplete="off"></div>
-      <div class="ph-field"><label for="phDestination">DESTINATION ICAO</label><input id="phDestination" maxlength="4" value="WITT" placeholder="WITT" autocomplete="off"></div>
-     </div>
-     <div class="ph-actions"><button class="ph-action" onclick="saveFlightWorkspace()">SAVE ROUTE</button><button class="ph-action secondary" onclick="lookupRouteWeather()">CHECK BOTH METARS</button><button class="ph-action secondary" id="phAtcButton" onclick="lookupVatsimAtc()">CHECK VATSIM ATC</button></div>
-     <div class="ph-status" id="phRouteStatus" aria-live="polite">Enter two ICAO airport codes. Weather and VATSIM are fetched only on request.</div>
-     <div class="ph-airport-summary">
-      <div class="ph-apbox"><strong id="phDepCode">WIII</strong><div id="phDepWeather">Departure · waiting for lookup</div><div id="phDepAtc">ATC · not checked</div></div>
-      <div class="ph-apbox"><strong id="phDestCode">WITT</strong><div id="phDestWeather">Destination · waiting for lookup</div><div id="phDestAtc">ATC · not checked</div></div>
-     </div>
+   <div class="ph-card">
+    <div class="ph-card-title">FLIGHT PLAN RETRIEVAL · VATSIM NETWORK</div>
+    <form class="ph-fields" onsubmit="event.preventDefault();lookupFlightCallsign()">
+     <div class="ph-field"><label for="phCallsign">VATSIM CALLSIGN</label><input id="phCallsign" maxlength="12" placeholder="e.g. ABC123" autocomplete="off" required></div>
+     <div class="ph-field" style="display:flex;align-items:flex-end"><button class="ph-action" id="phFlightLookupBtn" type="submit" style="width:100%">RETRIEVE FLIGHT DATA</button></div>
+    </form>
+    <div class="ph-status" id="phFlightStatus" aria-live="polite">Enter the callsign exactly as shown on VATSIM. The live network feed is fetched only when you submit.</div>
+   </div>
+   <div class="ph-card" style="margin-top:12px">
+    <div class="ph-card-title">LIVE AIRPORT WEATHER · DEPARTURE / ARRIVAL</div>
+    <div class="ph-airport-summary">
+     <div class="ph-apbox ph-weatherbox"><strong><span id="phDepCode">DEP · —</span></strong><div class="ph-weather-main" id="phDepWeather">Waiting for flight plan lookup</div><div id="phDepAtc">VATSIM ATC · not checked</div><div class="ph-weather-raw" id="phDepRaw"></div></div>
+     <div class="ph-apbox ph-weatherbox"><strong><span id="phDestCode">ARR · —</span></strong><div class="ph-weather-main" id="phDestWeather">Waiting for flight plan lookup</div><div id="phDestAtc">VATSIM ATC · not checked</div><div class="ph-weather-raw" id="phDestRaw"></div></div>
     </div>
-    <div class="ph-card">
-     <div class="ph-card-title">AIRPORT INTELLIGENCE</div>
-     <div class="ph-copy">A compact route brief assembled from the live METAR service and VATSIM network snapshot. It does not dispatch a flight plan or replace official aeronautical information.</div>
-     <div class="ph-actions"><button class="ph-action secondary" onclick="copyFlightRoute()">COPY ROUTE</button><button class="ph-action secondary" onclick="openSimBriefForRoute()">OPEN SIMBRIEF</button></div>
-     <div class="ph-status" id="phBriefStatus">Route summary will appear here after lookups.</div>
-     <div class="ph-muted">ATC status reflects the latest successful VATSIM data snapshot and may change at any time. No controller found is not a guarantee that the airport is uncontrolled.</div>
+    <div class="ph-actions"><button class="ph-action secondary" onclick="lookupRouteWeather()">REFRESH BOTH METARS</button><button class="ph-action secondary" onclick="lookupVatsimAtc()">REFRESH ATC AVAILABILITY</button></div>
+    <div class="ph-muted">Weather uses the configured METAR proxy. ATC status is inferred from matching VATSIM controller/ATIS callsigns in the network snapshot; a missing match does not guarantee an airport is uncontrolled.</div>
+   </div>
+   <div class="ph-card" style="margin-top:12px">
+    <div class="ph-card-title">FLIGHT DETAILS</div>
+    <div class="ph-flight-details" id="phFlightDetails"><div class="ph-detail"><label>STATUS</label><strong>Awaiting callsign</strong></div></div>
+    <div class="ph-actions"><button class="ph-action secondary" onclick="copyFlightSummary()">COPY FLIGHT SUMMARY</button><button class="ph-action secondary" onclick="openSimBriefForRoute()">OPEN SIMBRIEF</button><button class="ph-action secondary" onclick="saveFlightWorkspace()">SAVE TO THIS BROWSER</button></div>
+    <div class="ph-status" id="phBriefStatus">Flight details will appear here after a successful lookup.</div>
+   </div>
+   <div class="ph-card" style="margin-top:12px">
+    <div class="ph-card-title">PERSONAL FLIGHT NOTES</div>
+    <div class="ph-field"><label for="phRouteNotes">BRIEFING / ROUTE NOTES</label><textarea id="phRouteNotes" rows="3" placeholder="SID / STAR reminders, alternate, gate, simulator-specific notes…"></textarea></div>
+    <div class="ph-actions"><button class="ph-action" onclick="saveFlightWorkspace()">SAVE NOTES</button></div>
+    <div class="ph-muted">For flight simulation planning only. Always verify charts, NOTAMs, procedures, weather, and network rules from authoritative current sources.</div>
+   </div>
+  </section>
+
+  <section class="ph-section" id="phSectionNotepad" hidden>
+   <div class="ph-card">
+    <div class="ph-card-title">FLIGHT OVERVIEW · KNEEBOARD</div>
+    <div class="ph-notepad-grid">
+     <div class="ph-field"><label>CALLSIGN</label><input data-note="overview.callsign" id="npCallsign" placeholder="ABC123"></div>
+     <div class="ph-field"><label>DEPARTURE TIME (UTC)</label><input data-note="overview.depTime" id="npDepTime" placeholder="HHMMZ"></div>
+     <div class="ph-field"><label>ARRIVAL TIME (UTC)</label><input data-note="overview.arrTime" id="npArrTime" placeholder="HHMMZ"></div>
+     <div class="ph-field"><label>AIR TIME</label><input data-note="overview.airTime" placeholder="HH:MM"></div>
+     <div class="ph-field"><label>BLOCK TIME</label><input data-note="overview.blockTime" placeholder="HH:MM"></div>
+     <div class="ph-field"><label>EMPTY WEIGHT</label><input data-note="overview.emptyWeight" placeholder="kg / lb"></div>
+     <div class="ph-field"><label>FAX / OTHER</label><input data-note="overview.fax" placeholder="—"></div>
+     <div class="ph-field"><label>FUEL</label><input data-note="overview.fuel" placeholder="kg / lb"></div>
+     <div class="ph-field"><label>CARGO</label><input data-note="overview.cargo" placeholder="kg / lb"></div>
+     <div class="ph-field"><label>ZFW</label><input data-note="overview.zfw" placeholder="kg / lb"></div>
+     <div class="ph-field"><label>PAYLOAD</label><input data-note="overview.payload" placeholder="kg / lb"></div>
+     <div class="ph-field"><label>TOW</label><input data-note="overview.tow" placeholder="kg / lb"></div>
     </div>
-    <div class="ph-card wide">
-     <div class="ph-card-title">ROUTE NOTES</div>
-     <div class="ph-field"><label for="phRouteNotes">PERSONAL BRIEFING NOTES</label><textarea id="phRouteNotes" rows="3" placeholder="Gate, SID/STAR notes, alternates, sim-specific reminders…"></textarea></div>
-     <div class="ph-actions"><button class="ph-action" onclick="saveFlightWorkspace()">SAVE WORKSPACE</button></div>
-     <div class="ph-muted">For flight simulation planning only. Always verify weather, charts, NOTAMs, procedures, and network rules using authoritative current sources.</div>
+    <div class="ph-actions"><button class="ph-action" onclick="saveNotepad()">SAVE NOTEPAD</button><button class="ph-action secondary" onclick="loadFlightIntoNotepad()">PREFILL FROM FLIGHT DECK</button><button class="ph-action secondary" onclick="clearNotepad()">CLEAR FIELDS</button></div>
+    <div class="ph-status" id="phNotepadStatus" aria-live="polite">Notepad saves locally in this browser only.</div>
+   </div>
+
+   <div class="ph-notepad-columns">
+    <div class="ph-card">
+     <div class="ph-card-title">01 · DEPARTURE</div>
+     <div class="ph-notepad-grid">
+      <div class="ph-field"><label>ICAO</label><input data-note="departure.icao" id="npDepIcao" placeholder="WIII"></div>
+      <div class="ph-field"><label>AIRPORT NAME</label><input data-note="departure.name" placeholder="Airport name"></div>
+      <div class="ph-field"><label>ELEVATION</label><input data-note="departure.elevation" placeholder="ft"></div>
+      <div class="ph-field"><label>DEPARTURE TIME</label><input data-note="departure.time" placeholder="UTC"></div>
+     </div>
+     <div class="ph-subhead">COM / ATIS</div><div class="ph-notepad-grid">
+      <div class="ph-field"><label>ATIS INFO</label><input data-note="departure.atis" placeholder="Information Alpha"></div>
+      <div class="ph-field"><label>TRANSITION LEVEL</label><input data-note="departure.transLevel" placeholder="FL / altitude"></div>
+      <div class="ph-field"><label>WIND</label><input data-note="departure.wind" placeholder="000/00"></div>
+      <div class="ph-field"><label>WEATHER</label><input data-note="departure.weather" placeholder="Visibility / cloud"></div>
+      <div class="ph-field"><label>TEMP / DEW</label><input data-note="departure.tempDew" placeholder="00 / 00"></div>
+      <div class="ph-field"><label>QNH</label><input data-note="departure.qnh" placeholder="hPa / inHg"></div>
+      <div class="ph-field"><label>CLEARANCE</label><input data-note="departure.clearance" placeholder="Frequency"></div>
+      <div class="ph-field"><label>GROUND</label><input data-note="departure.ground" placeholder="Frequency"></div>
+      <div class="ph-field"><label>TOWER</label><input data-note="departure.tower" placeholder="Frequency"></div>
+      <div class="ph-field"><label>OTHER COM</label><input data-note="departure.otherCom" placeholder="Delivery / approach"></div>
+     </div>
+     <div class="ph-subhead">FLIGHT DETAILS</div><div class="ph-notepad-grid">
+      <div class="ph-field"><label>CALLSIGN</label><input data-note="departure.callsign" placeholder="ABC123"></div>
+      <div class="ph-field"><label>AIRCRAFT</label><input data-note="departure.aircraft" placeholder="A320 / B738"></div>
+      <div class="ph-field"><label>POSITION</label><input data-note="departure.position" placeholder="Stand / gate"></div>
+      <div class="ph-field"><label>RUNWAY</label><input data-note="departure.runway" placeholder="RWY"></div>
+      <div class="ph-field"><label>INITIAL LEVEL</label><input data-note="departure.initialLevel" placeholder="FL / altitude"></div>
+      <div class="ph-field"><label>SID / FIX</label><input data-note="departure.sidFix" placeholder="SID / first fix"></div>
+      <div class="ph-field"><label>INFO</label><input data-note="departure.info" placeholder="ATIS / clearance"></div>
+      <div class="ph-field"><label>SQUAWK</label><input data-note="departure.squawk" placeholder="0000"></div>
+      <div class="ph-field"><label>IFR DESTINATION</label><input data-note="departure.ifrDestination" placeholder="ICAO"></div>
+      <div class="ph-field"><label>TAXI ROUTING</label><input data-note="departure.taxi" placeholder="Taxi route"></div>
+     </div>
+     <div class="ph-field" style="margin-top:10px"><label>DEPARTURE NOTES</label><textarea data-note="departure.notes" rows="3" placeholder="Clearance, taxi, departure reminders…"></textarea></div>
+    </div>
+
+    <div class="ph-card">
+     <div class="ph-card-title">02 · CRUISE</div>
+     <div class="ph-field"><label>ROUTING</label><textarea data-note="cruise.routing" rows="4" placeholder="Route string / fixes / airway routing"></textarea></div>
+     <div class="ph-subhead">CENTER / FREQUENCIES</div><div class="ph-notepad-grid">
+      <div class="ph-field"><label>CENTER LINE / UNIT</label><input data-note="cruise.centerLine" placeholder="Center sector"></div>
+      <div class="ph-field"><label>FREQUENCIES</label><input data-note="cruise.frequencies" placeholder="Frequency list"></div>
+      <div class="ph-field"><label>UNICOM</label><input data-note="cruise.unicom" placeholder="122.800"></div>
+      <div class="ph-field"><label>CRUISE LEVEL</label><input data-note="cruise.level" placeholder="FLxxx"></div>
+     </div>
+     <div class="ph-field" style="margin-top:10px"><label>CRUISE NOTES</label><textarea data-note="cruise.notes" rows="5" placeholder="Handoffs, estimates, step climbs, reminders…"></textarea></div>
+    </div>
+
+    <div class="ph-card">
+     <div class="ph-card-title">03 · ARRIVAL</div>
+     <div class="ph-notepad-grid">
+      <div class="ph-field"><label>ICAO</label><input data-note="arrival.icao" id="npArrIcao" placeholder="WITT"></div>
+      <div class="ph-field"><label>AIRPORT NAME</label><input data-note="arrival.name" placeholder="Airport name"></div>
+      <div class="ph-field"><label>ELEVATION</label><input data-note="arrival.elevation" placeholder="ft"></div>
+      <div class="ph-field"><label>ARRIVAL TIME</label><input data-note="arrival.time" placeholder="UTC"></div>
+     </div>
+     <div class="ph-subhead">COM / ATIS</div><div class="ph-notepad-grid">
+      <div class="ph-field"><label>ATIS INFO</label><input data-note="arrival.atis" placeholder="Information Alpha"></div>
+      <div class="ph-field"><label>WIND</label><input data-note="arrival.wind" placeholder="000/00"></div>
+      <div class="ph-field"><label>TEMP / DEW</label><input data-note="arrival.tempDew" placeholder="00 / 00"></div>
+      <div class="ph-field"><label>QNH</label><input data-note="arrival.qnh" placeholder="hPa / inHg"></div>
+      <div class="ph-field"><label>APPROACH</label><input data-note="arrival.approachFreq" placeholder="Frequency"></div>
+      <div class="ph-field"><label>TOWER</label><input data-note="arrival.tower" placeholder="Frequency"></div>
+      <div class="ph-field"><label>GROUND</label><input data-note="arrival.ground" placeholder="Frequency"></div>
+     </div>
+     <div class="ph-field" style="margin-top:10px"><label>GO-AROUND INSTRUCTIONS</label><textarea data-note="arrival.goAround" rows="2" placeholder="Missed approach / go-around reminders"></textarea></div>
+     <div class="ph-notepad-grid" style="margin-top:10px">
+      <div class="ph-field"><label>STAR</label><input data-note="arrival.star" placeholder="STAR / transition"></div>
+      <div class="ph-field"><label>APPROACH</label><input data-note="arrival.approach" placeholder="ILS / RNAV / visual"></div>
+      <div class="ph-field"><label>RUNWAY / EXIT</label><input data-note="arrival.runwayExit" placeholder="RWY / exit"></div>
+      <div class="ph-field"><label>GATE / TAXI</label><input data-note="arrival.gateTaxi" placeholder="Gate / taxi route"></div>
+      <div class="ph-field"><label>TRANSITION INFO</label><input data-note="arrival.transition" placeholder="Transition / altitude"></div>
+     </div>
+     <div class="ph-field" style="margin-top:10px"><label>ARRIVAL NOTES</label><textarea data-note="arrival.notes" rows="3" placeholder="Approach, landing, taxi, gate reminders…"></textarea></div>
     </div>
    </div>
   </section>
+
   <section class="ph-section" id="phSectionTools" hidden>
    <div class="ph-grid">
     <div class="ph-card">
@@ -629,22 +750,23 @@ body.panel-collapsed #panelToggle{right:0;}
     <div class="ph-card">
      <div class="ph-card-title">PERSONAL CHECKLIST</div>
      <div class="ph-field"><label for="phChecklistPreset">AIRCRAFT PRESET</label><select id="phChecklistPreset" class="ph-input" onchange="renderHandbookChecklist()"><option value="airbus">Airbus-style · A320 family</option><option value="boeing">Boeing-style · 737 family</option><option value="generic">Generic flight-sim flow</option></select></div>
-     <div class="ph-copy" style="margin:9px 0">Editable reminder list for simulation use only—not an aircraft-approved checklist or substitute for the aircraft’s official documentation.</div>
+     <div class="ph-copy" style="margin:9px 0">Editable reminder list for simulation use only—not an aircraft-approved checklist or substitute for official documentation.</div>
      <div id="phChecklistItems" class="ph-checklist"></div><div class="ph-progress"><div id="phChecklistProgress"></div></div><div class="ph-status" id="phChecklistStatus">0 items completed</div>
      <div class="ph-actions"><button class="ph-action secondary" onclick="resetHandbookChecklist()">RESET CHECKLIST</button></div>
     </div>
     <div class="ph-card wide">
-     <div class="ph-card-title">FLIGHT PREPARATION NOTES</div>
-     <div class="ph-fields"><div class="ph-field"><label for="phToolsRoute">ROUTE / FLIGHT NUMBER</label><input id="phToolsRoute" placeholder="WIII–WITT · AJV123"></div><div class="ph-field"><label for="phToolsAircraft">AIRCRAFT / SIM</label><input id="phToolsAircraft" placeholder="A320 · MSFS"></div></div>
+     <div class="ph-card-title">FUEL / PERFORMANCE & PERSONAL NOTES</div>
+     <div class="ph-fields"><div class="ph-field"><label for="phToolsRoute">ROUTE / FLIGHT NUMBER</label><input id="phToolsRoute" placeholder="WIII–WITT · ABC123"></div><div class="ph-field"><label for="phToolsAircraft">AIRCRAFT / SIM</label><input id="phToolsAircraft" placeholder="A320 · MSFS"></div></div>
      <div class="ph-field" style="margin-top:10px"><label for="phToolsNotes">NOTES</label><textarea id="phToolsNotes" rows="3" placeholder="Fuel planning reminder, performance notes, alternates, briefing items…"></textarea></div>
      <div class="ph-actions"><button class="ph-action" onclick="saveFlightWorkspace()">SAVE NOTES</button></div>
     </div>
    </div>
   </section>
+
   <section class="ph-section" id="phSectionLinks" hidden>
    <div class="ph-card">
     <div class="ph-card-title">EXTERNAL RESOURCES · OPEN IN NEW TAB</div>
-    <div class="ph-copy">These are quick links only. Keeping external sites out of embedded frames avoids unnecessary loading, third-party restrictions, and extra page lag.</div>
+    <div class="ph-copy">Quick links only. External sites are not embedded, so they do not load until you open them.</div>
     <div class="ph-resource-grid" style="margin-top:12px">
      <a class="ph-resource" href="https://jbud.github.io/Flex-Calculator-TS/" target="_blank" rel="noopener noreferrer"><div><strong>FLEX Calculator</strong><small>Takeoff FLEX temperature tool</small></div><em>↗</em></a>
      <a class="ph-resource" href="https://docs.google.com/forms/d/e/1FAIpQLSfSC0vRQV--4CDaHv_H1caJBVNQANR6bDabcP9dWMkS-nYP4Q/viewform?fbzx=7324454320254349879" target="_blank" rel="noopener noreferrer"><div><strong>Google Form</strong><small>Operations form / submission</small></div><em>↗</em></a>
@@ -2531,69 +2653,80 @@ function renderPilotReport(){
  const normalizeJomokName=s=>String(s||'').toLowerCase().normalize('NFD').replace(/[\\u0300-\\u036f]/g,'').replace(/[^a-z]/g,'');
  const selectedJomokName=normalizeJomokName(name);
  const isJomokPilot=jomokPilots.some(n=>{const target=normalizeJomokName(n);return selectedJomokName===target||selectedJomokName.startsWith(target)});
- const jomokGifs=['https://media.giphy.com/media/cEC8Yk946EcyiUlReU/giphy.gif','https://media.giphy.com/media/ETsG1pevQK80mA7sDV/giphy.gif','https://media.giphy.com/media/XFYr5mJDMz3mxB8gFC/giphy.gif','https://media.giphy.com/media/wgQTGjJMReIsbLnB3G/giphy.gif','https://media.giphy.com/media/gNjSEUHYeGVAiSRwyt/giphy.gif'];
- const jomokReward={min:0,label:'JOMOK CLASSIFIED',emoji:'💀',gifUrl:jomokGifs[Math.floor(Math.random()*jomokGifs.length)]};
- const leaderboard=leaderboardHtml(name);
- if(!all.length){const noFlightReward=isJomokPilot?jomokReward:PILOT_GIF_TIERS[0],noFlightEvo=isJomokPilot?5:0;document.getElementById('opsHeaderReward').className='ops-header-reward evo-'+noFlightEvo;document.getElementById('opsHeaderReward').innerHTML='<div class="ops-header-reward-art">'+(noFlightReward.gifUrl?'<img src="'+escapeOps(noFlightReward.gifUrl)+'" alt="'+escapeOps(noFlightReward.label)+' GIF" loading="lazy">':'<span>'+noFlightReward.emoji+'</span>')+'</div><div class="ops-header-reward-copy"><div class="ops-reward-label">'+noFlightReward.label+'</div><div class="ops-reward-note">'+'No flights loaded for this pilot yet.'+'</div></div>';el.innerHTML=leaderboard+'<div class="ops-empty">No pilot PIREPs found in the currently loaded data.</div>';return;}
- const fleet={},airports={},countries={},routes={},regs={},subs={},months={};let longest=null,shortest=null;
- let mins=0;all.forEach(p=>{mins+=airtimeToMinutes(p.airtime);const ac=(p.aircraft||'Unknown aircraft').trim();fleet[ac]=(fleet[ac]||0)+1;if(p.reg)regs[p.reg]=(regs[p.reg]||0)+1;if(p.subsidiary)subs[p.subsidiary]=(subs[p.subsidiary]||0)+1;
- [p.origin,p.dest].forEach(ap=>{const code=ap.icao||'?';if(!airports[code])airports[code]={n:0,name:ap.name||code};airports[code].n++;const cc=ap.country||AIRPORT_COORDS[code]?.country||inferCountryFromICAO(code)||'Unknown';countries[cc]=(countries[cc]||0)+1;});
- const km=routeDistanceKm(p),key=p.origin.icao+'-'+p.dest.icao;routes[key]=(routes[key]||0)+1;if(km>0&&(!longest||km>longest.km))longest={p,km};if(km>0&&(!shortest||km<shortest.km))shortest={p,km};
- const d=opsDate(p);if(d){const mo=d.toLocaleDateString('en-CA',{year:'numeric',month:'short',timeZone:'UTC'});months[mo]=(months[mo]||0)+1;}
- });
- const ap=opsTop(Object.fromEntries(Object.entries(airports).map(([k,v])=>[k,v.n]))),co=opsTop(countries),ac=opsTop(fleet),rt=opsTop(routes),su=opsTop(subs),mo=opsTop(months);
- const totalKm=all.reduce((sum,p)=>sum+Math.max(0,routeDistanceKm(p)||0),0),totalPoints=all.reduce((sum,p)=>sum+flightPoints(p),0),reward=isJomokPilot?jomokReward:pilotRewardTier(totalPoints),nextMilestone=FLIGHT_MILESTONES.find(n=>n>all.length);
- const milestones=FLIGHT_MILESTONES.filter(n=>all.length>=n),days=new Set(all.map(p=>opsDate(p)?.toISOString().slice(0,10)).filter(Boolean)).size,sorted=[...all].sort((a,b)=>(opsDate(a)?.getTime()||0)-(opsDate(b)?.getTime()||0)),fbar=Object.entries(fleet).sort((a,b)=>b[1]-a[1]).slice(0,6),rbar=Object.entries(regs).sort((a,b)=>b[1]-a[1]).slice(0,5),journey=sorted.slice(-18).reverse();
- const routeText=x=>x?x.p.origin.icao+' → '+x.p.dest.icao+' · '+Math.round(x.km).toLocaleString()+' km':'—';
- const airportText=ap?airports[ap[0]].name+' ('+ap[0]+') · '+ap[1]+' visits':'—';
- const evo=isJomokPilot?5:PILOT_GIF_TIERS.findIndex(t=>t.min===reward.min);document.getElementById('opsHeaderReward').className='ops-header-reward evo-'+Math.max(0,evo);document.getElementById('opsHeaderReward').innerHTML='<div class="ops-header-reward-art">'+(reward.gifUrl?'<img src="'+escapeOps(reward.gifUrl)+'" alt="'+escapeOps(reward.label)+' plane reward" loading="lazy">':'<span>'+reward.emoji+'</span>')+'</div><div class="ops-header-reward-copy"><div class="ops-reward-label">'+reward.label+'</div><div class="ops-reward-note">'+(isJomokPilot?'JOMOK OVERRIDE · PLANE PRIVILEGES REVOKED':totalPoints.toLocaleString()+' pts · evolution stage '+(evo+1)+'/'+PILOT_GIF_TIERS.length)+'</div><div class="ops-reward-note">'+(isJomokPilot?'The algorithm has concerns.':'The GIF gets progressively more cursed as your score rises.')+'</div></div>';;const personality=pilotPersonality(all,totalKm,fleet,airports,routes),secrets=secretAchievements(all,totalKm,fleet,airports,routes,totalPoints);el.innerHTML=leaderboard+'<section class="ops-personality"><div class="ops-personality-icon">'+personality.icon+'</div><div><div class="ops-personality-tag">PILOT PSYCH EVALUATION</div><div class="ops-personality-title">'+personality.name+'</div><div class="ops-personality-tag">'+personality.tag+'</div><div class="ops-personality-copy">'+personality.copy+'</div></div></section>'+'<div class="ops-grid">'+
- '<div class="ops-metric"><div class="ops-metric-label">Lifetime flights</div><div class="ops-metric-value">'+all.length.toLocaleString()+'</div><div class="ops-metric-note">'+days+' active days</div></div>'+
- '<div class="ops-metric"><div class="ops-metric-label">Total airtime</div><div class="ops-metric-value">'+opsMinutes(mins)+'</div><div class="ops-metric-note">Average '+opsMinutes(mins/all.length)+' per PIREP</div></div>'+
- '<div class="ops-metric"><div class="ops-metric-label">Fleet types</div><div class="ops-metric-value">'+Object.keys(fleet).length+'</div><div class="ops-metric-note">'+Object.keys(regs).length+' registrations</div></div>'+
- '<div class="ops-metric"><div class="ops-metric-label">Global footprint</div><div class="ops-metric-value">'+Object.keys(countries).filter(c=>c!=='Unknown').length+' countries</div><div class="ops-metric-note">'+Object.keys(airports).length+' unique airports</div></div>'+
- '<div class="ops-metric"><div class="ops-metric-label">Journey points</div><div class="ops-metric-value">'+totalPoints.toLocaleString()+'</div><div class="ops-metric-note">100 per flight + distance bonus</div></div>'+
- '<div class="ops-metric"><div class="ops-metric-label">Total distance</div><div class="ops-metric-value">'+Math.round(totalKm).toLocaleString()+' km</div><div class="ops-metric-note">Great-circle route distance</div></div></div>'+
- '<section class="ops-panel" style="margin-top:12px"><div class="ops-panel-title">Flight achievements</div><div class="ops-empty">'+(nextMilestone?'Next milestone: '+nextMilestone+' flights · '+Math.max(0,nextMilestone-all.length)+' to go':'All flight-count milestones unlocked!')+'</div><div class="ops-achievement-badges">'+FLIGHT_MILESTONES.map(n=>'<span class="ops-badge '+(all.length>=n?'unlocked':'locked')+'">'+(all.length>=n?'✓':'🔒')+' '+n.toLocaleString()+' FLIGHT'+(n===1?'':'S')+'</span>').join('')+'</div></section>'+
- '<section class="ops-panel" style="margin-top:12px"><div class="ops-panel-title">🕵️ Secret achievements · '+secrets.filter(s=>s.ok).length+'/'+secrets.length+' discovered</div><div class="ops-secret-grid">'+secrets.map(s=>'<div class="ops-secret '+(s.ok?'unlocked':'locked')+'"><div class="ops-secret-name">'+(s.ok?s.icon+' '+s.name:'🔒 ???')+'</div><div class="ops-secret-desc">'+(s.ok?s.desc:'Hidden achievement. Keep flying to reveal its condition.')+'</div><div class="ops-secret-status">'+(s.ok?'✓ UNLOCKED':s.progress==='???'?'UNDISCOVERED':escapeOps(s.progress))+'</div></div>').join('')+'</div></section>'+'<div class="ops-columns"><section class="ops-panel"><div class="ops-panel-title">Journey highlights</div>'+
- opsRow('Most visited airport',airportText)+opsRow('Most visited country',co?countryLabel(co[0])+' · '+co[1]+' airport visits':'—')+opsRow('Favorite aircraft',ac?ac[0]+' · '+ac[1]+' flights':'—')+opsRow('Favorite route',rt?rt[0].replace('-',' → ')+' · '+rt[1]+' flights':'—')+opsRow('Longest route',routeText(longest))+opsRow('Shortest route',routeText(shortest))+opsRow('Most active month',mo?mo[0]+' · '+mo[1]+' flights':'—')+opsRow('Most flown subsidiary',su?su[0]+' · '+su[1]+' flights':'—')+
- '<div class="ops-badges">'+(milestones.length?milestones.map(n=>'<span class="ops-badge">✦ '+n+' FLIGHTS</span>').join(''):'<span class="ops-badge">FIRST MILESTONE: 10 FLIGHTS</span>')+'</div></section>'+
- '<section class="ops-panel"><div class="ops-panel-title">Fleet usage · types</div>'+(fbar.length?fbar.map(([k,v])=>opsBar(k,v,fbar[0][1])).join(''):'<div class="ops-empty">No aircraft data.</div>')+(rbar.length?'<div class="ops-panel-title" style="margin-top:20px">Registrations</div>'+rbar.map(([k,v])=>opsBar(k,v,rbar[0][1])).join(''):'')+'</section></div>'+
- '<section class="ops-panel" style="margin-top:12px"><div class="ops-panel-title">Pilot journey · latest 18 flights</div>'+journey.map(p=>'<div class="ops-journey-item"><div class="ops-journey-date">'+(opsDate(p)?opsDate(p).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'2-digit',timeZone:'UTC'}):escapeOps(p.date||'—'))+'</div><div><div class="ops-journey-route">'+escapeOps(p.origin.icao)+' <span style="color:var(--orange)">→</span> '+escapeOps(p.dest.icao)+'</div><div class="ops-journey-meta">'+escapeOps(p.aircraft||'Aircraft unknown')+' · '+escapeOps(p.subsidiary||'Subsidiary unknown')+' · '+Math.round(routeDistanceKm(p)).toLocaleString()+' km</div></div><div class="ops-journey-time">'+escapeOps(p.airtime||'—')+'</div></div>').join('')+'</section>';
+ const jomokGifs=['https://media.giphy.com/media/cEC8Yk946EcyiUlReU/giphy.gif','https://media.giphy.com/media/ETsG1pevQK80mA7sDV/giphy.gif','https://media.giphy.com/media/XFYr5mJDMz3mxB8gFC/giphy.gif','https://media.giphy.com/media/wgQTGjJMReIsbLnB3G/giphy.gif','https://media.giphy.com/me/* PILOT HANDBOOK: on-demand VATSIM, METAR, local notepad and checklist state. No polling. */
+const PH_WORKER='https://pirep-metar-api.thomassiahaan31.workers.dev/metar?icao=';
+const PH_VATSIM='https://data.vatsim.net/v3/vatsim-data.json';
+const PH_CHECKLISTS={
+ airbus:['Exterior / walkaround completed (sim)','Cockpit preparation completed','Aircraft power and systems checked','MCDU / route entered and cross-checked','Departure runway and SID reviewed','Performance data reviewed in simulator tool','Before-start flow completed','Before-taxi flow completed','Flight controls checked','Takeoff briefing reviewed','Climb / cruise reminders reviewed','Descent and approach brief reviewed','Landing configuration and go-around reviewed','After-landing and shutdown flow reviewed'],
+ boeing:['Exterior / walkaround completed (sim)','Cockpit preparation completed','Aircraft power and systems checked','FMC route entered and cross-checked','Departure runway and SID reviewed','Performance data reviewed in simulator tool','Before-start flow completed','Before-taxi flow completed','Flight controls checked','Takeoff briefing reviewed','Climb / cruise reminders reviewed','Descent and approach brief reviewed','Landing configuration and go-around reviewed','After-landing and shutdown flow reviewed'],
+ generic:['Route and destination reviewed','Weather and alternates checked','Aircraft fuel/load planning reviewed','Airport charts and procedures opened','Departure and arrival runway reviewed','Flight plan entered into simulator','Controls and avionics checked','Takeoff briefing reviewed','Cruise reminders reviewed','Approach and go-around plan reviewed','After-landing and shutdown flow reviewed']
+};
+let phAtcSnapshot=null,phMetars={},phFlight=null;
+function phEsc(v){return String(v==null?'':v).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
+function phCode(id){return String(document.getElementById(id).value||'').trim().toUpperCase()}
+function phSetStatus(id,msg,type){const e=document.getElementById(id);if(!e)return;e.className='ph-status'+(type?' '+type:'');e.textContent=msg}
+function openPilotHandbook(){document.getElementById('pilotHandbook').classList.add('vis');showHandbookSection('deck');loadFlightWorkspace();loadNotepad();renderHandbookChecklist()}
+function closePilotHandbook(){document.getElementById('pilotHandbook').classList.remove('vis')}
+function showHandbookSection(which){['deck','notepad','tools','links'].forEach(function(k){const section=document.getElementById('phSection'+k.charAt(0).toUpperCase()+k.slice(1)),tab=document.getElementById('phTab'+k.charAt(0).toUpperCase()+k.slice(1));if(section)section.hidden=k!==which;if(tab)tab.classList.toggle('on',k===which)})}
+function saveFlightWorkspace(){const data={callsign:phCode('phCallsign'),departure:phCode('phDepCode').replace(/^DEP · /,''),destination:phCode('phDestCode').replace(/^ARR · /,''),routeNotes:document.getElementById('phRouteNotes').value,toolsRoute:document.getElementById('phToolsRoute').value,toolsAircraft:document.getElementById('phToolsAircraft').value,toolsNotes:document.getElementById('phToolsNotes').value};try{localStorage.setItem('ajPilotHandbookWorkspace',JSON.stringify(data));phSetStatus('phBriefStatus','Flight workspace saved in this browser.','ok')}catch(e){phSetStatus('phBriefStatus','Could not save locally in this browser.','err')}}
+function loadFlightWorkspace(){try{const d=JSON.parse(localStorage.getItem('ajPilotHandbookWorkspace')||'{}');if(d.callsign)document.getElementById('phCallsign').value=d.callsign;if(d.departure&&/^[A-Z]{4}$/.test(d.departure))document.getElementById('phDepCode').textContent=d.departure;if(d.destination&&/^[A-Z]{4}$/.test(d.destination))document.getElementById('phDestCode').textContent=d.destination;if(d.routeNotes)document.getElementById('phRouteNotes').value=d.routeNotes;if(d.toolsRoute)document.getElementById('phToolsRoute').value=d.toolsRoute;if(d.toolsAircraft)document.getElementById('phToolsAircraft').value=d.toolsAircraft;if(d.toolsNotes)document.getElementById('phToolsNotes').value=d.toolsNotes}catch(e){}}
+function phGetAirports(){const dep=String((phFlight&&phFlight.flight_plan&&phFlight.flight_plan.departure)||document.getElementById('phDepCode').textContent||'').replace(/^DEP · /,'').trim().toUpperCase();const dest=String((phFlight&&phFlight.flight_plan&&phFlight.flight_plan.arrival)||document.getElementById('phDestCode').textContent||'').replace(/^ARR · /,'').trim().toUpperCase();return{dep:dep,dest:dest}}
+async function lookupFlightCallsign(){
+ const callsign=phCode('phCallsign'),button=document.getElementById('phFlightLookupBtn');
+ if(!callsign||callsign.length>12){phSetStatus('phFlightStatus','Enter a valid VATSIM callsign.','err');return}
+ button.disabled=true;button.textContent='FETCHING LIVE DATA…';phSetStatus('phFlightStatus','Fetching the latest VATSIM network snapshot…');
+ try{
+  const response=await fetch(PH_VATSIM,{headers:{Accept:'application/json'}});if(!response.ok)throw new Error('VATSIM returned HTTP '+response.status+'.');
+  const data=await response.json(),pilots=Array.isArray(data.pilots)?data.pilots:[],pilot=pilots.find(function(p){return String(p.callsign||'').trim().toUpperCase()===callsign});
+  phAtcSnapshot={fetchedAt:Date.now(),controllers:Array.isArray(data.controllers)?data.controllers:[],atis:Array.isArray(data.atis)?data.atis:[]};
+  if(!pilot)throw new Error('Callsign '+callsign+' was not found among currently connected VATSIM pilots. Check the spelling or try again.');
+  phFlight=pilot;document.getElementById('phToolsRoute').value=((pilot.flight_plan||{}).departure||'—')+' → '+((pilot.flight_plan||{}).arrival||'—')+' · '+callsign;document.getElementById('phToolsAircraft').value=pilot.flight_plan&&pilot.flight_plan.aircraft_short||pilot.flight_plan&&pilot.flight_plan.aircraft||pilot.aircraft||'';
+  renderFlightDetails(pilot);const fp=pilot.flight_plan||{};document.getElementById('phDepCode').textContent=fp.departure||'DEP · —';document.getElementById('phDestCode').textContent=fp.arrival||'ARR · —';document.getElementById('npCallsign').value=callsign;
+  if(fp.departure)document.getElementById('npDepIcao').value=fp.departure;if(fp.arrival)document.getElementById('npArrIcao').value=fp.arrival;
+  phSetStatus('phFlightStatus','Found '+callsign+' in the VATSIM feed. Flight plan fields and airport weather are being updated…','ok');
+  await Promise.allSettled([lookupRouteWeather(),Promise.resolve(lookupVatsimAtc())]);
+  phSetStatus('phFlightStatus','Flight data loaded from VATSIM. Weather and ATC panels show the latest successful lookups.','ok');
+ }catch(e){phSetStatus('phFlightStatus',e.message||'Could not retrieve VATSIM data.','err')}
+ finally{button.disabled=false;button.textContent='RETRIEVE FLIGHT DATA'}
 }
-document.addEventListener('keydown',e=>{if(e.key==='Escape')closeOpsReport();});
-
-
-// ═══════════════════════════════════════════════════════
-// DEBUG PANEL
-// ═══════════════════════════════════════════════════════
-function toggleDebug(){
-  const p=document.getElementById('dbgPanel');
-  if(p.classList.toggle('vis')) refreshDebug();
+function renderFlightDetails(p){
+ const f=p.flight_plan||{},details=[
+ ['CALLSIGN',p.callsign],['AIRCRAFT TYPE',f.aircraft_short||f.aircraft||p.aircraft],['TRANSPONDER / SQUAWK',p.transponder],['LOGON TIME (UTC)',p.logon_time],['PLANNED DEPARTURE (UTC)',f.deptime||f.departure_time],['DEPARTURE AIRPORT',f.departure],['ARRIVAL AIRPORT',f.arrival],['ALTERNATE',f.alternate],['ENROUTE TIME',f.enroute_time],['FUEL ENDURANCE',f.fuel_time],['CRUISE ALTITUDE',f.altitude],['CRUISE TAS',f.cruise_tas],['ROUTE',f.route],['COM / FREQUENCY','Not supplied in standard pilot flight-plan fields'],['REMARKS',f.remarks],['LAST UPDATED (UTC)',p.last_updated]
+ ];
+ document.getElementById('phFlightDetails').innerHTML=details.map(function(pair){let v=pair[1];if(v===undefined||v===null||String(v).trim()==='')v='—';return '<div class="ph-detail"><label>'+phEsc(pair[0])+'</label><strong>'+phEsc(v)+'</strong></div>'}).join('');
+ const dep=f.departure||'—',dest=f.arrival||'—';document.getElementById('phBriefStatus').textContent='VATSIM flight plan: '+dep+' → '+dest+'. Planned departure is not confirmed actual off-block time; COM frequencies are not part of the standard pilot flight-plan fields.';
 }
-function refreshDebug(){
-  const ago = _dbgLastFetch
-    ? Math.round((Date.now()-new Date(_dbgLastFetch))/1000)+'s ago'
-    : 'never';
-  const keyHtml = _dbgRawKeys.length
-    ? _dbgRawKeys.map(k=>`<span>${k}</span>`).join('')
-    : '<span style="color:var(--dim)">not fetched yet</span>';
-  document.getElementById('dbgContent').innerHTML=`
-    <div class="dbg-row"><span class="dbg-lbl">Airport DB</span>
-      <span class="dbg-val ${_dbgAirports>0?'dbg-ok':'dbg-err'}">${_dbgAirports>0?_dbgAirports+' airports':'FAILED'}</span></div>
-    <div class="dbg-row"><span class="dbg-lbl">Fleet DB</span>
-      <span class="dbg-val ${_dbgFleet>0?'dbg-ok':'dbg-err'}">${_dbgFleet>0?_dbgFleet+' airframes':'FAILED'}</span></div>
-    <div class="dbg-row"><span class="dbg-lbl">PIREP source</span>
-      <span class="dbg-val ${_dbgFallback?'dbg-err':'dbg-ok'}">${_dbgFallback?'FALLBACK ('+FALLBACK_PIREPS.length+')':'LIVE ('+_dbgPireps+')'}</span></div>
-    <div class="dbg-row"><span class="dbg-lbl">Filed routes</span>
-      <span class="dbg-val ${_airacDead?'dbg-err':(_dbgRoutesResolved>0?'dbg-ok':'')}">${_airacDead?'API UNREACHABLE (CORS?)':(_dbgRoutesTotal?_dbgRoutesResolved+' / '+_dbgRoutesTotal+' resolved':'no route field')}</span></div>
-    <div class="dbg-row"><span class="dbg-lbl">Last fetch</span>
-      <span class="dbg-val">${ago}</span></div>
-    ${_dbgErr?`<div class="dbg-row"><span class="dbg-lbl">Error</span><span class="dbg-val dbg-err" style="font-size:8px">${_dbgErr}</span></div>`:''}
-    <div class="dbg-keys"><span class="dbg-lbl" style="display:block;margin-bottom:4px">Sheet column keys:</span>${keyHtml}</div>
-    <div class="dbg-keys"><span class="dbg-lbl" style="display:block;margin-bottom:4px">Aircraft icon credits:</span><a class="aircraft-credit" href="https://github.com/VATSIM-Radar/vatsim-radar/tree/next/app/assets/icons/aircraft" target="_blank" rel="noopener noreferrer">VATSIM Radar aircraft icons</a> · <a class="aircraft-credit" href="https://github.com/VATSIM-Radar/vatsim-radar" target="_blank" rel="noopener noreferrer">Source repository</a></div>`;
+async function phFetchMetar(code){const response=await fetch(PH_WORKER+encodeURIComponent(code),{headers:{Accept:'application/json'}});let data;try{data=await response.json()}catch(e){throw new Error('Weather service returned unreadable data.')}if(!response.ok)throw new Error(data.error||('Weather request failed (HTTP '+response.status+').'));const reports=Array.isArray(data.reports)?data.reports:[];if(!reports.length)throw new Error('No METAR currently available for '+code+'.');return reports[0]}
+function phMetarSummary(r){const raw=String(r.rawOb||r.raw_text||r.metar||r.raw||'').trim();const obs=Number(r.obsTime),dt=Number.isFinite(obs)&&obs>0?new Date(obs*1000).toISOString().replace('T',' ').replace(/\.\d{3}Z$/,' UTC'):'Observation time unavailable';const bits=[r.name||'',dt];if(r.wdir!==undefined&&r.wdir!==null)bits.push('Wind '+(Number(r.wdir)===0?'calm':r.wdir+'°')+(r.wspd!=null?' / '+r.wspd+' kt':''));if(r.visib!=null)bits.push('Visibility '+r.visib);if(r.temp!=null)bits.push('Temp '+r.temp+'°C / dew '+(r.dewp==null?'—':r.dewp+'°C'));if(r.altim!=null)bits.push('Altimeter '+r.altim);return{raw:raw,summary:bits.filter(Boolean).join(' · ')}}
+async function lookupRouteWeather(){
+ const a=phGetAirports(),dep=a.dep,dest=a.dest;if(!/^[A-Z]{4}$/.test(dep)||!/^[A-Z]{4}$/.test(dest)){phSetStatus('phFlightStatus','A valid departure and destination ICAO are required before checking both METARs.','err');return}
+ document.getElementById('phDepCode').textContent=dep;document.getElementById('phDestCode').textContent=dest;document.getElementById('phDepWeather').textContent='Fetching METAR…';document.getElementById('phDestWeather').textContent='Fetching METAR…';
+ const results=await Promise.allSettled([phFetchMetar(dep),phFetchMetar(dest)]);
+ [dep,dest].forEach(function(code,i){const box=i===0?'phDepWeather':'phDestWeather',rawid=i===0?'phDepRaw':'phDestRaw';if(results[i].status==='fulfilled'){const info=phMetarSummary(results[i].value);phMetars[code]=info;document.getElementById(box).textContent=info.summary;document.getElementById(rawid).textContent=info.raw||'Raw METAR unavailable'}else{document.getElementById(box).textContent='METAR unavailable: '+results[i].reason.message;document.getElementById(rawid).textContent=''}});updatePhBrief();
 }
-async function forceRefresh(){
-  document.getElementById('dbgRefresh').textContent='FETCHING…';
+async function lookupHandbookMetar(){const code=phCode('phMetarCode');if(!/^[A-Z]{4}$/.test(code)){phSetStatus('phMetarResult','Enter a four-letter ICAO code.','err');return}const button=document.getElementById('phMetarButton');button.disabled=true;button.textContent='FETCHING…';phSetStatus('phMetarResult','Contacting METAR service…');try{const r=await phFetchMetar(code),info=phMetarSummary(r);phMetars[code]=info;phSetStatus('phMetarResult',code+' · '+info.summary+'\n'+info.raw,'ok')}catch(e){phSetStatus('phMetarResult',e.message,'err')}finally{button.disabled=false;button.textContent='FETCH METAR'}}
+async function lookupVatsimAtc(){
+ const a=phGetAirports(),dep=a.dep,dest=a.dest;if(!/^[A-Z]{4}$/.test(dep)||!/^[A-Z]{4}$/.test(dest)){phSetStatus('phFlightStatus','Valid departure and destination ICAO codes are needed for airport ATC matching.','err');return}
+ const buttons=document.querySelectorAll('#phSectionDeck .ph-actions button');buttons.forEach(function(b){if(b.textContent.includes('ATC')){b.disabled=true;b.textContent='FETCHING ATC…'}});
+ try{
+  let snapshot=phAtcSnapshot;if(!snapshot||Date.now()-snapshot.fetchedAt>120000){const response=await fetch(PH_VATSIM,{headers:{Accept:'application/json'}});if(!response.ok)throw new Error('VATSIM returned HTTP '+response.status+'.');const data=await response.json();snapshot={fetchedAt:Date.now(),controllers:Array.isArray(data.controllers)?data.controllers:[],atis:Array.isArray(data.atis)?data.atis:[]};phAtcSnapshot=snapshot}
+  [dep,dest].forEach(function(code,i){const stations=snapshot.controllers.concat(snapshot.atis),matches=stations.filter(function(c){const cs=String(c.callsign||'').toUpperCase();return cs.startsWith(code+'_')||cs.startsWith(code+'-')||cs===code});const labels=matches.map(function(c){return String(c.callsign||'').toUpperCase()+(c.frequency?' · '+c.frequency:'')+(snapshot.atis.indexOf(c)!==-1?' · ATIS':'')});document.getElementById(i===0?'phDepAtc':'phDestAtc').textContent=matches.length?'ATC / ATIS online: '+labels.join(', '):'No matching airport ATC / ATIS in this snapshot';});
+  updatePhBrief();
+ }catch(e){document.getElementById('phDepAtc').textContent='ATC lookup unavailable';document.getElementById('phDestAtc').textContent='ATC lookup unavailable';phSetStatus('phFlightStatus','VATSIM ATC lookup failed: '+e.message,'err')}
+ finally{buttons.forEach(function(b){if(b.textContent.includes('FETCHING ATC')){b.disabled=false;b.textContent='REFRESH ATC AVAILABILITY'}})}
+}
+function updatePhBrief(){const a=phGetAirports(),parts=[a.dep+' → '+a.dest];if(phMetars[a.dep])parts.push(a.dep+' METAR received');if(phMetars[a.dest])parts.push(a.dest+' METAR received');if(phAtcSnapshot)parts.push('VATSIM snapshot '+new Date(phAtcSnapshot.fetchedAt).toISOString().replace('T',' ').replace(/\.\d{3}Z$/,' UTC'));document.getElementById('phBriefStatus').textContent=parts.join(' · ')}
+function copyFlightSummary(){const p=phFlight||{},f=p.flight_plan||{},text='CALLSIGN '+(p.callsign||phCode('phCallsign'))+'\nAIRCRAFT '+(f.aircraft_short||f.aircraft||p.aircraft||'—')+'\nSQUAWK '+(p.transponder||'—')+'\nROUTE '+(f.departure||'—')+' → '+(f.arrival||'—')+'\nALTERNATE '+(f.alternate||'—')+'\nENROUTE '+(f.enroute_time||'—')+' · FUEL '+(f.fuel_time||'—')+'\nROUTE '+(f.route||'—')+'\nREMARKS '+(f.remarks||'—');if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(text).then(function(){phSetStatus('phBriefStatus','Flight summary copied.','ok')}).catch(function(){phSetStatus('phBriefStatus',text)});else phSetStatus('phBriefStatus',text)}
+function openSimBriefForRoute(){const a=phGetAirports();window.open('https://dispatch.simbrief.com/briefing/latest?orig='+encodeURIComponent(a.dep)+'&dest='+encodeURIComponent(a.dest),'_blank','noopener,noreferrer')}
+function loadFlightIntoNotepad(){const p=phFlight||{},f=p.flight_plan||{},set=function(id,v){if(v!=null&&String(v).trim())document.getElementById(id).value=v};set('npCallsign',p.callsign);set('npDepIcao',f.departure);set('npArrIcao',f.arrival);set('npDepTime',f.deptime||f.departure_time);set('npSquawk',p.transponder);set('npDepIcao',f.departure);document.querySelector('[data-note="departure.callsign"]').value=p.callsign||'';document.querySelector('[data-note="departure.aircraft"]').value=f.aircraft_short||f.aircraft||p.aircraft||'';document.querySelector('[data-note="departure.ifrDestination"]').value=f.arrival||'';document.querySelector('[data-note="cruise.routing"]').value=f.route||'';document.querySelector('[data-note="arrival.icao"]').value=f.arrival||'';saveNotepad();phSetStatus('phNotepadStatus','Prefilled available fields from the VATSIM flight plan.','ok')}
+function saveNotepad(){const data={};document.querySelectorAll('#phSectionNotepad [data-note]').forEach(function(el){data[el.dataset.note]=el.value});try{localStorage.setItem('ajPilotNotepad',JSON.stringify(data));phSetStatus('phNotepadStatus','Notepad saved locally in this browser.','ok')}catch(e){phSetStatus('phNotepadStatus','Could not save locally in this browser.','err')}}
+function loadNotepad(){try{const d=JSON.parse(localStorage.getItem('ajPilotNotepad')||'{}');document.querySelectorAll('#phSectionNotepad [data-note]').forEach(function(el){if(Object.prototype.hasOwnProperty.call(d,el.dataset.note))el.value=d[el.dataset.note]})}catch(e){}}
+function clearNotepad(){if(!confirm('Clear all ATC Notepad fields? This will also clear the saved local notepad.'))return;document.querySelectorAll('#phSectionNotepad [data-note]').forEach(function(el){el.value=''});try{localStorage.removeItem('ajPilotNotepad')}catch(e){}phSetStatus('phNotepadStatus','Notepad cleared.','ok')}
+function renderHandbookChecklist(){const el=document.getElementById('phChecklistItems');if(!el)return;const preset=document.getElementById('phChecklistPreset').value,items=PH_CHECKLISTS[preset]||PH_CHECKLISTS.generic;let saved={};try{saved=JSON.parse(localStorage.getItem('ajPilotChecklist_'+preset)||'{}')}catch(e){}el.innerHTML=items.map(function(item,i){return '<label class="ph-check"><input type="checkbox" data-ph-check="'+i+'" '+(saved[i]?'checked':'')+' onchange="saveHandbookChecklist()"><span>'+phEsc(item)+'</span></label>'}).join('');updateHandbookChecklistProgress()}
+function saveHandbookChecklist(){const preset=document.getElementById('phChecklistPreset').value,saved={};document.querySelectorAll('#phChecklistItems [data-ph-check]').forEach(function(el){saved[el.dataset.phCheck]=el.checked});try{localStorage.setItem('ajPilotChecklist_'+preset,JSON.stringify(saved))}catch(e){}updateHandbookChecklistProgress()}
+function updateHandbookChecklistProgress(){const all=Array.from(document.querySelectorAll('#phChecklistItems [data-ph-check]')),done=all.filter(function(e){return e.checked}).length;const bar=document.getElementById('phChecklistProgress'),status=document.getElementById('phChecklistStatus');if(bar)bar.style.width=(all.length?done/all.length*100:0)+'%';if(status)status.textContent=done+' / '+all.length+' items completed'}
+function resetHandbookChecklist(){const preset=document.getElementById('phChecklistPreset').value;try{localStorage.removeItem('ajPilotChecklist_'+preset)}catch(e){}renderHandbookChecklist()}
+document.addEventListener('keydown',function(e){if(e.key==='Escape')closePilotHandbook()});ment.getElementById('dbgRefresh').textContent='FETCHING…';
   lastFetched=0;
   await Promise.allSettled([fetchPIREPs(),fetchFleetDB()]);
   rebuildUI();
