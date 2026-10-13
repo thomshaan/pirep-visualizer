@@ -1103,9 +1103,18 @@ function animate(){
     if(!fl.plane)return;
     const pos=fl.curve.getPoint(fl.t),tan=fl.curve.getTangent(fl.t).normalize();
     fl.plane.position.copy(pos);
-    const screenPos=pos.clone().project(camera),screenAhead=pos.clone().addScaledVector(tan,0.001).project(camera);
-    const screenDX=screenAhead.x-screenPos.x,screenDY=screenAhead.y-screenPos.y;
-    if(Math.abs(screenDX)+Math.abs(screenDY)>1e-9)fl.plane.material.rotation=Math.atan2(-screenDX,screenDY);
+    // Aim the SVG's upward-facing nose along the curve's projected direction.
+    // Sample slightly ahead on the curve (rather than projecting a tiny world-space tangent)
+    // so the heading remains stable under perspective and around tight bends.
+    const lookT=(fl.t+0.002)%1;
+    const screenPos=pos.clone().project(camera);
+    const screenAhead=fl.curve.getPoint(lookT).project(camera);
+    const screenDX=screenAhead.x-screenPos.x;
+    const screenDY=screenAhead.y-screenPos.y;
+    if(Math.hypot(screenDX,screenDY)>1e-7){
+      // Screen Y grows downward; an SVG aircraft nose points upward at rotation 0.
+      fl.plane.material.rotation=Math.atan2(screenDX,-screenDY);
+    }
     if(trailsOn&&fl.trail)fl.trail.push(pos);
   });
   renderer.render(scene,camera);
