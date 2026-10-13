@@ -254,6 +254,16 @@ body.panel-collapsed #panelToggle{right:0;}
 .tw-btn{flex:1;padding:5px 0;background:transparent;border:1px solid var(--border);border-radius:4px;
   color:var(--dim);font-size:9px;cursor:pointer;transition:all .2s;font-family:var(--fm);font-weight:700;}
 .tw-btn.on{background:rgba(249,148,32,.12);border-color:var(--orange);color:var(--orange);}
+
+/* OPS REPORT */
+.ops-nav-btn{pointer-events:auto;background:rgba(249,148,32,.1);border:1px solid rgba(249,148,32,.42);color:var(--gold);padding:9px 13px;border-radius:7px;font:700 9px var(--fm);letter-spacing:.15em;cursor:pointer;white-space:nowrap}
+.ops-nav-btn:hover{background:rgba(249,148,32,.2);border-color:var(--gold)}
+#opsReport{position:fixed;inset:0;z-index:120;background:rgba(12,4,10,.88);backdrop-filter:blur(18px);display:none;align-items:center;justify-content:center;padding:20px}
+#opsReport.vis{display:flex}.ops-shell{width:min(1120px,100%);max-height:calc(100vh - 40px);overflow:auto;background:linear-gradient(145deg,rgba(42,15,34,.99),rgba(20,7,17,.99));border:1px solid rgba(249,148,32,.3);border-radius:15px;padding:22px;box-shadow:0 24px 90px #0009}
+.ops-top{display:flex;justify-content:space-between;gap:16px;margin-bottom:18px}.ops-kicker{font:700 9px var(--fm);letter-spacing:.2em;color:var(--orange);margin-bottom:8px}.ops-title{font:900 clamp(19px,3vw,28px) var(--fd);color:var(--gold)}.ops-sub{font-size:11px;color:var(--dim);margin-top:6px}.ops-close{background:transparent;border:1px solid var(--border);color:var(--dim);border-radius:7px;padding:8px 12px;cursor:pointer}
+.ops-select-wrap{display:flex;align-items:center;gap:10px;margin-bottom:15px;flex-wrap:wrap}.ops-select-wrap label{font:700 9px var(--fm);color:var(--dim);letter-spacing:.16em}#pilotReportSelect{min-width:240px;max-width:100%;background:#2A0F22;border:1px solid var(--border-hi);border-radius:7px;padding:10px;color:var(--text);font:600 12px var(--fb)}
+.ops-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:12px}.ops-metric,.ops-panel{background:rgba(249,148,32,.04);border:1px solid rgba(249,148,32,.15);border-radius:10px;padding:14px;min-width:0}.ops-metric-label{font:700 8px var(--fm);letter-spacing:.14em;color:var(--dim);margin-bottom:9px}.ops-metric-value{font:700 clamp(16px,2.2vw,24px) var(--fd);color:var(--gold);overflow-wrap:anywhere}.ops-metric-note{font:9px var(--fm);color:var(--dim);margin-top:6px;line-height:1.5}.ops-columns{display:grid;grid-template-columns:1.1fr .9fr;gap:12px;margin-top:12px}.ops-panel-title{font:700 10px var(--fd);letter-spacing:.13em;color:var(--orange);margin-bottom:12px}.ops-stat-row{display:flex;justify-content:space-between;gap:12px;padding:9px 0;border-bottom:1px solid #ffffff0b;font-size:11px}.ops-stat-name{color:var(--dim)}.ops-stat-value{text-align:right;font:700 10px var(--fm);color:var(--text);overflow-wrap:anywhere}.ops-bar-row{margin:12px 0}.ops-bar-head{display:flex;justify-content:space-between;gap:12px;font-size:10px;margin-bottom:5px}.ops-bar-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.ops-bar-value{font:10px var(--fm);color:var(--orange)}.ops-bar-track{height:5px;background:#ffffff10;border-radius:8px;overflow:hidden}.ops-bar-fill{height:100%;background:linear-gradient(90deg,var(--magenta),var(--orange),var(--gold))}.ops-badges{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}.ops-badge{font:700 8px var(--fm);color:var(--gold);background:#f9942014;border:1px solid #f9942033;padding:6px 8px;border-radius:5px}.ops-journey-item{display:grid;grid-template-columns:70px 1fr auto;gap:10px;padding:10px 0;border-bottom:1px solid #ffffff0b;align-items:center}.ops-journey-date{font:9px var(--fm);color:var(--dim)}.ops-journey-route{font:700 11px var(--fm)}.ops-journey-meta{font-size:9px;color:var(--dim);margin-top:4px;line-height:1.5}.ops-journey-time{font:10px var(--fm);color:var(--orange);white-space:nowrap}.ops-empty{font-size:11px;color:var(--dim);padding:12px 0;line-height:1.6}.ops-footnote{font-size:9px;color:#f5e6da66;line-height:1.6;margin-top:14px}
+@media(max-width:760px){.ops-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.ops-columns{grid-template-columns:1fr}#opsReport{padding:8px}.ops-shell{padding:14px;max-height:calc(100vh - 16px)}.hdr-stats{gap:10px}.hdr-stats .stat:nth-child(3){display:none}.ops-nav-btn{padding:8px;font-size:8px}.ops-journey-item{grid-template-columns:55px 1fr}.ops-journey-time{grid-column:2}}
 </style>
 </head>
 <body>
@@ -283,6 +293,7 @@ body.panel-collapsed #panelToggle{right:0;}
       <div class="hdr-sub">Abel Jets Virtual Group · Flight Operations</div>
     </div>
   </div>
+  <button class="ops-nav-btn" onclick="openOpsReport()">✦ OPS REPORT</button>
   <div class="hdr-stats">
     <div class="stat"><div class="stat-val" id="statFlights">–</div><div class="stat-lbl">Total Flights</div></div>
     <div class="stat"><div class="stat-val" id="statAirtime">–</div><div class="stat-lbl">Total Airtime</div></div>
@@ -290,6 +301,15 @@ body.panel-collapsed #panelToggle{right:0;}
   </div>
 </div>
 
+<!-- PILOT JOURNEY / OPS REPORT -->
+<div id="opsReport" role="dialog" aria-modal="true" aria-label="Operations report" onclick="if(event.target===this)closeOpsReport()">
+ <div class="ops-shell">
+  <div class="ops-top"><div><div class="ops-kicker">ABEL JETS · FLIGHT OPERATIONS INTELLIGENCE</div><div class="ops-title">PILOT JOURNEY</div><div class="ops-sub">Lifetime routes, fleet choices and global footprint.</div></div><button class="ops-close" onclick="closeOpsReport()">✕ CLOSE</button></div>
+  <div class="ops-select-wrap"><label for="pilotReportSelect">SELECT PILOT</label><select id="pilotReportSelect" onchange="renderPilotReport()"></select></div>
+  <div id="opsReportContent"></div>
+  <div class="ops-footnote">Metrics use all PIREPs currently loaded from live and legacy sheets. Route distance is great-circle distance. Country totals use airport country codes when available.</div>
+ </div>
+</div>
 <!-- PANEL TOGGLE TAB -->
 <button id="panelToggle" onclick="togglePanel()" title="Toggle panel">◀</button>
 
@@ -398,6 +418,7 @@ async function fetchAirportDB() {
       lon:        header.indexOf('longitude_deg'),
       gps_code:   header.indexOf('gps_code'),
       local_code: header.indexOf('local_code'),
+      country:    header.indexOf('iso_country'),
     };
     for (let i = 1; i < lines.length; i++) {
       const cols = lines[i].match(/(".*?"|[^,]+|(?<=,)(?=,)|(?<=,)$)/g);
@@ -406,7 +427,7 @@ async function fetchAirportDB() {
       const lat = parseFloat(clean(idx.lat));
       const lon = parseFloat(clean(idx.lon));
       if (isNaN(lat) || isNaN(lon)) continue;
-      const entry = { lat, lon, name: clean(idx.name) };
+      const entry = { lat, lon, name: clean(idx.name), country: clean(idx.country) };
       const icao  = clean(idx.ident);
       if (icao.length === 4)  AIRPORT_COORDS[icao]  = entry;
       const gps   = clean(idx.gps_code);
@@ -575,8 +596,8 @@ function parseRow(row) {
     reg:        row['Aircraft Registration'] || '',
     network:    'VATSIM',
     subsidiary: getSubsidiaryFromCallsign(callsign),
-    origin:     { icao: originICAO, name: cleanAirportName(row['Departure Airport']) || originC.name, lat: originC.lat, lon: originC.lon },
-    dest:       { icao: destICAO,   name: cleanAirportName(row['Arrival Airport'])   || destC.name,   lat: destC.lat,  lon: destC.lon  },
+    origin:     { icao: originICAO, name: cleanAirportName(row['Departure Airport']) || originC.name, lat: originC.lat, lon: originC.lon, country: originC.country || inferCountryFromICAO(originICAO) },
+    dest:       { icao: destICAO,   name: cleanAirportName(row['Arrival Airport'])   || destC.name,   lat: destC.lat,  lon: destC.lon, country: destC.country || inferCountryFromICAO(destICAO) },
     dep:        fmtTime(row['Departure Time (UTC)']),
     arr:        fmtTime(row['Arrival Time (UTC)']),
     airtime:    fmtAirtime(row['Block Time (min)']),
@@ -604,8 +625,8 @@ function parseOldRow(row) {
     reg:        row['Aircraft Registration'] || '',
     network:    row['Network Name'] || 'Unavailable — Older PIREP',
     subsidiary: getSubsidiaryFromCallsign(row['ICAO Flight Number'] || ''),
-    origin:     { icao: originICAO, name: cleanAirportName(row['Origin Airport']) || originC.name, lat: originC.lat, lon: originC.lon },
-    dest:       { icao: destICAO,   name: cleanAirportName(row['Destination Airport']) || destC.name, lat: destC.lat, lon: destC.lon },
+    origin:     { icao: originICAO, name: cleanAirportName(row['Origin Airport']) || originC.name, lat: originC.lat, lon: originC.lon, country: originC.country || inferCountryFromICAO(originICAO) },
+    dest:       { icao: destICAO,   name: cleanAirportName(row['Destination Airport']) || destC.name, lat: destC.lat, lon: destC.lon, country: destC.country || inferCountryFromICAO(destICAO) },
     dep:        fmtTime(row['Off-Block Time']),
     arr:        fmtTime(row['On-Block Time']),
     airtime:    fmtAirtime(row['Air Time']),
@@ -681,6 +702,8 @@ function rebuildUI() {} // overridden later
 // GLOBE GLOBALS
 // ═══════════════════════════════════════════════════════
 let arcH=0.10, autoRot=0.00015, trailsOn=true, cloudsOn=true;
+const MAX_GLOBE_FLIGHTS=120; // Globe is a recent-flight view; Ops Report retains the complete history.
+let _labelFrame=0;
 let flights=[], pulseRings=[], airportMarkers=[];
 let sunLight, globe, camera, renderer, scene;
 let rotX=0.12, rotY=2.83, trgX=0.12, trgY=2.83;
@@ -866,7 +889,7 @@ function buildAirports(){
 
   // Collect unique airports from current PIREPs
   const seen={};
-  PIREPS.forEach(p=>{
+  PIREPS.slice(0,MAX_GLOBE_FLIGHTS).forEach(p=>{
     [p.origin,p.dest].forEach(ap=>{
       if(!seen[ap.icao]) seen[ap.icao]={...ap};
     });
@@ -905,13 +928,14 @@ function buildAirports(){
 // ═══════════════════════════════════════════════════════
 function buildFlights(){
   flights.forEach(f=>{
-    globe.remove(f.arcMesh);f.arcMesh.geometry.dispose();
-    if(f.plane) globe.remove(f.plane);
-    if(f.trail)  globe.remove(f.trail.line);
+    if(f.arcMesh){globe.remove(f.arcMesh);f.arcMesh.geometry.dispose();if(f.mat)f.mat.dispose();}
+    if(f.plane){globe.remove(f.plane);if(f.plane.material.map)f.plane.material.map.dispose();f.plane.material.dispose();}
+    if(f.trail){globe.remove(f.trail.line);if(f.trail.line.geometry)f.trail.line.geometry.dispose();}
   });
   flights=[];
   const seenRoutes=new Set();
   PIREPS.forEach((p,i)=>{
+    if(i>=MAX_GLOBE_FLIGHTS&&p!==selectedPIREP){flights.push({pirep:p,curve:null,arcMesh:null,plane:null,trail:null,mat:null,t:0,speed:0});return;}
     const curve=buildCurve(p.origin.lat,p.origin.lon,p.dest.lat,p.dest.lon,arcH);
     const mat=new THREE.MeshBasicMaterial({color:new THREE.Color(p.color),transparent:true,opacity:0.85,blending:THREE.AdditiveBlending,depthWrite:false});
     const arcMesh=new THREE.Mesh(new THREE.TubeGeometry(curve,80,0.0018,5,false),mat);
@@ -926,25 +950,12 @@ function buildFlights(){
 }
 
 function makePlane(color){
-  const g=new THREE.Group(),c=new THREE.Color(color);
-  const mat=new THREE.MeshPhongMaterial({color:c,emissive:c,emissiveIntensity:0.4,shininess:60});
-  const gm=new THREE.MeshBasicMaterial({color:c,transparent:true,opacity:0.7,blending:THREE.AdditiveBlending,depthWrite:false});
-  const s=0.032;
-  const f=new THREE.Mesh(new THREE.CylinderGeometry(s*.07,s*.055,s*1.2,8),mat);f.rotation.z=Math.PI/2;g.add(f);
-  const n=new THREE.Mesh(new THREE.ConeGeometry(s*.07,s*.25,8),mat);n.rotation.z=-Math.PI/2;n.position.x=s*.7;g.add(n);
-  const w=new THREE.Mesh(new THREE.BoxGeometry(s*.32,s*.025,s*1.05),mat);w.position.x=s*.08;g.add(w);
-  [[s*.55],[-s*.55]].forEach(([z])=>{const wl=new THREE.Mesh(new THREE.BoxGeometry(s*.06,s*.18,s*.025),mat);wl.position.set(s*.08,s*.09,z);g.add(wl);});
-  const hs=new THREE.Mesh(new THREE.BoxGeometry(s*.2,s*.02,s*.44),mat);hs.position.x=-s*.52;g.add(hs);
-  const vs=new THREE.Mesh(new THREE.BoxGeometry(s*.18,s*.28,s*.025),mat);vs.position.set(-s*.44,s*.14,0);g.add(vs);
-  [[s*.34],[-s*.34]].forEach(([z])=>{
-    const en=new THREE.Mesh(new THREE.CylinderGeometry(s*.09,s*.09,s*.28,8),mat);en.rotation.z=Math.PI/2;en.position.set(s*.09,-s*.05,z);g.add(en);
-    const eg=new THREE.Mesh(new THREE.CircleGeometry(s*.07,8),gm);eg.position.set(-s*.05,-s*.05,z);eg.rotation.y=Math.PI/2;g.add(eg);
-  });
-  const mkN=(col,pos)=>{const nm=new THREE.MeshBasicMaterial({color:new THREE.Color(col),transparent:true,opacity:0.9,blending:THREE.AdditiveBlending,depthWrite:false});const nl=new THREE.Mesh(new THREE.SphereGeometry(s*.06,6,6),nm);nl.position.set(...pos);g.add(nl);return nm;};
-  g.userData.navL=mkN('#ff2222',[s*.09,-s*.02,s*.55]);
-  g.userData.navR=mkN('#00ff66',[s*.09,-s*.02,-s*.55]);
-  g.userData.beacon=mkN('#ffffff',[0,s*.12,0]);
-  return g;
+  // Lightweight 2D vector aircraft sprite instead of a multi-mesh 3D model.
+  const canvas=document.createElement('canvas');canvas.width=64;canvas.height=64;
+  const ctx=canvas.getContext('2d');ctx.translate(32,32);ctx.fillStyle=color;ctx.shadowColor=color;ctx.shadowBlur=8;
+  ctx.beginPath();ctx.moveTo(0,-29);ctx.lineTo(4,-7);ctx.lineTo(23,5);ctx.lineTo(23,10);ctx.lineTo(4,4);ctx.lineTo(3,20);ctx.lineTo(10,25);ctx.lineTo(10,29);ctx.lineTo(0,26);ctx.lineTo(-10,29);ctx.lineTo(-10,25);ctx.lineTo(-3,20);ctx.lineTo(-4,4);ctx.lineTo(-23,10);ctx.lineTo(-23,5);ctx.lineTo(-4,-7);ctx.closePath();ctx.fill();
+  const texture=new THREE.CanvasTexture(canvas),material=new THREE.SpriteMaterial({map:texture,transparent:true,depthWrite:false,depthTest:true});
+  const sprite=new THREE.Sprite(material);sprite.scale.set(.055,.055,1);return sprite;
 }
 
 class Trail{
@@ -1036,16 +1047,13 @@ function animate(){
     });
   }
   flights.forEach((fl,i)=>{
+    if(!fl.curve)return;
     fl.t=(fl.t+dt*fl.speed)%1;
-    if(!fl.plane) return;
+    if(!fl.plane)return;
     const pos=fl.curve.getPoint(fl.t),tan=fl.curve.getTangent(fl.t).normalize();
-    const up=pos.clone().normalize(),right=new THREE.Vector3().crossVectors(tan,up).normalize();
     fl.plane.position.copy(pos);
-    fl.plane.quaternion.setFromRotationMatrix(new THREE.Matrix4().makeBasis(tan,new THREE.Vector3().crossVectors(right,tan),right));
-    if(trailsOn&&fl.trail) fl.trail.push(pos);
-    if(fl.plane.userData.navL)   fl.plane.userData.navL.opacity  =.5+.5*Math.sin(t*5+i*2);
-    if(fl.plane.userData.navR)   fl.plane.userData.navR.opacity  =.5+.5*Math.sin(t*5+i*2+Math.PI);
-    if(fl.plane.userData.beacon) fl.plane.userData.beacon.opacity=.4+.6*(Math.sin(t*3+i)>.6?1:0);
+    fl.plane.material.rotation=Math.atan2(tan.z,tan.x)-Math.PI/2;
+    if(trailsOn&&fl.trail)fl.trail.push(pos);
   });
   renderer.render(scene,camera);
   updateLabels();
@@ -1053,6 +1061,7 @@ function animate(){
 
 function updateLabels(){
   if(!globe||!camera)return;
+  if((++_labelFrame%3)!==0)return;
   airportMarkers.forEach(mk=>{
     const world=mk.pos.clone().applyMatrix4(globe.matrixWorld);
     const proj=world.clone().project(camera);
@@ -1148,9 +1157,9 @@ function applyFlightVisibility(){
   }
   flights.forEach((fl,i)=>{
     const vis=!q||PIREPS[i].pilot.toLowerCase().includes(q);
-    fl.arcMesh.visible=vis;
-    if(fl.plane) fl.plane.visible=vis;
-    if(fl.trail) fl.trail.line.visible=vis;
+    if(fl.arcMesh)fl.arcMesh.visible=vis;
+    if(fl.plane)fl.plane.visible=vis;
+    if(fl.trail)fl.trail.line.visible=vis;
   });
   airportMarkers.forEach(mk=>{
     const vis=!q||activeAirports.has(mk.icao);
@@ -1272,6 +1281,7 @@ function openDetail(i){
   if(globe){
     _savedAutoRot=autoRot; autoRot=0;
     selectedPIREP=p;
+    if(i>=MAX_GLOBE_FLIGHTS){buildFlights();applyFlightVisibility();}
     const _va=ll2v(p.origin.lat,p.origin.lon),_vb=ll2v(p.dest.lat,p.dest.lon);
     const _mid=_va.clone().add(_vb).normalize();
     trgY=Math.atan2(-_mid.x,_mid.z);
@@ -1341,6 +1351,46 @@ rebuildUI=function(){
     if(pilot) setPilotFilter(pilot);
   }
 };
+
+
+/* OPS REPORT: full-history pilot analytics */
+const COUNTRY_NAMES={ID:'Indonesia',TH:'Thailand',MY:'Malaysia',SG:'Singapore',PH:'Philippines',VN:'Vietnam',KH:'Cambodia',MM:'Myanmar',BN:'Brunei',JP:'Japan',KR:'South Korea',CN:'China',TW:'Taiwan',IN:'India',AU:'Australia',NZ:'New Zealand',US:'United States',CA:'Canada',GB:'United Kingdom',FR:'France',DE:'Germany',NL:'Netherlands',ES:'Spain',IT:'Italy',AE:'United Arab Emirates',ZA:'South Africa',BR:'Brazil',MX:'Mexico',RU:'Russia',TR:'Türkiye'};
+function inferCountryFromICAO(icao){const c=String(icao||'').toUpperCase();if(/^(WI|WA|WO|WR|WQ)/.test(c))return'ID';if(/^VT/.test(c))return'TH';if(/^WM/.test(c))return'MY';if(/^WS/.test(c))return'SG';if(/^RP/.test(c))return'PH';if(/^VV/.test(c))return'VN';if(/^VY/.test(c))return'MM';if(/^RJ|^RO/.test(c))return'JP';if(/^RK/.test(c))return'KR';if(/^Z/.test(c))return'CN';if(/^RC/.test(c))return'TW';if(/^Y/.test(c))return'AU';if(/^NZ/.test(c))return'NZ';if(/^K/.test(c))return'US';if(/^C/.test(c))return'CA';if(/^EG/.test(c))return'GB';if(/^LF/.test(c))return'FR';if(/^ED|^ET/.test(c))return'DE';if(/^EH/.test(c))return'NL';if(/^LE/.test(c))return'ES';if(/^LI/.test(c))return'IT';if(/^OM/.test(c))return'AE';return'';}
+function countryLabel(c){c=String(c||'').toUpperCase();return COUNTRY_NAMES[c]||c||'Unknown';}
+function escapeOps(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function routeDistanceKm(p){const a=p.origin,b=p.dest,rad=n=>n*Math.PI/180,dLat=rad(b.lat-a.lat),dLon=rad(b.lon-a.lon),h=Math.sin(dLat/2)**2+Math.cos(rad(a.lat))*Math.cos(rad(b.lat))*Math.sin(dLon/2)**2;return 6371*2*Math.atan2(Math.sqrt(h),Math.sqrt(Math.max(0,1-h)));}
+function opsDate(p){const d=new Date(p._rawTimestamp||p.date||'');return Number.isNaN(d.getTime())?null:d;}
+function opsMinutes(m){m=Math.max(0,Math.round(m||0));return Math.floor(m/60)+'h '+String(m%60).padStart(2,'0')+'m';}
+function opsTop(o){return Object.entries(o).sort((a,b)=>b[1]-a[1])[0]||null;}
+function opsRow(k,v){return '<div class="ops-stat-row"><span class="ops-stat-name">'+escapeOps(k)+'</span><span class="ops-stat-value">'+escapeOps(v||'—')+'</span></div>';}
+function opsBar(k,v,max){return '<div class="ops-bar-row"><div class="ops-bar-head"><span class="ops-bar-name">'+escapeOps(k)+'</span><span class="ops-bar-value">'+v+' flights</span></div><div class="ops-bar-track"><div class="ops-bar-fill" style="width:'+Math.max(3,100*v/(max||1))+'%"></div></div></div>';}
+function openOpsReport(){const sel=document.getElementById('pilotReportSelect'),old=sel.value,pilots=[...new Set(PIREPS.map(p=>p.pilot).filter(Boolean))].sort();sel.innerHTML=pilots.map(p=>'<option value="'+escapeOps(p)+'">'+escapeOps(p)+'</option>').join('');if(pilots.includes(old))sel.value=old;else if(pilots.includes(activeFilter))sel.value=activeFilter;sel.selectedIndex=Math.max(0,sel.selectedIndex);document.getElementById('opsReport').classList.add('vis');renderPilotReport();}
+function closeOpsReport(){document.getElementById('opsReport').classList.remove('vis');}
+function renderPilotReport(){
+ const name=document.getElementById('pilotReportSelect').value,all=PIREPS.filter(p=>p.pilot===name),el=document.getElementById('opsReportContent');
+ if(!all.length){el.innerHTML='<div class="ops-empty">No pilot PIREPs found in the currently loaded data.</div>';return;}
+ const fleet={},airports={},countries={},routes={},regs={},subs={},months={};let longest=null,shortest=null;
+ let mins=0;all.forEach(p=>{mins+=airtimeToMinutes(p.airtime);const ac=(p.aircraft||'Unknown aircraft').trim();fleet[ac]=(fleet[ac]||0)+1;if(p.reg)regs[p.reg]=(regs[p.reg]||0)+1;if(p.subsidiary)subs[p.subsidiary]=(subs[p.subsidiary]||0)+1;
+ [p.origin,p.dest].forEach(ap=>{const code=ap.icao||'?';if(!airports[code])airports[code]={n:0,name:ap.name||code};airports[code].n++;const cc=ap.country||AIRPORT_COORDS[code]?.country||inferCountryFromICAO(code)||'Unknown';countries[cc]=(countries[cc]||0)+1;});
+ const km=routeDistanceKm(p),key=p.origin.icao+'-'+p.dest.icao;routes[key]=(routes[key]||0)+1;if(km>0&&(!longest||km>longest.km))longest={p,km};if(km>0&&(!shortest||km<shortest.km))shortest={p,km};
+ const d=opsDate(p);if(d){const mo=d.toLocaleDateString('en-CA',{year:'numeric',month:'short',timeZone:'UTC'});months[mo]=(months[mo]||0)+1;}
+ });
+ const ap=opsTop(Object.fromEntries(Object.entries(airports).map(([k,v])=>[k,v.n]))),co=opsTop(countries),ac=opsTop(fleet),rt=opsTop(routes),su=opsTop(subs),mo=opsTop(months);
+ const days=new Set(all.map(p=>opsDate(p)?.toISOString().slice(0,10)).filter(Boolean)).size,sorted=[...all].sort((a,b)=>(opsDate(a)?.getTime()||0)-(opsDate(b)?.getTime()||0)),milestones=[10,25,50,100,250,500,1000].filter(n=>all.length>=n),fbar=Object.entries(fleet).sort((a,b)=>b[1]-a[1]).slice(0,6),rbar=Object.entries(regs).sort((a,b)=>b[1]-a[1]).slice(0,5),journey=sorted.slice(-18).reverse();
+ const routeText=x=>x?x.p.origin.icao+' → '+x.p.dest.icao+' · '+Math.round(x.km).toLocaleString()+' km':'—';
+ const airportText=ap?airports[ap[0]].name+' ('+ap[0]+') · '+ap[1]+' visits':'—';
+ el.innerHTML='<div class="ops-grid">'+
+ '<div class="ops-metric"><div class="ops-metric-label">Lifetime flights</div><div class="ops-metric-value">'+all.length.toLocaleString()+'</div><div class="ops-metric-note">'+days+' active days</div></div>'+
+ '<div class="ops-metric"><div class="ops-metric-label">Total airtime</div><div class="ops-metric-value">'+opsMinutes(mins)+'</div><div class="ops-metric-note">Average '+opsMinutes(mins/all.length)+' per PIREP</div></div>'+
+ '<div class="ops-metric"><div class="ops-metric-label">Fleet types</div><div class="ops-metric-value">'+Object.keys(fleet).length+'</div><div class="ops-metric-note">'+Object.keys(regs).length+' registrations</div></div>'+
+ '<div class="ops-metric"><div class="ops-metric-label">Global footprint</div><div class="ops-metric-value">'+Object.keys(countries).filter(c=>c!=='Unknown').length+' countries</div><div class="ops-metric-note">'+Object.keys(airports).length+' unique airports</div></div></div>'+
+ '<div class="ops-columns"><section class="ops-panel"><div class="ops-panel-title">Journey highlights</div>'+
+ opsRow('Most visited airport',airportText)+opsRow('Most visited country',co?countryLabel(co[0])+' · '+co[1]+' airport visits':'—')+opsRow('Favorite aircraft',ac?ac[0]+' · '+ac[1]+' flights':'—')+opsRow('Favorite route',rt?rt[0].replace('-',' → ')+' · '+rt[1]+' flights':'—')+opsRow('Longest route',routeText(longest))+opsRow('Shortest route',routeText(shortest))+opsRow('Most active month',mo?mo[0]+' · '+mo[1]+' flights':'—')+opsRow('Most flown subsidiary',su?su[0]+' · '+su[1]+' flights':'—')+
+ '<div class="ops-badges">'+(milestones.length?milestones.map(n=>'<span class="ops-badge">✦ '+n+' FLIGHTS</span>').join(''):'<span class="ops-badge">FIRST MILESTONE: 10 FLIGHTS</span>')+'</div></section>'+
+ '<section class="ops-panel"><div class="ops-panel-title">Fleet usage · types</div>'+(fbar.length?fbar.map(([k,v])=>opsBar(k,v,fbar[0][1])).join(''):'<div class="ops-empty">No aircraft data.</div>')+(rbar.length?'<div class="ops-panel-title" style="margin-top:20px">Registrations</div>'+rbar.map(([k,v])=>opsBar(k,v,rbar[0][1])).join(''):'')+'</section></div>'+
+ '<section class="ops-panel" style="margin-top:12px"><div class="ops-panel-title">Pilot journey · latest 18 flights</div>'+journey.map(p=>'<div class="ops-journey-item"><div class="ops-journey-date">'+(opsDate(p)?opsDate(p).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'2-digit',timeZone:'UTC'}):escapeOps(p.date||'—'))+'</div><div><div class="ops-journey-route">'+escapeOps(p.origin.icao)+' <span style="color:var(--orange)">→</span> '+escapeOps(p.dest.icao)+'</div><div class="ops-journey-meta">'+escapeOps(p.aircraft||'Aircraft unknown')+' · '+escapeOps(p.subsidiary||'Subsidiary unknown')+' · '+Math.round(routeDistanceKm(p)).toLocaleString()+' km</div></div><div class="ops-journey-time">'+escapeOps(p.airtime||'—')+'</div></div>').join('')+'</section>';
+}
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeOpsReport();});
 
 // ═══════════════════════════════════════════════════════
 // DEBUG PANEL
