@@ -460,7 +460,7 @@ body.panel-collapsed #panelToggle{right:0;}
  body.map-ready .zulu-clock{opacity:1;visibility:visible}
  .wx-toggle{opacity:0;visibility:hidden;transition:opacity .35s ease,visibility .35s ease}
  body.map-ready .wx-toggle{opacity:1;visibility:visible}
- .wx-panel{top:66px!important}
+ .wx-panel{top:124px!important}
  .metar-check{display:flex;gap:7px;margin:10px 0 12px}
  .metar-check input{min-width:0;width:100%;flex:1;border:1px solid rgba(92,218,193,.3);border-radius:7px;background:#101c22;color:#e9f5f4;padding:10px;font:700 11px var(--fm);text-transform:uppercase;outline:none}
  .metar-check input:focus{border-color:#65e5ca}
@@ -470,7 +470,7 @@ body.panel-collapsed #panelToggle{right:0;}
  .metar-check-result strong{color:#baf8e9}
  /* Weather-map overlays are disabled; METAR remains a manual lookup only. */
  .wx-map-badge{display:none!important}
- @media(max-width:760px){.zulu-clock{top:12px!important;left:50%!important;max-width:calc(100vw - 170px);padding:7px 9px!important;gap:5px!important;font-size:9px!important;letter-spacing:.03em!important}.zulu-clock #zuluDate{font-size:7px!important;letter-spacing:0!important}.wx-panel{top:62px!important;left:12px!important;width:calc(100vw - 24px)!important;max-height:calc(100dvh - 80px)!important}}
+ @media(max-width:760px){.zulu-clock{top:12px!important;left:50%!important;max-width:calc(100vw - 170px);padding:7px 9px!important;gap:5px!important;font-size:9px!important;letter-spacing:.03em!important}.zulu-clock #zuluDate{font-size:7px!important;letter-spacing:0!important}.wx-panel{top:104px!important;left:12px!important;width:calc(100vw - 24px)!important;max-height:calc(100dvh - 122px)!important}}
  @media(max-width:420px){.zulu-clock{left:auto!important;right:10px!important;transform:none!important;max-width:calc(100vw - 170px);font-size:8px!important;padding:6px 7px!important}.zulu-clock #zuluDate{display:none!important}}
 
 /* PILOT HANDBOOK — lazy, on-demand flight workspace */
@@ -525,6 +525,7 @@ body.panel-collapsed #panelToggle{right:0;}
 @media(max-width:700px){.nav-dock{bottom:10px;gap:6px;max-width:calc(100vw - 20px)}.nav-dock .ops-nav-btn,.nav-dock .handbook-nav-btn{padding:9px 8px;font-size:8px;letter-spacing:.04em}.ph-shell{padding:13px;max-height:calc(100dvh - 16px)}#pilotHandbook{padding:8px}.ph-grid,.ph-fields,.ph-checklist,.ph-resource-grid{grid-template-columns:1fr}.ph-card.wide{grid-column:auto}.ph-top{gap:10px}.ph-close{padding:9px;font-size:9px}.ph-airport-summary{grid-template-columns:1fr 1fr}}
 
 
+.ph-weather-widget{margin:10px 0 14px;padding:12px;border:1px solid rgba(101,229,202,.18);border-radius:10px;background:rgba(0,0,0,.12)}
 /* PILOT HANDBOOK NOTEPAD + LIVE FLIGHT DECK */
 .ph-notepad-columns{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:12px;align-items:start}
 .ph-notepad-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
@@ -619,6 +620,14 @@ body.panel-collapsed #panelToggle{right:0;}
    </div>
    <div class="ph-card" style="margin-top:12px">
     <div class="ph-card-title">LIVE AIRPORT WEATHER · DEPARTURE / ARRIVAL</div>
+    <div class="ph-weather-widget">
+     <div class="ph-copy">Check any airport independently, or use the departure / arrival weather below after retrieving your VATSIM flight plan.</div>
+     <form class="ph-fields" onsubmit="event.preventDefault();lookupHandbookLiveWeather()" style="margin-top:10px">
+      <div class="ph-field"><label for="phWeatherIcao">AIRPORT ICAO</label><input id="phWeatherIcao" maxlength="4" minlength="4" pattern="[A-Za-z]{4}" placeholder="e.g. WIII" autocomplete="off" required></div>
+      <div class="ph-field" style="display:flex;align-items:flex-end"><button class="ph-action" id="phWeatherLookupBtn" type="submit" style="width:100%">CHECK LIVE WEATHER</button></div>
+     </form>
+     <div id="phWeatherWidget" aria-live="polite"></div>
+    </div>
     <div class="ph-airport-summary">
      <div class="ph-apbox ph-weatherbox"><strong><span id="phDepCode">DEP · —</span></strong><div class="ph-weather-main" id="phDepWeather">Waiting for flight plan lookup</div><div id="phDepAtc">VATSIM ATC · not checked</div><div class="ph-weather-raw" id="phDepRaw"></div></div>
      <div class="ph-apbox ph-weatherbox"><strong><span id="phDestCode">ARR · —</span></strong><div class="ph-weather-main" id="phDestWeather">Waiting for flight plan lookup</div><div id="phDestAtc">VATSIM ATC · not checked</div><div class="ph-weather-raw" id="phDestRaw"></div></div>
@@ -2596,6 +2605,30 @@ async function lookupRouteWeather(){
  document.getElementById('phDepCode').textContent=dep;document.getElementById('phDestCode').textContent=dest;document.getElementById('phDepWeather').textContent='Fetching METAR…';document.getElementById('phDestWeather').textContent='Fetching METAR…';
  const results=await Promise.allSettled([phFetchMetar(dep),phFetchMetar(dest)]);
  [dep,dest].forEach(function(code,i){const box=i===0?'phDepWeather':'phDestWeather',rawid=i===0?'phDepRaw':'phDestRaw';if(results[i].status==='fulfilled'){const info=phMetarSummary(results[i].value);phMetars[code]=info;document.getElementById(box).textContent=info.summary;document.getElementById(rawid).textContent=info.raw||'Raw METAR unavailable'}else{document.getElementById(box).textContent='METAR unavailable: '+results[i].reason.message;document.getElementById(rawid).textContent=''}});updatePhBrief();
+}
+async function lookupHandbookLiveWeather(){
+ const input=document.getElementById('phWeatherIcao'),out=document.getElementById('phWeatherWidget'),button=document.getElementById('phWeatherLookupBtn');
+ const code=String(input.value||'').trim().toUpperCase();
+ if(!/^[A-Z]{4}$/.test(code)){phSetStatus('phWeatherWidget','Enter a valid four-letter ICAO code.','err');return}
+ input.value=code;button.disabled=true;button.textContent='FETCHING…';out.innerHTML='<div class="ph-muted">Fetching latest METAR for '+phEsc(code)+'…</div>';
+ try{
+  const r=await phFetchMetar(code),raw=String(r.rawOb||r.raw_text||r.metar||r.raw||'').trim();
+  const wxText=(Array.isArray(r.wxString)?r.wxString.join(' '):String(r.wxString||r.wx||'')).toUpperCase();
+  const cloudText=(Array.isArray(r.clouds)?r.clouds.map(c=>String(c.cover||c.coverage||'')).join(' '):String(r.skyCover||'')).toUpperCase();
+  const rawCloud=(raw.match(/\\b(FEW|SCT|BKN|OVC|VV)\\d{3}\\b/g)||[]).join(' '),allClouds=cloudText+' '+rawCloud,wt=wxText+' '+raw;
+  const storm=/TS|\\+RA|VCTS/.test(wt),snow=/SN|SG|PL|IC/.test(wt),wet=/RA|DZ|SH|FZ/.test(wt),fog=/FG|BR|HZ|FU|DU|SA/.test(wt),covered=/BKN|OVC|VV/.test(allClouds),partly=/FEW|SCT/.test(allClouds);
+  const scene=storm?'storm':snow?'snow':wet?'rain':fog?'fog':covered||partly?'cloudy':'clear',glyph=storm?'⛈️':snow?'🌨️':wet?'🌧️':fog?'🌫️':covered?'☁️':partly?'🌤️':'☀️';
+  const condition=storm?'Thunderstorm reported':snow?'Snow / frozen precipitation':wet?'Rain / drizzle reported':fog?'Fog / mist / reduced clarity':covered?'Overcast / low cloud':partly?'Few / scattered cloud':'Clear / fair conditions';
+  const temp=r.temp!=null?Math.round(Number(r.temp))+'°C':'—',wind=(r.wdir!=null?Number(r.wdir)+'°':'VRB')+(r.wspd!=null?' · '+r.wspd+' kt':''),angle=Number.isFinite(Number(r.wdir))?Number(r.wdir):0;
+  const visibility=r.visib!=null?String(r.visib)+(String(r.visib).match(/^\\d+(\\.\\d+)?$/)?' SM':''):'—',category=String(r.fltCat||r.flightCategory||r.flight_category||'').toUpperCase(),details=[];
+  if(r.dewp!=null)details.push('DEW '+r.dewp+'°C');if(r.altim!=null)details.push('ALT '+r.altim);
+  const obs=Number(r.obsTime),date=Number.isFinite(obs)&&obs>0?new Date(obs*1000).toISOString().replace('T',' ').replace(/\\.\\d{3}Z$/,' UTC'):'Observation time unavailable';
+  phMetars[code]=phMetarSummary(r);
+  out.innerHTML='<div style="font:700 10px var(--fm);letter-spacing:.1em;color:#baf8e9;margin-top:10px">'+phEsc(code)+' · LIVE OBSERVATION</div>'+
+   '<div class="wx-live"><div class="wx-scene '+scene+'" role="img" aria-label="'+phEsc(condition)+'"><span class="wx-glyph">'+glyph+'</span></div><div class="wx-live-data"><div class="wx-live-top"><span class="wx-live-condition">'+phEsc(condition)+'</span>'+(category?'<span class="wx-live-category">'+phEsc(category)+'</span>':'')+'</div><div class="wx-live-temp">'+phEsc(temp)+'</div><div class="wx-live-meta"><span class="wx-wind-arrow" style="--wind-angle:'+angle+'deg">↑</span> WIND '+phEsc(wind)+'<br>VIS '+phEsc(visibility)+(details.length?'<br>'+details.map(phEsc).join(' · '):'')+'</div></div></div>'+
+   '<div class="ph-muted">OBSERVED '+phEsc(date)+(r.name?' · '+phEsc(r.name):'')+'</div>'+(raw?'<details class="wx-raw"><summary>SHOW RAW METAR</summary><pre>'+phEsc(raw)+'</pre></details>':'');
+ }catch(e){out.innerHTML='<div class="ph-status err">'+phEsc(e.message||'Unable to retrieve METAR.')+'</div>'}
+ finally{button.disabled=false;button.textContent='CHECK LIVE WEATHER'}
 }
 async function lookupHandbookMetar(){const code=phCode('phMetarCode');if(!/^[A-Z]{4}$/.test(code)){phSetStatus('phMetarResult','Enter a four-letter ICAO code.','err');return}const button=document.getElementById('phMetarButton');button.disabled=true;button.textContent='FETCHING…';phSetStatus('phMetarResult','Contacting METAR service…');try{const r=await phFetchMetar(code),info=phMetarSummary(r);phMetars[code]=info;phSetStatus('phMetarResult',code+' · '+info.summary+'\n'+info.raw,'ok')}catch(e){phSetStatus('phMetarResult',e.message,'err')}finally{button.disabled=false;button.textContent='FETCH METAR'}}
 async function lookupVatsimAtc(){
