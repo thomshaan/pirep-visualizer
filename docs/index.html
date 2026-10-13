@@ -2648,12 +2648,14 @@ function openOpsReport(){const sel=document.getElementById('pilotReportSelect'),
 function closeOpsReport(){document.getElementById('opsReport').classList.remove('vis');}
 function renderPilotReport(){
  const name=document.getElementById('pilotReportSelect').value,all=PIREPS.filter(p=>p.pilot===name),el=document.getElementById('opsReportContent');
-
- const jomokPilots=['muhammad faza abel jonggara marpaung','thomas septian eliezer siahaan','lalu muhamad alhadad','lalu muhammad alhadad'];
- const normalizeJomokName=s=>String(s||'').toLowerCase().normalize('NFD').replace(/[\\u0300-\\u036f]/g,'').replace(/[^a-z]/g,'');
- const selectedJomokName=normalizeJomokName(name);
- const isJomokPilot=jomokPilots.some(n=>{const target=normalizeJomokName(n);return selectedJomokName===target||selectedJomokName.startsWith(target)});
- const jomokGifs=['https://media.giphy.com/media/cEC8Yk946EcyiUlReU/giphy.gif','https://media.giphy.com/media/ETsG1pevQK80mA7sDV/giphy.gif','https://media.giphy.com/media/XFYr5mJDMz3mxB8gFC/giphy.gif','https://media.giphy.com/media/wgQTGjJMReIsbLnB3G/giphy.gif','https://media.giphy.com/me/* PILOT HANDBOOK: on-demand VATSIM, METAR, local notepad and checklist state. No polling. */
+ if(!el)return;
+ if(!name||!all.length){el.innerHTML='<div class="ops-empty">Select a pilot with recorded flights to view the report.</div>';return;}
+ const totalKm=all.reduce((sum,p)=>sum+Math.max(0,routeDistanceKm(p)||0),0),fleet={},airports={},routes={};
+ all.forEach(p=>{const type=p.aircraft||p.aircraftType||'Unknown aircraft';fleet[type]=(fleet[type]||0)+1;const o=(p.origin&&p.origin.icao)||p.originCode||'???',d=(p.dest&&p.dest.icao)||p.destCode||'???';airports[o]=(airports[o]||0)+1;airports[d]=(airports[d]||0)+1;const route=o+' → '+d;routes[route]=(routes[route]||0)+1;});
+ const topFleet=Object.entries(fleet).sort((a,b)=>b[1]-a[1]).slice(0,5),topRoutes=Object.entries(routes).sort((a,b)=>b[1]-a[1]).slice(0,5),topAirports=Object.entries(airports).sort((a,b)=>b[1]-a[1]).slice(0,5),maxFleet=Math.max(1,...topFleet.map(x=>x[1])),maxRoutes=Math.max(1,...topRoutes.map(x=>x[1]));
+ el.innerHTML='<div class="ops-report-grid">'+opsRow('PILOT',name)+opsRow('TOTAL FLIGHTS',all.length)+opsRow('DISTANCE FLOWN',Math.round(totalKm).toLocaleString()+' km')+'</div><div class="ops-report-section"><h3>TOP AIRCRAFT</h3>'+topFleet.map(x=>opsBar(x[0],x[1],maxFleet)).join('')+'</div><div class="ops-report-section"><h3>TOP ROUTES</h3>'+topRoutes.map(x=>opsBar(x[0],x[1],maxRoutes)).join('')+'</div><div class="ops-report-section"><h3>TOP AIRPORTS</h3>'+topAirports.map(x=>opsRow(x[0],x[1]+' movements')).join('')+'</div>';
+}
+/* PILOT HANDBOOK: on-demand VATSIM, METAR, local notepad and checklist state. No polling. */
 const PH_WORKER='https://pirep-metar-api.thomassiahaan31.workers.dev/metar?icao=';
 const PH_VATSIM='https://data.vatsim.net/v3/vatsim-data.json';
 const PH_CHECKLISTS={
