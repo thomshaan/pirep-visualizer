@@ -921,7 +921,7 @@ function buildAirports(){
     lbl.addEventListener('click',()=>handleLabelClick(ap.icao,lbl));
     document.body.appendChild(lbl);
 
-    airportMarkers.push({icao:ap.icao,dot,halo,ring,pos:v.clone(),lbl});
+    airportMarkers.push({icao:ap.icao,dot,halo,ring,pos:v.clone(),lbl,filterVisible:true,hemisphereVisible:true});
   });
 }
 
@@ -983,7 +983,7 @@ function buildFlights(){
     if(isNew) seenRoutes.add(routeKey);
     const plane=isNew?makePlane(p.color,p.aircraft):null; if(plane) globe.add(plane);
     const trail=isNew?new Trail(p.color,60):null; if(trail) globe.add(trail.line);
-    flights.push({curve,arcMesh,plane,trail,t:Math.random(),speed:0.007+Math.random()*0.004,color:p.color,mat});
+    flights.push({curve,cullSamples:curve.getPoints(32),routeVisible:true,filterVisible:true,arcMesh,plane,trail,t:Math.random(),speed:0.007+Math.random()*0.004,color:p.color,mat});
   });
 }
 
@@ -1065,6 +1065,31 @@ window.addEventListener('click',e=>{
 // ANIMATION LOOP
 // ═══════════════════════════════════════════════════════
 const clock=new THREE.Clock();
+let _hemisphereCullFrame=0;
+function frontDot(point,cameraLocal){return point.dot(cameraLocal)/Math.max(point.length(),1e-8);}
+function updateHemisphereCulling(){
+  if(!globe||!camera)return;
+  globe.updateMatrixWorld(true);
+  const cameraLocal=globe.worldToLocal(camera.position.clone()).normalize();
+  const refreshRoutes=(++_hemisphereCullFrame%4===0);
+  airportMarkers.forEach(mk=>{
+    mk.hemisphereVisible=frontDot(mk.pos,cameraLocal)>0.015;
+    const visible=mk.filterVisible!==false&&mk.hemisphereVisible;
+    mk.dot.visible=mk.halo.visible=mk.ring.visible=visible;
+    if(!visible)mk.lbl.classList.remove('show');
+  });
+  flights.forEach(fl=>{
+    if(!fl.curve||!fl.arcMesh)return;
+    if(refreshRoutes||fl.routeVisible===undefined){
+      const samples=fl.cullSamples||fl.curve.getPoints(28);
+      fl.routeVisible=samples.some(p=>frontDot(p,cameraLocal)>-0.12);
+    }
+    const filterVisible=fl.filterVisible!==false;
+    fl.arcMesh.visible=filterVisible&&fl.routeVisible;
+    if(fl.plane){const p=fl.curve.getPoint(fl.t);fl.plane.visible=filterVisible&&frontDot(p,cameraLocal)>-0.035;}
+    if(fl.trail&&fl.trail.line){const visible=trailsOn&&fl.trail.pts.some(p=>frontDot(p,cameraLocal)>-0.04);fl.trail.line.visible=filterVisible&&visible;}
+  });
+}
 function animate(){
   requestAnimationFrame(animate);
   const dt=clock.getDelta(),t=clock.getElapsedTime();
@@ -1081,6 +1106,7 @@ function animate(){
   rotY+=dY*.04;
   camZ+=(trgZ-camZ)*.08; camera.position.z=camZ;
   if(globe){globe.rotation.x=rotX;globe.rotation.y=rotY;}
+  updateHemisphereCulling();
   if(window._cloudMesh) window._cloudMesh.rotation.y+=dt*.008;
   if(window._earthMat&&window._earthMat.userData.shader){
     const sl=sunLight.position.clone().normalize().applyMatrix4(new THREE.Matrix4().extractRotation(globe.matrixWorld).invert());
@@ -1088,8 +1114,8 @@ function animate(){
   }
   // Zoom scale for effects
   const zS=Math.min(Math.max(camZ/2.8,0.35),1.4);
-  pulseRings.forEach(r=>{r.userData.t=(r.userData.t+dt*.42)%1;const pt=r.userData.t;r.scale.setScalar((1+pt*3.5*zS)*zS);r.userData.mat.opacity=(1-pt)*.5*Math.min(1,zS);});
-  airportMarkers.forEach((mk,i)=>{mk.halo.scale.setScalar((1+.3*Math.abs(Math.sin(t*1.5+i)))*zS);mk.dot.scale.setScalar(zS);});
+  pulseRings.forEach(r=>{if(!r.visible)return;r.userData.t=(r.userData.t+dt*.42)%1;const pt=r.userData.t;r.scale.setScalar((1+pt*3.5*zS)*zS);r.userData.mat.opacity=(1-pt)*.5*Math.min(1,zS);});
+  airportMarkers.forEach((mk,i)=>{if(!mk.hemisphereVisible||mk.filterVisible===false)return;mk.halo.scale.setScalar((1+.3*Math.abs(Math.sin(t*1.5+i)))*zS);mk.dot.scale.setScalar(zS);});
   // Arc highlight for selected flight
   if(selectedPIREP){
     flights.forEach((fl,i)=>{
@@ -1103,6 +1129,7 @@ function animate(){
     if(!fl.plane)return;
     const pos=fl.curve.getPoint(fl.t),tan=fl.curve.getTangent(fl.t).normalize();
     fl.plane.position.copy(pos);
+    if(!fl.plane.visible){if(fl.trail&&fl.trail.line)fl.trail.line.visible=false;return;}
     // Route curves are in the globe's local space. Transform both samples into
     // world space before projecting, otherwise globe rotation makes the heading wrong.
     // Sample forward along the curve so direct arcs and waypoint segments both work.
@@ -1221,13 +1248,15 @@ function applyFlightVisibility(){
   }
   flights.forEach((fl,i)=>{
     const vis=!q||PIREPS[i].pilot.toLowerCase().includes(q);
+    fl.filterVisible=vis;
     if(fl.arcMesh)fl.arcMesh.visible=vis;
     if(fl.plane)fl.plane.visible=vis;
     if(fl.trail)fl.trail.line.visible=vis;
   });
   airportMarkers.forEach(mk=>{
     const vis=!q||activeAirports.has(mk.icao);
-    mk.dot.visible=mk.halo.visible=mk.ring.visible=vis;
+    mk.filterVisible=vis;
+    mk.dot.visible=mk.halo.visible=mk.ring.visible=vis&&mk.hemisphereVisible;
     if(!vis) mk.lbl.classList.remove('show');
   });
 }
