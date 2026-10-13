@@ -2628,16 +2628,16 @@ function phWeatherVisual(code,r){
  const raw=String(r.rawOb||r.raw_text||r.metar||r.raw||'').trim();
  const wx=(Array.isArray(r.wxString)?r.wxString.join(' '):String(r.wxString||r.wx||'')).toUpperCase();
  const clouds=(Array.isArray(r.clouds)?r.clouds.map(x=>String(x.cover||x.coverage||'')).join(' '):String(r.skyCover||'')).toUpperCase();
- const rawCloud=(raw.match(/\\b(FEW|SCT|BKN|OVC|VV)\\d{3}\\b/g)||[]).join(' '),all=clouds+' '+rawCloud,weather=wx+' '+raw;
- const storm=/TS|\\+RA|VCTS/.test(weather),snow=/SN|SG|PL|IC/.test(weather),wet=/RA|DZ|SH|FZ/.test(weather),fog=/FG|BR|HZ|FU|DU|SA/.test(weather),covered=/BKN|OVC|VV/.test(all),partly=/FEW|SCT/.test(all);
+ const rawCloud=(raw.match(/\b(FEW|SCT|BKN|OVC|VV)\d{3}\b/g)||[]).join(' '),all=clouds+' '+rawCloud,weather=wx+' '+raw;
+ const storm=/TS|\+RA|VCTS/.test(weather),snow=/SN|SG|PL|IC/.test(weather),wet=/RA|DZ|SH|FZ/.test(weather),fog=/FG|BR|HZ|FU|DU|SA/.test(weather),covered=/BKN|OVC|VV/.test(all),partly=/FEW|SCT/.test(all);
  const scene=storm?'storm':snow?'snow':wet?'rain':fog?'fog':covered||partly?'cloudy':'clear';
  const glyph=storm?'⛈️':snow?'🌨️':wet?'🌧️':fog?'🌫️':covered?'☁️':partly?'🌤️':'☀️';
  const condition=storm?'Thunderstorm reported':snow?'Snow / frozen precipitation':wet?'Rain / drizzle reported':fog?'Fog / mist / reduced clarity':covered?'Overcast / low cloud':partly?'Few / scattered cloud':'Clear / fair conditions';
  const temp=r.temp!=null?Math.round(Number(r.temp))+'°C':'—',wind=(r.wdir!=null?Number(r.wdir)+'°':'VRB')+(r.wspd!=null?' · '+r.wspd+' kt':''),angle=Number.isFinite(Number(r.wdir))?Number(r.wdir):0;
- const vis=r.visib!=null?String(r.visib)+(String(r.visib).match(/^\\d+(\\.\\d+)?$/)?' SM':''):'—';
+ const vis=r.visib!=null?String(r.visib)+(String(r.visib).match(/^\d+(\.\d+)?$/)?' SM':''):'—';
  const extras=[];if(r.dewp!=null)extras.push('DEW '+r.dewp+'°C');if(r.altim!=null)extras.push('ALT '+r.altim);
  const cat=String(r.fltCat||r.flightCategory||r.flight_category||'').toUpperCase();
- const obs=Number(r.obsTime),date=Number.isFinite(obs)&&obs>0?new Date(obs*1000).toISOString().replace('T',' ').replace(/\\.\\d{3}Z$/,' UTC'):'Observation time unavailable';
+ const obs=Number(r.obsTime),date=Number.isFinite(obs)&&obs>0?new Date(obs*1000).toISOString().replace('T',' ').replace(/\.\d{3}Z$/,' UTC'):'Observation time unavailable';
  return '<div class="ph-wx-visual"><div class="wx-scene '+scene+'" role="img" aria-label="'+phEsc(condition)+'"><span class="wx-glyph">'+glyph+'</span></div><div class="ph-wx-reading"><div class="ph-wx-condition">'+phEsc(condition)+(cat?'<span class="wx-live-category">'+phEsc(cat)+'</span>':'')+'</div><div class="ph-wx-temp">'+phEsc(temp)+'</div><div class="ph-wx-line"><span class="ph-wx-label">WIND</span><span class="ph-wind-arrow" style="--wind-angle:'+angle+'deg">↑</span> '+phEsc(wind)+'</div><div class="ph-wx-line"><span class="ph-wx-label">VISIBILITY</span> '+phEsc(vis)+'</div>'+(extras.length?'<div class="ph-wx-line">'+extras.map(phEsc).join(' · ')+'</div>':'')+'<div class="ph-wx-observed">OBSERVED '+phEsc(date)+'</div></div></div>';
 }
 async function lookupRouteWeather(){
