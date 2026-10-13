@@ -257,7 +257,7 @@ body.panel-collapsed #panelToggle{right:0;}
 .tw-btn.on{background:rgba(249,148,32,.12);border-color:var(--orange);color:var(--orange);}
 
 /* OPS REPORT */
-.ops-nav-btn{pointer-events:auto;background:rgba(249,148,32,.1);border:1px solid rgba(249,148,32,.42);color:var(--gold);padding:9px 13px;border-radius:7px;font:700 9px var(--fm);letter-spacing:.15em;cursor:pointer;white-space:nowrap}
+.ops-nav-btn{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);z-index:31;pointer-events:auto;background:rgba(26,10,21,.94);backdrop-filter:blur(8px);border:1px solid rgba(249,148,32,.55);color:var(--gold);padding:9px 13px;border-radius:7px;font:700 9px var(--fm);letter-spacing:.15em;cursor:pointer;white-space:nowrap;box-shadow:0 4px 18px rgba(0,0,0,.4)}
 .ops-nav-btn:hover{background:rgba(249,148,32,.2);border-color:var(--gold)}
 #opsReport{position:fixed;inset:0;z-index:120;background:rgba(12,4,10,.88);backdrop-filter:blur(18px);display:none;align-items:center;justify-content:center;padding:20px}
 #opsReport.vis{display:flex}.ops-shell{width:min(1120px,100%);max-height:calc(100vh - 40px);overflow:auto;background:linear-gradient(145deg,rgba(42,15,34,.99),rgba(20,7,17,.99));border:1px solid rgba(249,148,32,.3);border-radius:15px;padding:22px;box-shadow:0 24px 90px #0009}
@@ -294,7 +294,7 @@ body.panel-collapsed #panelToggle{right:0;}
       <div class="hdr-sub">Abel Jets Virtual Group · Flight Operations</div>
     </div>
   </div>
-  <button class="ops-nav-btn" onclick="openOpsReport()">✦ OPS REPORT</button>
+  <button class="ops-nav-btn" onclick="openOpsReport()">✦ PILOT REPORT</button>
   <div class="hdr-stats">
     <div class="stat"><div class="stat-val" id="statFlights">–</div><div class="stat-lbl">Total Flights</div></div>
     <div class="stat"><div class="stat-val" id="statAirtime">–</div><div class="stat-lbl">Total Airtime</div></div>
@@ -992,7 +992,7 @@ function makePlane(color,aircraft){
  const ctx=canvas.getContext('2d');ctx.translate(32,32);ctx.fillStyle='#ffffff';
  ctx.beginPath();ctx.moveTo(0,-29);ctx.lineTo(4,-7);ctx.lineTo(23,5);ctx.lineTo(23,10);ctx.lineTo(4,4);ctx.lineTo(3,20);ctx.lineTo(10,25);ctx.lineTo(10,29);ctx.lineTo(0,26);ctx.lineTo(-10,29);ctx.lineTo(-10,25);ctx.lineTo(-3,20);ctx.lineTo(-4,4);ctx.lineTo(-23,10);ctx.lineTo(-23,5);ctx.lineTo(-4,-7);ctx.closePath();ctx.fill();
  const fallback=new THREE.CanvasTexture(canvas),material=new THREE.SpriteMaterial({map:fallback,color:new THREE.Color(color),transparent:true,depthWrite:false,depthTest:true});
- const sprite=new THREE.Sprite(material);sprite.scale.set(.055,.055,1);sprite.userData.fallbackMap=fallback;
+ const sprite=new THREE.Sprite(material);sprite.scale.set(.011,.011,1);sprite.userData.fallbackMap=fallback;
  const code=aircraftShapeCode(aircraft);sprite.userData.aircraftShapeCode=code;
  if(code)loadAircraftShape(code).then(texture=>{
   if(!sprite.material)return;
