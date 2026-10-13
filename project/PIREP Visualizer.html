@@ -1262,6 +1262,7 @@ function updateLabels(){
     mk.lbl.style.left=((proj.x+1)/2*innerWidth)+'px';
     mk.lbl.style.top=((-proj.y+1)/2*innerHeight)+'px';
     mk.lbl.classList.toggle('show',visible&&mk.dot.visible);
+    if(mk.wxBadge){mk.wxBadge.style.left=mk.lbl.style.left;mk.wxBadge.style.top=(parseFloat(mk.lbl.style.top||'0')-18)+'px';mk.wxBadge.style.display=weatherMapOn&&mk.wxBad&&visible&&mk.dot.visible?'block':'none';}
   });
 }
 
