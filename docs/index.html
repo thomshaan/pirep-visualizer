@@ -1505,12 +1505,12 @@ function makePlane(color,aircraft){
  const canvas=document.createElement('canvas');canvas.width=64;canvas.height=64;
  const ctx=canvas.getContext('2d');ctx.translate(32,32);ctx.fillStyle='#FFD92F';ctx.strokeStyle='#111111';ctx.lineWidth=2;
  ctx.beginPath();ctx.moveTo(0,-29);ctx.lineTo(4,-7);ctx.lineTo(23,5);ctx.lineTo(23,10);ctx.lineTo(4,4);ctx.lineTo(3,20);ctx.lineTo(10,25);ctx.lineTo(10,29);ctx.lineTo(0,26);ctx.lineTo(-10,29);ctx.lineTo(-10,25);ctx.lineTo(-3,20);ctx.lineTo(-4,4);ctx.lineTo(-23,10);ctx.lineTo(-23,5);ctx.lineTo(-4,-7);ctx.closePath();ctx.fill();ctx.stroke();
- const fallback=new THREE.CanvasTexture(canvas),material=new THREE.SpriteMaterial({map:fallback,color:new THREE.Color('#FFD92F'),transparent:true,depthWrite:false,depthTest:true});
+ const fallback=new THREE.CanvasTexture(canvas),material=new THREE.SpriteMaterial({map:fallback,color:new THREE.Color('#FFFFFF'),transparent:true,depthWrite:false,depthTest:true});
  const sprite=new THREE.Sprite(material);sprite.scale.set(.011,.011,1);sprite.userData.fallbackMap=fallback;
  const code=aircraftShapeCode(aircraft);sprite.userData.aircraftShapeCode=code;
  if(code)loadAircraftShape(code).then(texture=>{
   if(!sprite.material)return;
-  sprite.material.map=texture;sprite.material.color.set('#FFD92F');sprite.material.needsUpdate=true;
+  sprite.material.map=texture;sprite.material.color.set('#FFFFFF');sprite.material.needsUpdate=true;
   if(sprite.userData.fallbackMap){sprite.userData.fallbackMap.dispose();delete sprite.userData.fallbackMap;}
  }).catch(error=>console.warn('[Aircraft SVG] Generic icon fallback for',aircraft,error));
  return sprite;
