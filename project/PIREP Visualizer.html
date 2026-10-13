@@ -1471,12 +1471,12 @@ function escapeOps(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','
 function routeDistanceKm(p){const a=p.origin||{},b=p.dest||{},rad=n=>n*Math.PI/180;const vals=[a.lat,a.lon,b.lat,b.lon].map(Number);if(vals.some(v=>!Number.isFinite(v)))return 0;const dLat=rad(vals[2]-vals[0]),dLon=rad(vals[3]-vals[1]),h=Math.sin(dLat/2)**2+Math.cos(rad(vals[0]))*Math.cos(rad(vals[2]))*Math.sin(dLon/2)**2;return 6371*2*Math.atan2(Math.sqrt(h),Math.sqrt(Math.max(0,1-h)));}
 const FLIGHT_MILESTONES=[1,2,5,10,20,50,100,200,300,500,1000];
 const PILOT_GIF_TIERS=[
- {min:0,label:'RUNWAY ROOKIE',emoji:'🛩️',gifUrl:''},
- {min:500,label:'REGIONAL MENACE',emoji:'✈️',gifUrl:''},
- {min:1500,label:'CARGO CHAOS',emoji:'📦✈️',gifUrl:''},
- {min:5000,label:'LONG-HAUL GOBLIN',emoji:'🛸',gifUrl:''},
- {min:10000,label:'SKY GREMLIN',emoji:'👾✈️',gifUrl:''},
- {min:25000,label:'AIRSPACE ANOMALY',emoji:'🌀✈️',gifUrl:''}
+ {min:0,label:'RUNWAY ROOKIE',emoji:'🛩️',gifUrl:'https://media1.giphy.com/media/16CHsvAeCMAiR7ve9A/giphy.gif'},
+ {min:500,label:'REGIONAL MENACE',emoji:'✈️',gifUrl:'https://media4.giphy.com/media/V67mTsfuangYeONZ8I/giphy.gif'},
+ {min:1500,label:'CARGO CHAOS',emoji:'📦✈️',gifUrl:'https://media3.giphy.com/media/ZdKLn8VSJBIyeKFDFX/giphy.gif'},
+ {min:5000,label:'LONG-HAUL GOBLIN',emoji:'🛸',gifUrl:'https://media2.giphy.com/media/o12UJD75a2R5SicNML/giphy.gif'},
+ {min:10000,label:'SKY GREMLIN',emoji:'👾✈️',gifUrl:'https://media4.giphy.com/media/pSNJyhTI0d6IPcO4PC/giphy.gif'},
+ {min:25000,label:'AIRSPACE ANOMALY',emoji:'🌀✈️',gifUrl:'https://media3.giphy.com/media/kHHCxwev9Obx9RhH53/giphy.gif'}
 ];
 function flightPoints(p){const km=Math.max(0,routeDistanceKm(p)||0);return 100+Math.min(150,Math.round(km/20));}
 function pilotLeaderboard(){const byPilot=new Map();PIREPS.forEach(p=>{if(!p.pilot)return;let r=byPilot.get(p.pilot);if(!r){r={pilot:p.pilot,flights:0,km:0,points:0};byPilot.set(p.pilot,r);}const km=Math.max(0,routeDistanceKm(p)||0);r.flights++;r.km+=km;r.points+=flightPoints(p);});return [...byPilot.values()].sort((a,b)=>b.points-a.points||b.flights-a.flights||b.km-a.km||a.pilot.localeCompare(b.pilot));}
