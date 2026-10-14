@@ -856,6 +856,46 @@ body.panel-collapsed #panelToggle{right:0;}
 </div>
 
 <script>
+
+// Debug controls were missing in the previous build, leaving the toolbar button inert.
+function toggleDebug(){
+  const panel=document.getElementById('dbgPanel'),button=document.getElementById('dbgBtn');
+  if(!panel)return;
+  const opening=!panel.classList.contains('vis');
+  panel.classList.toggle('vis',opening);
+  if(button)button.classList.toggle('on',opening);
+  if(opening)refreshDebug();
+}
+function refreshDebug(){
+  const el=document.getElementById('dbgContent');
+  if(!el)return;
+  const rows=[
+    ['PIREP DATA',_dbgFallback?'Fallback / sample data':'Live data'],
+    ['FLIGHTS LOADED',String(_dbgPireps||PIREPS.length||0)],
+    ['AIRPORT RECORDS',String(_dbgAirports||Object.keys(AIRPORT_COORDS).length)],
+    ['LAST FETCH',_dbgLastFetch?new Date(_dbgLastFetch).toLocaleString():'Not fetched yet'],
+    ['API ERROR',_dbgErr||'None'],
+    ['ROUTES RESOLVED',String(typeof _dbgRoutesResolved!=='undefined'?_dbgRoutesResolved:0)+' / '+String(typeof _dbgRoutesTotal!=='undefined'?_dbgRoutesTotal:0)],
+    ['AIRAC STATUS',typeof _airacDead!=='undefined'&&_airacDead?'Unavailable / fallback':'Not flagged unavailable']
+  ];
+  el.innerHTML=rows.map(([label,value])=>'<div class="dbg-row"><span class="dbg-lbl">'+escapeOps(label)+'</span><span class="dbg-val '+(label==='API ERROR'&&_dbgErr?'dbg-err':'')+'">'+escapeOps(value)+'</span></div>').join('')+
+    '<div class="dbg-keys">PIREP fields: '+(_dbgRawKeys.length?_dbgRawKeys.map(k=>'<span>'+escapeOps(k)+'</span>').join(''):'No live response fields recorded yet')+'</div>';
+}
+async function forceRefresh(){
+  const button=document.getElementById('dbgRefresh');
+  if(button){button.disabled=true;button.textContent='⟳ REFRESHING…';}
+  try{
+    await Promise.allSettled([fetchAirportDB(),fetchPIREPs()]);
+    if(typeof rebuildUI==='function')rebuildUI();
+    refreshDebug();
+  }catch(err){
+    _dbgErr=err&&err.message?err.message:String(err);
+    refreshDebug();
+  }finally{
+    if(button){button.disabled=false;button.textContent='⟳ FORCE REFRESH NOW';}
+  }
+}
+
 // ═══════════════════════════════════════════════════════
 // AIRPORT COORDINATE LOOKUP (populated from OurAirports CSV)
 // ═══════════════════════════════════════════════════════
@@ -1674,7 +1714,7 @@ function buildAirports(){
     const country=apMeta.country||ap.country||'';
     const flag=countryFlag(country);
     const iata=ap.iata||ap.iata_code||'';
-    lbl.innerHTML=`${escapeOps(ap.icao)}<span class="albl-tip"><span class="albl-tip-city">${escapeOps(city)} — ${escapeOps(fullName)}</span><span class="albl-tip-meta">${escapeOps(ap.icao)}${iata?' / '+escapeOps(iata):''} · <span class="ap-tip-flag">${flag}</span>${escapeOps(country||'Country unavailable')}</span></span>`;
+    lbl.innerHTML=`${escapeOps(ap.icao)}<span class="albl-tip"><span class="albl-tip-city">${escapeOps(city)} - ${escapeOps(fullName)}</span><span class="albl-tip-meta">${escapeOps(ap.icao)} - <span class="ap-tip-flag">${flag}</span> ${escapeOps(country||'??')}</span></span>`;
     lbl.tabIndex=0;
     lbl.setAttribute('aria-label',`${city} — ${fullName}; ${ap.icao}${iata?' / '+iata:''}; ${country}`);
     lbl.addEventListener('click',()=>handleLabelClick(ap.icao,lbl));
@@ -2421,6 +2461,12 @@ function focusGlobe(lat,lon){
   trgY=Math.atan2(-v.x,v.z);
   trgX=-(lat*Math.PI/180)*0.46;
 }
+function formatShortDate(value){
+  if(value===undefined||value===null||String(value).trim()==='')return 'Date unavailable';
+  const d=new Date(value);
+  if(Number.isNaN(d.getTime()))return String(value);
+  return String(d.getUTCDate()).padStart(2,'0')+'/'+String(d.getUTCMonth()+1).padStart(2,'0')+'/'+String(d.getUTCFullYear()).slice(-2);
+}
 function handleLabelClick(icao,lblEl){
   const ap=AIRPORT_COORDS[icao];
   if(ap){
@@ -2442,7 +2488,7 @@ function handleLabelClick(icao,lblEl){
         const i=PIREPS.indexOf(p);
         return `<div class="ap-pop-item" onclick="openDetail(${i});document.getElementById('apPopup').classList.remove('vis')">
           <div class="ap-pop-main"><span class="ap-fi" style="color:${p.color}">${escapeOps(p.flight||'UNKNOWN')}</span><span class="ap-fr">${escapeOps(p.origin.icao)} → ${escapeOps(p.dest.icao)}</span></div>
-          <div class="ap-pop-meta"><strong>${escapeOps(p.pilot||'Unknown pilot')}</strong> · ${escapeOps(p.date||'Date unavailable')}</div>
+          <div class="ap-pop-meta"><strong>${escapeOps(p.pilot||'Unknown pilot')}</strong> · ${escapeOps(formatShortDate(p._rawTimestamp||p.date))}</div>
         </div>`;
       }).join('');
     let left=rect.left,top=rect.bottom+6;
