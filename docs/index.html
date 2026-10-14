@@ -611,6 +611,13 @@ body.panel-collapsed #panelToggle{right:0;}
  #opsReport .ops-stat-row{font-size:12px}
 }
 
+
+/* Flight hover tooltip */
+.plane-tooltip{position:fixed;z-index:1200;display:none;pointer-events:none;min-width:190px;max-width:280px;padding:10px 12px;border:1px solid rgba(255,228,92,.45);border-radius:8px;background:rgba(7,13,22,.94);box-shadow:0 8px 28px rgba(0,0,0,.38);color:#eaf0f7;font:11px/1.5 ui-monospace,SFMono-Regular,Consolas,monospace;backdrop-filter:blur(8px)}
+.plane-tooltip.vis{display:block}
+.plane-tooltip .ptt-flight{color:#FFE45C;font-size:12px;font-weight:800;letter-spacing:.06em;margin-bottom:3px}
+.plane-tooltip .ptt-route{color:#fff;font-size:12px;font-weight:700;margin-bottom:5px}
+.plane-tooltip .ptt-meta{color:#aebbd0;overflow-wrap:anywhere}
 </style>
 </head>
 <body>
@@ -2922,6 +2929,8 @@ document.getElementById('pilotHandbook').addEventListener('wheel',function(e){if
 document.addEventListener('keydown',function(e){if(e.key==='Escape')closePilotHandbook()});
 
 </script>
+
+<div id="planeTooltip" class="plane-tooltip" role="status" aria-live="polite"></div>
 
 </body>
 </html>
