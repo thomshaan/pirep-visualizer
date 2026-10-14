@@ -303,8 +303,8 @@ body.panel-collapsed #panelToggle{right:0;}
 .albl:hover,.albl:focus-visible{border-color:var(--border-hi);background:rgba(62,21,48,.98);outline:none;}
 .albl-tip{position:absolute;left:50%;bottom:calc(100% + 8px);transform:translate(-50%,4px);display:block;min-width:190px;max-width:270px;padding:9px 11px;border:1px solid rgba(249,148,32,.48);border-radius:7px;background:rgba(20,7,17,.98);box-shadow:0 8px 28px #0009;opacity:0;visibility:hidden;pointer-events:none;transition:opacity .16s,transform .16s;white-space:normal;text-align:left;letter-spacing:normal;z-index:30;}
 .albl:hover .albl-tip,.albl:focus-visible .albl-tip{opacity:1;visibility:visible;transform:translate(-50%,0);}
-.albl-tip-city{font:700 11px/1.4 var(--fb);color:var(--text);overflow-wrap:anywhere;}
-.albl-tip-meta{font:9px/1.5 var(--fm);color:var(--dim);margin-top:4px;}
+ .albl-tip-city{display:block;font:700 11px/1.4 var(--fb);color:var(--text);overflow-wrap:anywhere;}
+ .albl-tip-meta{display:block;width:100%;font:9px/1.5 var(--fm);color:var(--dim);margin-top:5px;white-space:nowrap;}
 .albl-tip-meta .ap-tip-flag{font-size:12px;margin-right:4px;}
 .albl.nation{font-size:11px;padding:4px 11px;border-radius:14px;letter-spacing:.2em;
   border-color:rgba(245,198,36,.5);background:rgba(42,15,34,.92);
@@ -1488,15 +1488,16 @@ async function resolveRouteForPirep(p){
   const fixes=parseRouteFixes(p.route);
   if(!fixes.length) return;
   const O=[p.origin.lat,p.origin.lon], D=[p.dest.lat,p.dest.lon];
-  const pts=[];
+  const pts=[],waypoints=[];
   for(const f of fixes){
     const cands=await fetchCandidates(f);
     if(_airacDead) break;
     const c=pickCandidate(cands,O[0],O[1],D[0],D[1]);   // anchor to the corridor, no chaining
-    if(c) pts.push({lat:c.lat,lon:c.lon});
+    if(c){pts.push({lat:c.lat,lon:c.lon});waypoints.push({lat:c.lat,lon:c.lon,name:f});}
   }
   if(pts.length>=1&&pts.length>=Math.ceil(fixes.length*0.5)){
     p._routePts=[{lat:p.origin.lat,lon:p.origin.lon},...pts,{lat:p.dest.lat,lon:p.dest.lon}];
+    p._routeWaypoints=waypoints;
     p._routeFixes=pts.length;
   }
 }
@@ -1686,7 +1687,7 @@ async function loadHazardEvents(){
 // ═══════════════════════════════════════════════════════
 function buildAirports(){
   // Remove old markers
-  airportMarkers.forEach(m=>{globe.remove(m.dot);globe.remove(m.halo);globe.remove(m.ring);if(m.selectedRing)globe.remove(m.selectedRing);});
+  airportMarkers.forEach(m=>{globe.remove(m.dot);globe.remove(m.halo);globe.remove(m.ring);if(m.selectedRing)globe.remove(m.selectedRing);if(m.icon){globe.remove(m.icon);if(m.icon.material.map)m.icon.material.map.dispose();m.icon.material.dispose();}});
   airportMarkers=[]; pulseRings=[];
   document.querySelectorAll('.albl,.wx-map-badge').forEach(el=>el.remove());
 
@@ -1703,11 +1704,14 @@ function buildAirports(){
   Object.values(seen).forEach(ap=>{
     const v=ll2v(ap.lat,ap.lon,1.009);
     const c=new THREE.Color('#F99420');
-
-    const dot=new THREE.Mesh(new THREE.SphereGeometry(0.011,10,10),new THREE.MeshBasicMaterial({color:c,blending:THREE.AdditiveBlending,depthWrite:false}));
+    const apMeta=AIRPORT_COORDS[ap.icao]||{};
+    const apType=apMeta.type||'medium_airport';
+    const apTier=apType==='large_airport'?'large':apType==='small_airport'?'small':'medium';
+    const dotRadius=apTier==='large'?0.014:apTier==='small'?0.007:0.010;
+    const dot=new THREE.Mesh(new THREE.SphereGeometry(dotRadius,10,10),new THREE.MeshBasicMaterial({color:c,blending:THREE.AdditiveBlending,depthWrite:false}));
     dot.position.copy(v);globe.add(dot);
 
-    const halo=new THREE.Mesh(new THREE.SphereGeometry(0.022,10,10),new THREE.MeshBasicMaterial({color:c,transparent:true,opacity:0.2,blending:THREE.AdditiveBlending,depthWrite:false}));
+    const halo=new THREE.Mesh(new THREE.SphereGeometry(apTier==='large'?0.029:apTier==='small'?0.016:0.022,10,10),new THREE.MeshBasicMaterial({color:c,transparent:true,opacity:0.2,blending:THREE.AdditiveBlending,depthWrite:false}));
     halo.position.copy(v);globe.add(halo);
 
     const rmat=new THREE.MeshBasicMaterial({color:c,transparent:true,opacity:0.6,side:THREE.DoubleSide,blending:THREE.AdditiveBlending,depthWrite:false});
@@ -1723,6 +1727,15 @@ function buildAirports(){
     selectedRing.visible=false;globe.add(selectedRing);pulseRings.push(selectedRing);
 
     // DOM label
+    const iconCanvas=document.createElement('canvas');iconCanvas.width=64;iconCanvas.height=64;
+    const ictx=iconCanvas.getContext('2d');ictx.translate(32,32);ictx.rotate(-Math.PI/4);
+    ictx.fillStyle='#FFE45C';ictx.strokeStyle='#24130A';ictx.lineWidth=5;
+    ictx.beginPath();ictx.roundRect(-8,-25,16,50,3);ictx.fill();ictx.stroke();
+    ictx.fillStyle='#24130A';ictx.fillRect(-5,-15,10,3);ictx.fillRect(-5,-3,10,3);ictx.fillRect(-5,9,10,3);
+    const iconTex=new THREE.CanvasTexture(iconCanvas);
+    const icon=new THREE.Sprite(new THREE.SpriteMaterial({map:iconTex,transparent:true,depthWrite:false,depthTest:true}));
+    icon.scale.set(apTier==='large'?0.035:apTier==='small'?0.021:0.028,apTier==='large'?0.035:apTier==='small'?0.021:0.028,1);
+    icon.position.copy(ll2v(ap.lat,ap.lon,1.012));globe.add(icon);
     const lbl=document.createElement('div');
     lbl.className='albl';
     lbl.id='lbl-'+ap.icao;
@@ -1740,7 +1753,7 @@ function buildAirports(){
     document.body.appendChild(lbl);
 
     const wxBadge=null;
-    airportMarkers.push({icao:ap.icao,lat:Number(ap.lat),lon:Number(ap.lon),name:ap.name||ap.icao,dot,halo,ring,selectedRing,pos:v.clone(),lbl,wxBadge,wxData:null,wxBad:false,filterVisible:true,hemisphereVisible:true});
+    airportMarkers.push({icao:ap.icao,lat:Number(ap.lat),lon:Number(ap.lon),name:ap.name||ap.icao,type:apTier,dot,halo,ring,selectedRing,icon,pos:v.clone(),lbl,wxBadge,wxData:null,wxBad:false,filterVisible:true,hemisphereVisible:true});
   });
 
   buildNationLabels(seen);
@@ -1878,7 +1891,7 @@ function buildFlights(){
     const routeKey=p.origin.icao+'-'+p.dest.icao;
     const isNew=!seenRoutes.has(routeKey);
     if(isNew) seenRoutes.add(routeKey);
-    const plane=isNew?makePlane(p.color,p.aircraft):null; if(plane) globe.add(plane);
+    const plane=isNew?makePlane(p.color,p.aircraft):null; if(plane){plane.userData.pirep=p;globe.add(plane);}
     const trail=isNew?new Trail(p.color,60):null; if(trail) globe.add(trail.line);
     flights.push({curve,cullSamples:curve.getPoints(isFiled?44:28),routeVisible:true,filterVisible:true,arcMesh,plane,trail,t:Math.random(),speed:0.007+Math.random()*0.004,color:p.color,mat,pireps:[p],baseOpacity:0.85});
   });
@@ -1919,7 +1932,7 @@ function buildDensityFlights(){
     const mat=new THREE.MeshBasicMaterial({color:col,transparent:true,opacity:baseOpacity,blending:THREE.AdditiveBlending,depthWrite:false});
     const arcMesh=new THREE.Mesh(new THREE.TubeGeometry(curve,80,0.0018+0.0052*f,6,false),mat);
     globe.add(arcMesh);
-    const plane=makePlane(hex,g.pireps[0]?.aircraft); globe.add(plane);
+    const plane=makePlane(hex,g.pireps[0]?.aircraft); plane.userData.pirep=g.pireps[0]||null; globe.add(plane);
     const trail=new Trail(hex,60); globe.add(trail.line);
     flights.push({curve,cullSamples:curve.getPoints(36),routeVisible:true,filterVisible:true,arcMesh,plane,trail,t:Math.random(),speed:0.007+Math.random()*0.004,color:hex,mat,pireps:g.pireps,baseOpacity});
   });
@@ -1933,10 +1946,10 @@ function toggleDensity(){
 
 function makePlane(color,aircraft){
  const canvas=document.createElement('canvas');canvas.width=64;canvas.height=64;
- const ctx=canvas.getContext('2d');ctx.translate(32,32);ctx.fillStyle='#FFD92F';ctx.strokeStyle='#111111';ctx.lineWidth=2;
+ const ctx=canvas.getContext('2d');ctx.translate(32,32);ctx.fillStyle='#FFE45C';ctx.strokeStyle='#25170A';ctx.lineWidth=2.6;
  ctx.beginPath();ctx.moveTo(0,-29);ctx.lineTo(4,-7);ctx.lineTo(23,5);ctx.lineTo(23,10);ctx.lineTo(4,4);ctx.lineTo(3,20);ctx.lineTo(10,25);ctx.lineTo(10,29);ctx.lineTo(0,26);ctx.lineTo(-10,29);ctx.lineTo(-10,25);ctx.lineTo(-3,20);ctx.lineTo(-4,4);ctx.lineTo(-23,10);ctx.lineTo(-23,5);ctx.lineTo(-4,-7);ctx.closePath();ctx.fill();ctx.stroke();
  const fallback=new THREE.CanvasTexture(canvas),material=new THREE.SpriteMaterial({map:fallback,color:new THREE.Color('#FFFFFF'),transparent:true,depthWrite:false,depthTest:true});
- const sprite=new THREE.Sprite(material);sprite.scale.set(.011,.011,1);sprite.userData.fallbackMap=fallback;
+ const sprite=new THREE.Sprite(material);sprite.scale.set(.014,.014,1);sprite.userData.fallbackMap=fallback;
  const code=aircraftShapeCode(aircraft);sprite.userData.aircraftShapeCode=code;
  if(code)loadAircraftShape(code).then(texture=>{
   if(!sprite.material)return;
@@ -2049,7 +2062,7 @@ function updateHemisphereCulling(){
   airportMarkers.forEach(mk=>{
     mk.hemisphereVisible=frontDot(mk.pos,cameraLocal)>0.015;
     const visible=mk.filterVisible!==false&&mk.hemisphereVisible;
-    mk.dot.visible=mk.halo.visible=mk.ring.visible=visible;
+    mk.dot.visible=mk.halo.visible=mk.ring.visible=visible; if(mk.icon)mk.icon.visible=visible;
     if(!visible)mk.lbl.classList.remove('show');
   });
   flights.forEach(fl=>{
@@ -2114,7 +2127,16 @@ function animate(){
     const breath=(Math.sin(t*(selected?2.1:1.25)+i*0.7)+1)/2;
     mk.halo.scale.setScalar((selected?1.15:0.9)+breath*(selected?0.85:0.38));
     mk.halo.material.opacity=(selected?0.22:0.075)+breath*(selected?0.34:0.13);
-    mk.dot.scale.setScalar(selected?zS*1.35:zS);
+    mk.dot.scale.setScalar(selected?zS*1.5:zS);
+    const zoomTier=camZ>3.65?'large':camZ>2.65?'medium':'small';
+    const tierRank={large:0,medium:1,small:2};
+    const endpoint=selectedPIREP&&(selectedPIREP.origin.icao===mk.icao||selectedPIREP.dest.icao===mk.icao);
+    const tierVisible=tierRank[mk.type]<=tierRank[zoomTier]||endpoint||selectedAirport&&selectedAirport.icao===mk.icao;
+    const markerVisible=mk.filterVisible!==false&&mk.hemisphereVisible&&tierVisible;
+    mk.dot.visible=mk.halo.visible=mk.ring.visible=markerVisible;
+    if(mk.icon)mk.icon.visible=markerVisible;
+    if(!markerVisible)mk.lbl.classList.remove('show');
+    if(mk.icon)mk.icon.scale.setScalar((mk.type==='large'?0.034:mk.type==='small'?0.020:0.027)*Math.min(1.2,Math.max(.72,3.2/camZ)));
   });
   // Declutter: fade the line web and shrink planes when zoomed in (unless isolating one flight)
   const zoomFade=Math.min(Math.max((camZ-1.0)/1.8,0.32),1);
@@ -2127,7 +2149,7 @@ function animate(){
   flights.forEach((fl,i)=>{
     fl.t=(fl.t+dt*fl.speed)%1;
     if(!fl.plane) return;
-    fl.plane.scale.setScalar(planeScale*0.05);
+    fl.plane.scale.setScalar(planeScale*0.065);
     const pos=fl.curve.getPoint(fl.t),tan=fl.curve.getTangent(fl.t).normalize();
     fl.plane.position.copy(pos);
     if(!fl.plane.visible){if(fl.trail&&fl.trail.line)fl.trail.line.visible=false;return;}
@@ -2320,7 +2342,7 @@ function applyFlightVisibility(){
     airportMarkers.forEach(mk=>{
       const vis=keep.has(mk.icao);
       mk.filterVisible=vis;
-      mk.dot.visible=mk.halo.visible=mk.ring.visible=vis&&mk.hemisphereVisible;
+      mk.dot.visible=mk.halo.visible=mk.ring.visible=vis&&mk.hemisphereVisible; if(mk.icon)mk.icon.visible=vis&&mk.hemisphereVisible;
       if(!vis) mk.lbl.classList.remove('show');
     });
     return;
@@ -2341,7 +2363,7 @@ function applyFlightVisibility(){
   airportMarkers.forEach(mk=>{
     const vis=!q||activeAirports.has(mk.icao);
     mk.filterVisible=vis;
-    mk.dot.visible=mk.halo.visible=mk.ring.visible=vis&&mk.hemisphereVisible;
+    mk.dot.visible=mk.halo.visible=mk.ring.visible=vis&&mk.hemisphereVisible; if(mk.icon)mk.icon.visible=vis&&mk.hemisphereVisible;
     if(!vis) mk.lbl.classList.remove('show');
   });
 }
