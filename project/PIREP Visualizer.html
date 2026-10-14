@@ -145,6 +145,7 @@ body.panel-collapsed #panelToggle{right:0;}
 .detail-view::-webkit-scrollbar{width:3px;}
 .detail-view::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px;}
 .detail-view.vis{display:flex;}
+ .hazard-tooltip{position:fixed;z-index:9999;display:none;pointer-events:none;min-width:220px;max-width:300px;padding:12px 14px;background:rgba(19,10,17,.96);border:1px solid rgba(249,148,32,.65);border-radius:10px;box-shadow:0 12px 36px rgba(0,0,0,.45);backdrop-filter:blur(14px);font-family:var(--fm);color:var(--text);font-size:10px;line-height:1.6}.hazard-tooltip.vis{display:block}.hazard-tooltip .ht-title{font-size:11px;font-weight:700;color:var(--orange);letter-spacing:.06em;margin-bottom:4px}.hazard-tooltip .ht-kind{font-size:9px;color:var(--dim);text-transform:uppercase;letter-spacing:.12em;margin-bottom:5px}.hazard-tooltip a{color:var(--orange);text-decoration:underline;pointer-events:auto}
 .dv-back{display:flex;align-items:center;gap:7px;padding:0 6px 10px;
   color:var(--dim);font-size:10px;letter-spacing:.12em;cursor:pointer;
   transition:color .2s;font-family:var(--fm);border:none;background:none;text-transform:uppercase;}
@@ -1352,6 +1353,8 @@ let isDrag=false, px=0, py=0;
 let camZ=2.8, trgZ=2.8;
 const CAM_MIN=1.4, CAM_MAX=5.5;
 let selectedPIREP=null, selectedAirport=null, _savedAutoRot=0.00015, _lastBuildZ=2.8, _savedTrgZ=2.8;
+// Route labels are created only for a selected flight; keep the collection initialized before any navigation action.
+let waypointLabels=[];
 let _nextRefreshAt=Date.now()+60000;
 
 function setTrails(on){
@@ -1703,6 +1706,9 @@ function addHazardMarker(lat,lon,kind,title,detail){
  if(!globe||!Number.isFinite(lat)||!Number.isFinite(lon))return;
  const c=document.createElement('canvas');c.width=96;c.height=96;const x=c.getContext('2d');x.beginPath();x.arc(48,48,33,0,Math.PI*2);x.fillStyle=kind==='EQ'?'rgba(255,91,91,.22)':kind==='TC'?'rgba(90,180,255,.22)':'rgba(255,155,65,.22)';x.fill();x.strokeStyle=kind==='EQ'?'#FF6666':kind==='TC'?'#6EC5FF':'#FFAD55';x.lineWidth=5;x.stroke();x.fillStyle='#FFFFFF';x.font='bold 40px sans-serif';x.textAlign='center';x.textBaseline='middle';x.fillText(kind==='EQ'?'✦':kind==='TC'?'🌀':'▲',48,49);
  const tex=new THREE.CanvasTexture(c),sprite=new THREE.Sprite(new THREE.SpriteMaterial({map:tex,transparent:true,depthTest:true,depthWrite:false}));sprite.position.copy(ll2v(lat,lon,1.025));sprite.scale.set(.055,.055,1);sprite.visible=hazardsOn;sprite.userData={kind,title,detail,lat,lon};globe.add(sprite);eventMarkers.push(sprite);
+ const ochaName=kind==='EQ'?'Earthquake':kind==='TC'?'Cyclone':'Volcano';
+ const ochaUrl='https://cdn.jsdelivr.net/gh/UN-OCHA/humanitarian-icons-2026-BDU@main/svg/'+ochaName+'.svg';
+ const loader=new THREE.TextureLoader();loader.setCrossOrigin('anonymous');loader.load(ochaUrl,loaded=>{if(!sprite.parent){loaded.dispose();return;}const old=sprite.material.map;sprite.material.map=loaded;sprite.material.needsUpdate=true;if(old)old.dispose();},undefined,()=>{/* keep the built-in fallback icon if CDN is unavailable */});
 }
 async function loadHazardEvents(){
  if(!globe)return;_eventRefreshAt=Date.now()+15*60*1000;
@@ -1758,11 +1764,11 @@ function buildAirports(){
 
     // DOM label
     const iconCanvas=document.createElement('canvas');iconCanvas.width=64;iconCanvas.height=64;
-    const ictx=iconCanvas.getContext('2d');ictx.translate(32,32);ictx.rotate(-Math.PI/4);
-    ictx.fillStyle='#FFE45C';ictx.strokeStyle='#24130A';ictx.lineWidth=5;
-    ictx.beginPath();ictx.roundRect(-8,-25,16,50,3);ictx.fill();ictx.stroke();
-    ictx.fillStyle='#24130A';ictx.fillRect(-5,-15,10,3);ictx.fillRect(-5,-3,10,3);ictx.fillRect(-5,9,10,3);
-    const iconTex=new THREE.CanvasTexture(iconCanvas);
+    const ictx=iconCanvas.getContext('2d');
+    // Aircraft/location pin icon supplied by the project owner, drawn locally for reliable rendering.
+    const airportPinSvg='<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24"><path d="M0 0h24v24H0z" fill="none"/><path fill="#FFE45C" stroke="#24130A" stroke-width=".45" d="m10 14 1.375.4q.15.05.263-.05t.112-.25v-.2q0-.025-.125-.25L10.75 13v-2.5l2.7.825q.2.05.375-.075t.175-.325v-.175q0-.05-.2-.375L10.75 8.5V6.3q0-.3-.225-.55T10 5.5q-.325 0-.537.25t-.213.55v2.2l-3.025 1.85q-.075.025-.225.425v.075q0 .25.2.388t.425.062l2.625-.8V13l-.85.65q-.05.025-.15.275v.1q0 .2.138.3t.312.05zm5.15 8q-.375 0-.65-.262t-.275-.638q0-.2.075-.4t.225-.35q2.15-2.3 3.813-4.9T20 10.2q0-1.975-.6-3.675T17.75 3.65q-.125-.125-.187-.3t-.063-.375q0-.425.275-.7t.7-.275q.2 0 .387.075t.313.225q1.4 1.5 2.112 3.55T22 10.2q0 3.025-1.862 6.05T15.85 21.7q-.125.15-.312.225T15.15 22m-5.85-.8q-.35-.125-.625-.375Q7.05 19.325 5.8 17.9t-2.087-2.762t-1.275-2.575T2 10.2q0-3.75 2.413-5.975T10 2t5.588 2.225T18 10.2q0 2.3-1.662 4.95t-5.013 5.675q-.275.25-.625.375t-.7.125t-.7-.125"/></svg>';
+    const airportPinImg=new Image();airportPinImg.onload=()=>{ictx.clearRect(0,0,64,64);ictx.drawImage(airportPinImg,0,0,64,64);iconTex.needsUpdate=true;};
+    const iconTex=new THREE.CanvasTexture(iconCanvas);airportPinImg.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(airportPinSvg);
     const icon=new THREE.Sprite(new THREE.SpriteMaterial({map:iconTex,transparent:true,depthWrite:false,depthTest:true}));
     icon.scale.set(apTier==='large'?0.035:apTier==='small'?0.021:0.028,apTier==='large'?0.035:apTier==='small'?0.021:0.028,1);
     icon.position.copy(ll2v(ap.lat,ap.lon,1.012));globe.add(icon);
@@ -2027,7 +2033,16 @@ function updatePlaneHover(){
  if(_planeTooltipP!==p){tip.innerHTML='<div class="ptt-flight">'+escapeOps(p.flight||'UNKNOWN FLIGHT')+'</div><div class="ptt-route">'+escapeOps(p.origin.icao)+' → '+escapeOps(p.dest.icao)+'</div><div class="ptt-meta">'+escapeOps(p.pilot||'Unknown pilot')+'</div><div class="ptt-meta">'+escapeOps(p.aircraft||'Aircraft unknown')+' · '+escapeOps(p.airtime||'—')+'</div><div class="ptt-meta">'+escapeOps(p.date||'Date unavailable')+'</div>';_planeTooltipP=p;}
  tip.style.left=Math.min(innerWidth-285,Math.max(8,_planePointerX+14))+'px';tip.style.top=Math.min(innerHeight-135,Math.max(8,_planePointerY+14))+'px';tip.classList.add('vis');
 }
-window.addEventListener('mousemove',e=>{if(isDrag)return;_planePointerX=e.clientX;_planePointerY=e.clientY;hoveredPlane=findPlaneAt(e.clientX,e.clientY);if(renderer&&renderer.domElement)renderer.domElement.style.cursor=hoveredPlane?'pointer':'grab';if(!hoveredPlane){const t=document.getElementById('planeTooltip');if(t)t.classList.remove('vis');}});
+const hazardRaycaster=new THREE.Raycaster(),hazardPointer=new THREE.Vector2();let _hoveredHazard=null;
+function updateHazardHover(x,y){
+ const tip=document.getElementById('hazardTooltip');if(!tip||!renderer||!camera||!globe||!hazardsOn||isDrag){if(tip)tip.classList.remove('vis');_hoveredHazard=null;return false;}
+ hazardPointer.x=x/innerWidth*2-1;hazardPointer.y=-(y/innerHeight)*2+1;hazardRaycaster.setFromCamera(hazardPointer,camera);
+ const hits=hazardRaycaster.intersectObjects(eventMarkers.filter(m=>m.visible),false);const obj=hits.length?hits[0].object:null;
+ if(!obj){tip.classList.remove('vis');_hoveredHazard=null;return false;}
+ const d=obj.userData||{};if(_hoveredHazard!==obj){tip.innerHTML='<div class="ht-kind">OCHA hazard icon · '+escapeOps(d.kind==='EQ'?'Earthquake':d.kind==='TC'?'Tropical cyclone':d.kind==='VO'?'Volcanic activity':'Hazard')+'</div><div class="ht-title">'+escapeOps(d.title||'Reported hazard')+'</div><div>'+escapeOps(d.detail||'Details unavailable')+'</div><div style="margin-top:7px;color:var(--dim)">Approx. '+Number(d.lat).toFixed(2)+'°, '+Number(d.lon).toFixed(2)+'°</div><div style="margin-top:5px"><a href="https://github.com/rodekruis/OCHA-Humanitarian-Icons" target="_blank" rel="noopener noreferrer">OCHA Humanitarian Icons ↗</a></div>';_hoveredHazard=obj;}
+ tip.style.left=Math.min(innerWidth-310,Math.max(8,x+14))+'px';tip.style.top=Math.min(innerHeight-175,Math.max(8,y+14))+'px';tip.classList.add('vis');return true;
+}
+window.addEventListener('mousemove',e=>{if(isDrag)return;_planePointerX=e.clientX;_planePointerY=e.clientY;hoveredPlane=findPlaneAt(e.clientX,e.clientY);const overHazard=updateHazardHover(e.clientX,e.clientY);if(renderer&&renderer.domElement)renderer.domElement.style.cursor=(hoveredPlane||overHazard)?'pointer':'grab';if(!hoveredPlane){const t=document.getElementById('planeTooltip');if(t)t.classList.remove('vis');}});
 window.addEventListener('click',e=>{if(isDrag||!e.target||e.target.tagName!=='CANVAS')return;const hit=findPlaneAt(e.clientX,e.clientY),p=hit&&hit.userData.pirep;if(p){const i=PIREPS.indexOf(p);if(i>=0)openDetail(i);}});
 
 // ═══════════════════════════════════════════════════════
@@ -2548,15 +2563,19 @@ function openDetail(i){
 }
 
 function closeDetail(){
+  // Always restore the normal live-flight view, even if route labels have not been initialized.
+  try{clearWaypointLabels();}catch(err){document.querySelectorAll('.waypoint-label').forEach(el=>el.remove());waypointLabels=[];}
   selectedAirport=null;
-  clearWaypointLabels();
-  document.getElementById('detailView').classList.remove('vis');
-  document.getElementById('flightList').style.display='flex';
-  document.getElementById('pagBar').style.display=_filtered.length>PAGE_SIZE?'flex':'none';
+  const detail=document.getElementById('detailView'), list=document.getElementById('flightList'), pag=document.getElementById('pagBar');
+  if(detail)detail.classList.remove('vis');
+  if(list)list.style.display='flex';
+  if(pag)pag.style.display=_filtered.length>PAGE_SIZE?'flex':'none';
   document.querySelectorAll('.pcard').forEach(c=>c.classList.remove('active'));
-  autoRot=_savedAutoRot; trgZ=_savedTrgZ; selectedPIREP=null;
-  flights.forEach(fl=>{if(fl.mat) fl.mat.opacity=fl.baseOpacity??0.85;});
-  if(globe) applyFlightVisibility();   // un-hide everything
+  const pop=document.getElementById('apPopup');if(pop)pop.classList.remove('vis');
+  selectedPIREP=null;
+  autoRot=_savedAutoRot; trgZ=_savedTrgZ;
+  flights.forEach(fl=>{if(fl.mat)fl.mat.opacity=fl.baseOpacity??0.85;});
+  if(globe)applyFlightVisibility();
 }
 
 // ═══════════════════════════════════════════════════════
@@ -2945,6 +2964,7 @@ document.addEventListener('keydown',function(e){if(e.key==='Escape')closePilotHa
 </script>
 
 <div id="planeTooltip" class="plane-tooltip" role="status" aria-live="polite"></div>
+<div id="hazardTooltip" class="hazard-tooltip" role="status" aria-live="polite"></div>
 
 </body>
 </html>
