@@ -2010,6 +2010,7 @@ function animate(){
     }
     if(trailsOn&&fl.trail) fl.trail.push(pos);
   });
+  if(_globeInteractionHidden){flights.forEach(fl=>{if(fl.arcMesh)fl.arcMesh.visible=false;if(fl.plane)fl.plane.visible=false;if(fl.trail&&fl.trail.line)fl.trail.line.visible=false;});}
   renderer.render(scene,camera);
   updateLabels();
 }
