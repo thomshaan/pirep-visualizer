@@ -1984,7 +1984,7 @@ class Trail{
 
 
 const planeRaycaster=new THREE.Raycaster(),planePointer=new THREE.Vector2();
-let hoveredPlane=null,_planePointerX=0,_planePointerY=0;
+let hoveredPlane=null,_planeTooltipP=null,_planePointerX=0,_planePointerY=0;
 function findPlaneAt(clientX,clientY){
  if(!renderer||!camera)return null;planePointer.x=clientX/innerWidth*2-1;planePointer.y=-(clientY/innerHeight)*2+1;planeRaycaster.setFromCamera(planePointer,camera);
  const sprites=flights.filter(fl=>fl.plane&&fl.plane.visible&&fl.filterVisible!==false).map(fl=>fl.plane);
@@ -1993,7 +1993,7 @@ function findPlaneAt(clientX,clientY){
 function updatePlaneHover(){
  const tip=document.getElementById('planeTooltip');if(!tip||!hoveredPlane||isDrag||!hoveredPlane.visible){if(tip)tip.classList.remove('vis');return;}
  const p=hoveredPlane.userData.pirep;if(!p){tip.classList.remove('vis');return;}
- tip.innerHTML='<div class="ptt-flight">'+escapeOps(p.flight||'UNKNOWN FLIGHT')+'</div><div class="ptt-route">'+escapeOps(p.origin.icao)+' → '+escapeOps(p.dest.icao)+'</div><div class="ptt-meta">'+escapeOps(p.pilot||'Unknown pilot')+'</div><div class="ptt-meta">'+escapeOps(p.aircraft||'Aircraft unknown')+' · '+escapeOps(p.airtime||'—')+'</div><div class="ptt-meta">'+escapeOps(p.date||'Date unavailable')+'</div>';
+ if(_planeTooltipP!==p){tip.innerHTML='<div class="ptt-flight">'+escapeOps(p.flight||'UNKNOWN FLIGHT')+'</div><div class="ptt-route">'+escapeOps(p.origin.icao)+' → '+escapeOps(p.dest.icao)+'</div><div class="ptt-meta">'+escapeOps(p.pilot||'Unknown pilot')+'</div><div class="ptt-meta">'+escapeOps(p.aircraft||'Aircraft unknown')+' · '+escapeOps(p.airtime||'—')+'</div><div class="ptt-meta">'+escapeOps(p.date||'Date unavailable')+'</div>';_planeTooltipP=p;}
  tip.style.left=Math.min(innerWidth-285,Math.max(8,_planePointerX+14))+'px';tip.style.top=Math.min(innerHeight-135,Math.max(8,_planePointerY+14))+'px';tip.classList.add('vis');
 }
 window.addEventListener('mousemove',e=>{if(isDrag)return;_planePointerX=e.clientX;_planePointerY=e.clientY;hoveredPlane=findPlaneAt(e.clientX,e.clientY);if(renderer&&renderer.domElement)renderer.domElement.style.cursor=hoveredPlane?'pointer':'grab';if(!hoveredPlane){const t=document.getElementById('planeTooltip');if(t)t.classList.remove('vis');}});
@@ -2149,7 +2149,7 @@ function animate(){
     fl.t=(fl.t+dt*fl.speed)%1;
     if(!fl.plane) return;
     fl.plane.scale.setScalar(planeScale*0.065);
-    const pos=fl.curve.getPoint(fl.t),tan=fl.curve.getTangent(fl.t).normalize();
+    const pos=fl.curve.getPoint(fl.t);
     fl.plane.position.copy(pos);
     if(!fl.plane.visible){if(fl.trail&&fl.trail.line)fl.trail.line.visible=false;return;}
     // Route curves are in the globe's local space. Transform both samples into
