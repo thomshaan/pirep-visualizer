@@ -1745,7 +1745,7 @@ function addHazardMarker(lat,lon,kind,title,detail,timeLabel){
  const c=document.createElement('canvas');c.width=192;c.height=192;const x=c.getContext('2d');
  x.save();x.shadowColor='rgba(0,0,0,.95)';x.shadowBlur=10;x.shadowOffsetX=2;x.shadowOffsetY=4;
  x.beginPath();x.arc(96,96,64.5,0,Math.PI*2);x.fillStyle=fill;x.fill();x.restore();
- x.beginPath();x.arc(64,64,43,0,Math.PI*2);x.strokeStyle='#000000';x.lineWidth=13.5;x.stroke();
+ x.beginPath();x.arc(96,96,64.5,0,Math.PI*2);x.strokeStyle='#000000';x.lineWidth=13.5;x.stroke();
  const tex=new THREE.CanvasTexture(c),sprite=new THREE.Sprite(new THREE.SpriteMaterial({map:tex,transparent:true,depthTest:true,depthWrite:false}));
  sprite.position.copy(ll2v(lat,lon,1.025));sprite.scale.set(.043,.043,1);sprite.visible=hazardsOn;
  sprite.userData={kind,title,detail,lat,lon,severity,timeLabel:timeLabel||'Time not provided',baseScale:.043};
