@@ -914,12 +914,31 @@ let _dbgAirports=0,_dbgPireps=0,_dbgFallback=true,_dbgErr=null,_dbgRawKeys=[],_d
 
 const AIRPORTS_CSV_URL = 'https://davidmegginson.github.io/ourairports-data/airports.csv';
 
+function parseCSVRow(line) {
+  const fields = [];
+  let value = '', quoted = false;
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
+    if (ch === '"') {
+      if (quoted && line[i + 1] === '"') { value += '"'; i++; }
+      else quoted = !quoted;
+    } else if (ch === ',' && !quoted) {
+      fields.push(value); value = '';
+    } else {
+      value += ch;
+    }
+  }
+  fields.push(value);
+  return fields;
+}
+
 async function fetchAirportDB() {
   try {
     const res = await fetch(AIRPORTS_CSV_URL);
+    if (!res.ok) throw new Error('HTTP ' + res.status);
     const text = await res.text();
     const lines = text.split('\n');
-    const header = lines[0].split(',').map(h => h.replace(/"/g,'').trim());
+    const header = parseCSVRow(lines[0]).map(h => h.trim());
     const idx = {
       ident:      header.indexOf('ident'),
       name:       header.indexOf('name'),
@@ -935,8 +954,8 @@ async function fetchAirportDB() {
       muni:       header.indexOf('municipality'),
     };
     for (let i = 1; i < lines.length; i++) {
-      const cols = lines[i].match(/(".*?"|[^,]+|(?<=,)(?=,)|(?<=,)$)/g);
-      if (!cols) continue;
+      const cols = parseCSVRow(lines[i]);
+      if (!cols.length) continue;
       const clean = c => (c>=0 ? (cols[c] || '') : '').replace(/"/g,'').trim();
       const lat = parseFloat(clean(idx.lat));
       const lon = parseFloat(clean(idx.lon));
