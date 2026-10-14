@@ -1716,10 +1716,10 @@ function hazardIconAsset(kind){
 function addHazardMarker(lat,lon,kind,title,detail,timeLabel){
  if(!globe||!Number.isFinite(lat)||!Number.isFinite(lon))return;
  const severity=hazardSeverity(kind,detail),fill=severity==='red'?'#FF0000':'#FF5A00';
- const c=document.createElement('canvas');c.width=128;c.height=128;const x=c.getContext('2d');
+ const c=document.createElement('canvas');c.width=192;c.height=192;const x=c.getContext('2d');
  x.save();x.shadowColor='rgba(0,0,0,.95)';x.shadowBlur=10;x.shadowOffsetX=2;x.shadowOffsetY=4;
- x.beginPath();x.arc(64,64,43,0,Math.PI*2);x.fillStyle=fill;x.fill();x.restore();
- x.beginPath();x.arc(64,64,43,0,Math.PI*2);x.strokeStyle='#000000';x.lineWidth=9;x.stroke();
+ x.beginPath();x.arc(96,96,64.5,0,Math.PI*2);x.fillStyle=fill;x.fill();x.restore();
+ x.beginPath();x.arc(64,64,43,0,Math.PI*2);x.strokeStyle='#000000';x.lineWidth=13.5;x.stroke();
  const tex=new THREE.CanvasTexture(c),sprite=new THREE.Sprite(new THREE.SpriteMaterial({map:tex,transparent:true,depthTest:true,depthWrite:false}));
  sprite.position.copy(ll2v(lat,lon,1.025));sprite.scale.set(.043,.043,1);sprite.visible=hazardsOn;
  sprite.userData={kind,title,detail,lat,lon,severity,timeLabel:timeLabel||'Time not provided',baseScale:.043};
@@ -1728,7 +1728,7 @@ function addHazardMarker(lat,lon,kind,title,detail,timeLabel){
   if(!sprite.material||!sprite.material.map)return;
   const clean=svg.replace(/<\?xml[^>]*\?>/gi,'').replace(/<svg\b([^>]*)>/i,'<svg$1 width="48" height="48">');
   const url=URL.createObjectURL(new Blob([clean],{type:'image/svg+xml;charset=utf-8'})),img=new Image();
-  img.onload=()=>{try{if(!sprite.material)return;x.drawImage(img,19,19,90,90);tex.needsUpdate=true;}finally{URL.revokeObjectURL(url);}};
+  img.onload=()=>{try{if(!sprite.material)return;x.drawImage(img,51,51,90,90);tex.needsUpdate=true;}finally{URL.revokeObjectURL(url);}};
   img.onerror=()=>URL.revokeObjectURL(url);img.src=url;
  }).catch(e=>console.warn('[Hazards] OCHA icon unavailable for '+kind,e.message));
 }
@@ -1769,10 +1769,10 @@ function buildAirports(){
     // Static airport marker: white circle, thick black outline, 80% of the former dot size.
     const dotCanvas=document.createElement('canvas');dotCanvas.width=64;dotCanvas.height=64;
     const dotCtx=dotCanvas.getContext('2d');dotCtx.beginPath();dotCtx.arc(32,32,27,0,Math.PI*2);dotCtx.fillStyle='#000000';dotCtx.fill();
-    dotCtx.beginPath();dotCtx.arc(32,32,21,0,Math.PI*2);dotCtx.fillStyle='#FFFFFF';dotCtx.fill();
+    dotCtx.beginPath();dotCtx.arc(32,32,21,0,Math.PI*2);dotCtx.fillStyle='#FFE45C';dotCtx.fill();
     const dotTexture=new THREE.CanvasTexture(dotCanvas);
     const dot=new THREE.Sprite(new THREE.SpriteMaterial({map:dotTexture,transparent:true,depthWrite:false,depthTest:true}));
-    dot.position.copy(v);dot.scale.set(dotRadius*2*0.8,dotRadius*2*0.8,1);globe.add(dot);
+    dot.position.copy(v);dot.scale.set(dotRadius*2*0.6,dotRadius*2*0.6,1);globe.add(dot);
 
     const halo=new THREE.Mesh(new THREE.SphereGeometry(apTier==='large'?0.022:apTier==='small'?0.012:0.016,10,10),new THREE.MeshBasicMaterial({color:'#F5A623',transparent:true,opacity:0,depthWrite:false}));
     halo.position.copy(v);halo.visible=false;globe.add(halo);
@@ -2003,7 +2003,7 @@ function makePlane(color,aircraft){
  const ctx=canvas.getContext('2d');ctx.translate(32,32);ctx.fillStyle='#FFE45C';ctx.strokeStyle='#25170A';ctx.lineWidth=2.6;
  ctx.beginPath();ctx.moveTo(0,-29);ctx.lineTo(4,-7);ctx.lineTo(23,5);ctx.lineTo(23,10);ctx.lineTo(4,4);ctx.lineTo(3,20);ctx.lineTo(10,25);ctx.lineTo(10,29);ctx.lineTo(0,26);ctx.lineTo(-10,29);ctx.lineTo(-10,25);ctx.lineTo(-3,20);ctx.lineTo(-4,4);ctx.lineTo(-23,10);ctx.lineTo(-23,5);ctx.lineTo(-4,-7);ctx.closePath();ctx.fill();ctx.stroke();
  const fallback=new THREE.CanvasTexture(canvas),material=new THREE.SpriteMaterial({map:fallback,color:new THREE.Color('#FFFFFF'),transparent:true,depthWrite:false,depthTest:true});
- const sprite=new THREE.Sprite(material);sprite.scale.set(.007,.007,1);sprite.userData.fallbackMap=fallback;
+ const sprite=new THREE.Sprite(material);sprite.scale.set(.0105,.0105,1);sprite.userData.fallbackMap=fallback;
  const code=aircraftShapeCode(aircraft);sprite.userData.aircraftShapeCode=code;
  if(code)loadAircraftShape(code).then(texture=>{
   if(!sprite.material)return;
@@ -2208,7 +2208,7 @@ function animate(){
   flights.forEach((fl,i)=>{
     fl.t=(fl.t+dt*fl.speed)%1;
     if(!fl.plane) return;
-    fl.plane.scale.setScalar(planeScale*0.0325);
+    fl.plane.scale.setScalar(planeScale*0.04875);
     const pos=fl.curve.getPoint(fl.t);
     fl.plane.position.copy(pos);
     if(!fl.plane.visible){if(fl.trail&&fl.trail.line)fl.trail.line.visible=false;return;}
