@@ -1707,7 +1707,7 @@ function addHazardMarker(lat,lon,kind,title,detail){
  const c=document.createElement('canvas');c.width=96;c.height=96;const x=c.getContext('2d');x.beginPath();x.arc(48,48,33,0,Math.PI*2);x.fillStyle=kind==='EQ'?'rgba(255,91,91,.22)':kind==='TC'?'rgba(90,180,255,.22)':'rgba(255,155,65,.22)';x.fill();x.strokeStyle=kind==='EQ'?'#FF6666':kind==='TC'?'#6EC5FF':'#FFAD55';x.lineWidth=5;x.stroke();x.fillStyle='#FFFFFF';x.font='bold 40px sans-serif';x.textAlign='center';x.textBaseline='middle';x.fillText(kind==='EQ'?'✦':kind==='TC'?'🌀':'▲',48,49);
  const tex=new THREE.CanvasTexture(c),sprite=new THREE.Sprite(new THREE.SpriteMaterial({map:tex,transparent:true,depthTest:true,depthWrite:false}));sprite.position.copy(ll2v(lat,lon,1.025));sprite.scale.set(.055,.055,1);sprite.visible=hazardsOn;sprite.userData={kind,title,detail,lat,lon};globe.add(sprite);eventMarkers.push(sprite);
  const ochaName=kind==='EQ'?'Earthquake':kind==='TC'?'Cyclone':'Volcano';
- const ochaUrl='https://cdn.jsdelivr.net/gh/UN-OCHA/humanitarian-icons-2026-BDU@main/svg/'+ochaName+'.svg';
+ const ochaUrl='https://raw.githubusercontent.com/rodekruis/OCHA-Humanitarian-Icons/main/svg/'+ochaName+'.svg';
  const loader=new THREE.TextureLoader();loader.setCrossOrigin('anonymous');loader.load(ochaUrl,loaded=>{if(!sprite.parent){loaded.dispose();return;}const old=sprite.material.map;sprite.material.map=loaded;sprite.material.needsUpdate=true;if(old)old.dispose();},undefined,()=>{/* keep the built-in fallback icon if CDN is unavailable */});
 }
 async function loadHazardEvents(){
