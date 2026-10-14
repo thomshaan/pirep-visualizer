@@ -307,20 +307,21 @@ body.panel-collapsed #panelToggle{right:0;}
 .albl-count{margin-left:5px;font-size:8px;color:var(--orange);opacity:.9;}
 
 /* AIRPORT POPUP */
-.ap-popup{position:fixed;z-index:50;min-width:190px;
+.ap-popup{position:fixed;z-index:50;min-width:190px;max-width:min(320px,calc(100vw - 24px));max-height:min(58vh,420px);overflow-y:auto;
   background:rgba(26,10,21,.97);border:1px solid var(--border-hi);
   border-radius:10px;padding:10px;backdrop-filter:blur(20px);
-  box-shadow:0 8px 32px rgba(0,0,0,.6);display:none;pointer-events:auto;}
+  box-shadow:0 8px 32px rgba(0,0,0,.6);display:none;pointer-events:auto;scrollbar-width:thin;scrollbar-color:var(--orange) rgba(255,255,255,.05);}
 .ap-popup.vis{display:block;}
 .ap-pop-title{font-family:var(--fd);font-size:9px;letter-spacing:.22em;
   color:var(--gold);text-transform:uppercase;margin-bottom:8px;font-weight:700;
   padding-bottom:6px;border-bottom:1px solid var(--border);}
-.ap-pop-item{padding:7px 8px;border-radius:6px;cursor:pointer;
-  display:flex;justify-content:space-between;align-items:center;gap:10px;
-  transition:background .2s;}
+.ap-pop-item{padding:8px;border-radius:6px;cursor:pointer;display:flex;flex-direction:column;align-items:stretch;gap:4px;transition:background .2s;border-bottom:1px solid #ffffff0b;}
 .ap-pop-item:hover{background:rgba(249,148,32,.1);}
+.ap-pop-main{display:flex;justify-content:space-between;align-items:center;gap:10px;min-width:0}
 .ap-fi{font-family:var(--fd);font-size:11px;font-weight:700;}
-.ap-fr{font-family:var(--fm);font-size:9px;color:var(--dim);}
+.ap-fr{font-family:var(--fm);font-size:9px;color:var(--dim);text-align:right}
+.ap-pop-meta{font:9px/1.45 var(--fm);color:var(--dim);overflow-wrap:anywhere}
+.ap-pop-meta strong{font-weight:600;color:#d7c5d1}
 
 /* LOADING */
 #loading{position:fixed;inset:0;z-index:50;display:flex;align-items:center;justify-content:center;
@@ -1879,8 +1880,19 @@ class Trail{
 // ═══════════════════════════════════════════════════════
 // DRAG / ORBIT
 // ═══════════════════════════════════════════════════════
-window.addEventListener('mousedown',e=>{if(e.target.tagName==='CANVAS'){isDrag=true;px=e.clientX;py=e.clientY;}});
-window.addEventListener('mouseup',()=>isDrag=false);
+let _globeInteractionHidden=false;
+function setGlobeInteractionVisibility(hidden){
+  _globeInteractionHidden=hidden;
+  flights.forEach(fl=>{
+    if(fl.arcMesh)fl.arcMesh.visible=!hidden&&fl.filterVisible!==false&&fl.routeVisible!==false;
+    if(fl.plane)fl.plane.visible=!hidden&&fl.filterVisible!==false;
+    if(fl.trail&&fl.trail.line)fl.trail.line.visible=!hidden&&trailsOn&&fl.filterVisible!==false;
+  });
+  if(hidden)document.querySelectorAll('.albl').forEach(el=>el.classList.remove('show'));
+  else updateLabels();
+}
+window.addEventListener('mousedown',e=>{if(e.target.tagName==='CANVAS'){isDrag=true;px=e.clientX;py=e.clientY;setGlobeInteractionVisibility(true);}});
+window.addEventListener('mouseup',()=>{if(isDrag){isDrag=false;setGlobeInteractionVisibility(false);}});
 window.addEventListener('mousemove',e=>{
   if(!isDrag)return;
   rotX+=(e.clientY-py)*0.006;rotY+=(e.clientX-px)*0.006;
@@ -1998,6 +2010,7 @@ function animate(){
     }
     if(trailsOn&&fl.trail) fl.trail.push(pos);
   });
+  if(_globeInteractionHidden){flights.forEach(fl=>{if(fl.arcMesh)fl.arcMesh.visible=false;if(fl.plane)fl.plane.visible=false;if(fl.trail&&fl.trail.line)fl.trail.line.visible=false;});}
   renderer.render(scene,camera);
   updateLabels();
 }
@@ -2017,7 +2030,7 @@ function updateLabels(){
   const band=labelBand();
   airportMarkers.forEach(mk=>{
     const visible=projectLabel(mk);
-    mk.lbl.classList.toggle('show',(iso||band==='airport')&&visible&&mk.dot.visible);
+    mk.lbl.classList.toggle('show',!_globeInteractionHidden&&(iso||band==='airport')&&visible&&mk.dot.visible);
     
   });
   nationMarkers.forEach(nm=>{
@@ -2365,9 +2378,8 @@ function handleLabelClick(icao,lblEl){
   const all=PIREPS.filter(p=>p.origin.icao===icao||p.dest.icao===icao);
   const matches=activeFilter?all.filter(p=>p.pilot.toLowerCase().includes(activeFilter.toLowerCase())):all;
   if(!matches.length) return;
-  if(matches.length===1){openDetail(PIREPS.indexOf(matches[0]));return;}
-  else{
-    // Multiple flights — show popup near the label
+  {
+    // Always show a consistent airport flight list, even for a single flight.
     const rect=lblEl.getBoundingClientRect();
     const pop=document.getElementById('apPopup');
     const meta=airportMeta(icao);
@@ -2375,8 +2387,8 @@ function handleLabelClick(icao,lblEl){
       matches.map(p=>{
         const i=PIREPS.indexOf(p);
         return `<div class="ap-pop-item" onclick="openDetail(${i});document.getElementById('apPopup').classList.remove('vis')">
-          <span class="ap-fi" style="color:${p.color}">${p.flight}</span>
-          <span class="ap-fr">${p.origin.icao} → ${p.dest.icao}</span>
+          <div class="ap-pop-main"><span class="ap-fi" style="color:${p.color}">${escapeOps(p.flight||'UNKNOWN')}</span><span class="ap-fr">${escapeOps(p.origin.icao)} → ${escapeOps(p.dest.icao)}</span></div>
+          <div class="ap-pop-meta"><strong>${escapeOps(p.pilot||'Unknown pilot')}</strong> · ${escapeOps(p.date||'Date unavailable')}</div>
         </div>`;
       }).join('');
     let left=rect.left,top=rect.bottom+6;
