@@ -1987,7 +1987,9 @@ function animate(){
   } else if(selectedAirport&&!isDrag){
     const v=ll2v(selectedAirport.lat,selectedAirport.lon);
     trgY=Math.atan2(-v.x,v.z);
-    trgX=-(selectedAirport.lat*Math.PI/180)*0.46;
+    // Match the selected-flight camera convention: positive latitude rotates north upward.
+    // The previous negative sign sent northern airports toward the southern hemisphere.
+    trgX=Math.asin(Math.max(-1,Math.min(1,v.y)));
   } else if(!isDrag){ trgY+=autoRot; }
   rotX+=(trgX-rotX)*.04;
   let dY=trgY-rotY; while(dY>Math.PI)dY-=2*Math.PI; while(dY<-Math.PI)dY+=2*Math.PI;
