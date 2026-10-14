@@ -1709,26 +1709,34 @@ function hazardSeverity(kind,detail){
  if(kind==='EQ')return 'orange';
  return 'yellow';
 }
+function hazardIconAsset(kind){
+ const names={EQ:'Earthquake',TC:'Cyclone',VO:'Volcano',FL:'Flood',TOR:'Tornado'};
+ return 'https://raw.githubusercontent.com/rodekruis/OCHA-Humanitarian-Icons/main/white/'+(names[kind]||'Alert')+'.svg';
+}
 function addHazardMarker(lat,lon,kind,title,detail,timeLabel){
  if(!globe||!Number.isFinite(lat)||!Number.isFinite(lon))return;
- const severity=hazardSeverity(kind,detail),palette={red:'#F04444',orange:'#FF8A24',yellow:'#F5C842'},fill=palette[severity]||palette.orange;
+ const severity=hazardSeverity(kind,detail),fill=severity==='red'?'#FF0000':'#FF5A00';
  const c=document.createElement('canvas');c.width=128;c.height=128;const x=c.getContext('2d');
- x.save();x.shadowColor='rgba(0,0,0,.95)';x.shadowBlur=12;x.shadowOffsetX=2;x.shadowOffsetY=5;
+ x.save();x.shadowColor='rgba(0,0,0,.95)';x.shadowBlur=10;x.shadowOffsetX=2;x.shadowOffsetY=4;
  x.beginPath();x.arc(64,64,43,0,Math.PI*2);x.fillStyle=fill;x.fill();x.restore();
  x.beginPath();x.arc(64,64,43,0,Math.PI*2);x.strokeStyle='#000000';x.lineWidth=9;x.stroke();
- x.beginPath();x.arc(64,64,37,0,Math.PI*2);x.strokeStyle='#FFFFFF';x.lineWidth=2.5;x.stroke();
- x.fillStyle='#FFFFFF';x.strokeStyle='#111111';x.lineWidth=1.5;x.font='bold 49px sans-serif';x.textAlign='center';x.textBaseline='middle';
- x.strokeText(kind==='EQ'?'✦':kind==='TC'?'🌀':'▲',64,66);x.fillText(kind==='EQ'?'✦':kind==='TC'?'🌀':'▲',64,66);
  const tex=new THREE.CanvasTexture(c),sprite=new THREE.Sprite(new THREE.SpriteMaterial({map:tex,transparent:true,depthTest:true,depthWrite:false}));
  sprite.position.copy(ll2v(lat,lon,1.025));sprite.scale.set(.043,.043,1);sprite.visible=hazardsOn;
  sprite.userData={kind,title,detail,lat,lon,severity,timeLabel:timeLabel||'Time not provided',baseScale:.043};
  globe.add(sprite);eventMarkers.push(sprite);
+ fetch(hazardIconAsset(kind),{cache:'force-cache'}).then(r=>{if(!r.ok)throw new Error('OCHA icon HTTP '+r.status);return r.text();}).then(svg=>{
+  if(!sprite.material||!sprite.material.map)return;
+  const clean=svg.replace(/<\?xml[^>]*\?>/gi,'').replace(/<svg\b([^>]*)>/i,'<svg$1 width="48" height="48">');
+  const url=URL.createObjectURL(new Blob([clean],{type:'image/svg+xml;charset=utf-8'})),img=new Image();
+  img.onload=()=>{try{if(!sprite.material)return;x.drawImage(img,34,34,60,60);tex.needsUpdate=true;}finally{URL.revokeObjectURL(url);}};
+  img.onerror=()=>URL.revokeObjectURL(url);img.src=url;
+ }).catch(e=>console.warn('[Hazards] OCHA icon unavailable for '+kind,e.message));
 }
 async function loadHazardEvents(){
  if(!globe)return;_eventRefreshAt=Date.now()+15*60*1000;
  eventMarkers.forEach(m=>{globe.remove(m);if(m.material.map)m.material.map.dispose();m.material.dispose();});eventMarkers=[];
- try{const r=await fetch('https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/4.5_day.geojson',{cache:'no-store'});if(r.ok){const data=await r.json();(data.features||[]).slice(0,80).forEach(f=>{const c=f.geometry&&f.geometry.coordinates;if(!c)return;const p=f.properties||{};addHazardMarker(c[1],c[0],'EQ',p.title||'Earthquake','Magnitude '+(p.mag==null?'?':Number(p.mag).toFixed(1)),new Date(p.time||Date.now()).toISOString().replace('T',' ').slice(0,16)+' UTC');});}}catch(e){console.warn('[Hazards] USGS feed unavailable:',e.message);}
- try{const r=await fetch('https://www.gdacs.org/gdacsapi/api/events/geteventlist/SEARCH?eventlist=TC,VO,EQ&alertlevel=Orange;Red',{headers:{Accept:'application/json'},cache:'no-store'});if(r.ok){const data=await r.json(),features=Array.isArray(data.features)?data.features:Array.isArray(data)?data:[];features.slice(0,100).forEach(f=>{const props=f.properties||f,coords=f.geometry&&f.geometry.coordinates;if(!coords||!Number.isFinite(Number(coords[0]))||!Number.isFinite(Number(coords[1])))return;const raw=String(props.eventtype||props.eventType||props.type||'').toUpperCase(),kind=raw.includes('TC')||raw.includes('TROP')?'TC':raw.includes('VO')||raw.includes('VOLC')?'VO':raw.includes('EQ')?'EQ':'';if(kind){const rawTime=props.fromdate||props.fromDate||props.eventdate||props.eventDate||props.pubDate||props.lastupdate||props.lastUpdate||props.toDate;let timeLabel='Time not provided';if(rawTime){const parsed=new Date(rawTime);if(!Number.isNaN(parsed.getTime()))timeLabel=parsed.toISOString().replace('T',' ').slice(0,16)+' UTC';}addHazardMarker(Number(coords[1]),Number(coords[0]),kind,props.name||props.eventname||props.title||kind+' event',String(props.alertlevel||props.alertLevel||'Active hazard'),timeLabel);}});}}catch(e){console.info('[Hazards] GDACS feed unavailable; USGS earthquake layer remains available:',e.message);}
+ try{const r=await fetch('https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/4.5_month.geojson',{cache:'no-store'});if(r.ok){const data=await r.json();(data.features||[]).filter(f=>Number(f.properties&&f.properties.time)>=Date.now()-72*60*60*1000).slice(0,120).forEach(f=>{const c=f.geometry&&f.geometry.coordinates;if(!c)return;const p=f.properties||{};addHazardMarker(c[1],c[0],'EQ',p.title||'Earthquake','Magnitude '+(p.mag==null?'?':Number(p.mag).toFixed(1)),new Date(p.time).toISOString().replace('T',' ').slice(0,16)+' UTC');});}}catch(e){console.warn('[Hazards] USGS feed unavailable:',e.message);}
+ try{const r=await fetch('https://www.gdacs.org/gdacsapi/api/events/geteventlist/SEARCH?eventlist=TC,VO,EQ&alertlevel=Orange;Red',{headers:{Accept:'application/json'},cache:'no-store'});if(r.ok){const data=await r.json(),features=Array.isArray(data.features)?data.features:Array.isArray(data)?data:[];features.slice(0,100).forEach(f=>{const props=f.properties||f,coords=f.geometry&&f.geometry.coordinates;if(!coords||!Number.isFinite(Number(coords[0]))||!Number.isFinite(Number(coords[1])))return;const raw=String(props.eventtype||props.eventType||props.type||'').toUpperCase(),kind=raw.includes('TC')||raw.includes('TROP')?'TC':raw.includes('VO')||raw.includes('VOLC')?'VO':raw.includes('EQ')?'EQ':'';if(kind){const rawTime=props.fromdate||props.fromDate||props.eventdate||props.eventDate||props.pubDate||props.lastupdate||props.lastUpdate||props.toDate;const parsed=rawTime?new Date(rawTime):null;if(!parsed||Number.isNaN(parsed.getTime())||parsed.getTime()<Date.now()-72*60*60*1000||parsed.getTime()>Date.now()+60*60*1000)return;const timeLabel=parsed.toISOString().replace('T',' ').slice(0,16)+' UTC';addHazardMarker(Number(coords[1]),Number(coords[0]),kind,props.name||props.eventname||props.title||kind+' event',String(props.alertlevel||props.alertLevel||'Active hazard'),timeLabel);}});}}catch(e){console.info('[Hazards] GDACS feed unavailable; USGS earthquake layer remains available:',e.message);}
  eventMarkers.forEach(m=>m.visible=hazardsOn);
 }
 
@@ -1776,16 +1784,7 @@ function buildAirports(){
     selectedRing.userData={t:Math.random(),mat:selectedRingMat,icao:ap.icao,selectedOnly:true};
     selectedRing.visible=false;globe.add(selectedRing);pulseRings.push(selectedRing);
 
-    // DOM label
-    const iconCanvas=document.createElement('canvas');iconCanvas.width=64;iconCanvas.height=64;
-    const ictx=iconCanvas.getContext('2d');
-    // Aircraft/location pin icon supplied by the project owner, drawn locally for reliable rendering.
-    const airportPinSvg='<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24"><path d="M0 0h24v24H0z" fill="none"/><path fill="#FFB52E" stroke="#000000" stroke-width="1.15" d="m10 14 1.375.4q.15.05.263-.05t.112-.25v-.2q0-.025-.125-.25L10.75 13v-2.5l2.7.825q.2.05.375-.075t.175-.325v-.175q0-.05-.2-.375L10.75 8.5V6.3q0-.3-.225-.55T10 5.5q-.325 0-.537.25t-.213.55v2.2l-3.025 1.85q-.075.025-.225.425v.075q0 .25.2.388t.425.062l2.625-.8V13l-.85.65q-.05.025-.15.275v.1q0 .2.138.3t.312.05zm5.15 8q-.375 0-.65-.262t-.275-.638q0-.2.075-.4t.225-.35q2.15-2.3 3.813-4.9T20 10.2q0-1.975-.6-3.675T17.75 3.65q-.125-.125-.187-.3t-.063-.375q0-.425.275-.7t.7-.275q.2 0 .387.075t.313.225q1.4 1.5 2.112 3.55T22 10.2q0 3.025-1.862 6.05T15.85 21.7q-.125.15-.312.225T15.15 22m-5.85-.8q-.35-.125-.625-.375Q7.05 19.325 5.8 17.9t-2.087-2.762t-1.275-2.575T2 10.2q0-3.75 2.413-5.975T10 2t5.588 2.225T18 10.2q0 2.3-1.662 4.95t-5.013 5.675q-.275.25-.625.375t-.7.125t-.7-.125"/></svg>';
-    const airportPinImg=new Image();airportPinImg.onload=()=>{ictx.clearRect(0,0,64,64);ictx.drawImage(airportPinImg,0,0,64,64);iconTex.needsUpdate=true;};
-    const iconTex=new THREE.CanvasTexture(iconCanvas);ictx.shadowColor='rgba(0,0,0,.95)';ictx.shadowBlur=7;ictx.shadowOffsetX=2;ictx.shadowOffsetY=3;airportPinImg.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(airportPinSvg);
-    const icon=new THREE.Sprite(new THREE.SpriteMaterial({map:iconTex,transparent:true,depthWrite:false,depthTest:true}));
-    icon.scale.set(apTier==='large'?0.026:apTier==='small'?0.016:0.021,apTier==='large'?0.026:apTier==='small'?0.016:0.021,1);
-    icon.position.copy(ll2v(ap.lat,ap.lon,1.012));globe.add(icon);
+    // Airport labels only; airport pictogram sprites are intentionally removed.
     const lbl=document.createElement('div');
     lbl.className='albl';
     lbl.id='lbl-'+ap.icao;
@@ -1801,7 +1800,7 @@ function buildAirports(){
     lbl.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();handleLabelClick(ap.icao,lbl);}});
     document.body.appendChild(lbl);
 
-    airportMarkers.push({icao:ap.icao,lat:Number(ap.lat),lon:Number(ap.lon),name:ap.name||ap.icao,type:apTier,dot,halo,ring,selectedRing,icon,pos:v.clone(),lbl,filterVisible:true,hemisphereVisible:true});
+    airportMarkers.push({icao:ap.icao,lat:Number(ap.lat),lon:Number(ap.lon),name:ap.name||ap.icao,type:apTier,dot,halo,ring,selectedRing,icon:null,pos:v.clone(),lbl,filterVisible:true,hemisphereVisible:true});
   });
 
   buildNationLabels(seen);
@@ -1911,7 +1910,7 @@ function loadAircraftShape(code){
  if(!AIRCRAFT_SHAPE_TEXTURES.has(code)){
   const url='https://raw.githubusercontent.com/VATSIM-Radar/vatsim-radar/next/app/assets/icons/aircraft/'+encodeURIComponent(code.toLowerCase())+'.svg';
   const promise=fetch(url).then(r=>{if(!r.ok)throw new Error('Aircraft SVG '+r.status);return r.text();}).then(svg=>{
-   svg=svg.replace(/fill="none"/i,'fill="#FFD92F" stroke="#111111" stroke-width="4" stroke-linejoin="round"').replace(/fill="(?:white|black|#[0-9a-f]{3,8})"/gi,'fill="#FFD92F"');
+   svg=svg.replace(/fill="none"/i,'fill="#FFF200"').replace(/fill="(?:white|black|#[0-9a-f]{3,8})"/gi,'fill="#FFF200"').replace(/<path\b/gi,'<path stroke="#000000" stroke-width="5.5" stroke-linejoin="round" paint-order="stroke fill"');
    const objectURL=URL.createObjectURL(new Blob([svg],{type:'image/svg+xml;charset=utf-8'}));
    return new Promise((resolve,reject)=>new THREE.TextureLoader().load(objectURL,texture=>{URL.revokeObjectURL(objectURL);texture.needsUpdate=true;resolve(texture);},undefined,error=>{URL.revokeObjectURL(objectURL);reject(error);}));
   }).catch(error=>{AIRCRAFT_SHAPE_FAILED.add(code);throw error;});
@@ -1996,7 +1995,7 @@ function toggleDensity(){
 
 function makePlane(color,aircraft){
  const canvas=document.createElement('canvas');canvas.width=64;canvas.height=64;
- const ctx=canvas.getContext('2d');ctx.translate(32,32);ctx.fillStyle='#FFE45C';ctx.strokeStyle='#25170A';ctx.lineWidth=2.6;
+ const ctx=canvas.getContext('2d');ctx.translate(32,32);ctx.fillStyle='#FFF200';ctx.strokeStyle='#000000';ctx.lineWidth=4.2;
  ctx.beginPath();ctx.moveTo(0,-29);ctx.lineTo(4,-7);ctx.lineTo(23,5);ctx.lineTo(23,10);ctx.lineTo(4,4);ctx.lineTo(3,20);ctx.lineTo(10,25);ctx.lineTo(10,29);ctx.lineTo(0,26);ctx.lineTo(-10,29);ctx.lineTo(-10,25);ctx.lineTo(-3,20);ctx.lineTo(-4,4);ctx.lineTo(-23,10);ctx.lineTo(-23,5);ctx.lineTo(-4,-7);ctx.closePath();ctx.fill();ctx.stroke();
  const fallback=new THREE.CanvasTexture(canvas),material=new THREE.SpriteMaterial({map:fallback,color:new THREE.Color('#FFFFFF'),transparent:true,depthWrite:false,depthTest:true});
  const sprite=new THREE.Sprite(material);sprite.scale.set(.014,.014,1);sprite.userData.fallbackMap=fallback;
@@ -2161,7 +2160,7 @@ function animate(){
   if(globe){globe.rotation.x=rotX;globe.rotation.y=rotY;}
   updateHemisphereCulling();
   if(window._cloudMesh) window._cloudMesh.rotation.y+=dt*.008;
-  if(eventMarkers.length&&hazardsOn){const camLocal=globe.worldToLocal(camera.position.clone()).normalize();eventMarkers.forEach(m=>{const local=m.position.clone().normalize();m.visible=hazardsOn&&frontDot(local,camLocal)>0.015;m.scale.setScalar(Math.min(.072,Math.max(.038,.055*2.8/camZ)));});}
+  if(eventMarkers.length&&hazardsOn){const camLocal=globe.worldToLocal(camera.position.clone()).normalize();eventMarkers.forEach(m=>{const local=m.position.clone().normalize();m.visible=hazardsOn&&frontDot(local,camLocal)>0.015;});}
   if(window._earthMat&&window._earthMat.userData.shader){
     const sl=sunLight.position.clone().normalize().applyMatrix4(new THREE.Matrix4().extractRotation(globe.matrixWorld).invert());
     window._earthMat.userData.shader.uniforms.sunDir.value.copy(sl);
@@ -2180,7 +2179,7 @@ function animate(){
     const base=(1-pt)*Math.min(1,zS)*ringFade;
     r.userData.mat.opacity=base*(r.userData.selectedOnly?0.72:(isSelected?0.72:0.34));
   });
-  eventMarkers.forEach(m=>{if(m.visible){const scale=m.userData.baseScale*Math.min(1.35,Math.max(.68,3.0/camZ));m.scale.set(scale,scale,1);}});
+  eventMarkers.forEach(m=>{if(m.visible){const scale=m.userData.baseScale*Math.min(1.35,Math.max(.34,1.5/camZ));m.scale.set(scale,scale,1);}});
   airportMarkers.forEach((mk,i)=>{
     if(!mk.hemisphereVisible||mk.filterVisible===false)return;
     const selected=!!(selectedAirport&&selectedAirport.icao===mk.icao);
