@@ -2101,7 +2101,7 @@ function animate(){
   if(globe){globe.rotation.x=rotX;globe.rotation.y=rotY;}
   updateHemisphereCulling();
   if(window._cloudMesh) window._cloudMesh.rotation.y+=dt*.008;
-  if(eventMarkers.length&&hazardsOn){const camLocal=globe.worldToLocal(camera.position.clone()).normalize();eventMarkers.forEach(m=>{const local=globe.worldToLocal(m.position.clone()).normalize();m.visible=hazardsOn&&frontDot(local,camLocal)>0.015;m.scale.setScalar(Math.min(.072,Math.max(.038,.055*2.8/camZ)));});}
+  if(eventMarkers.length&&hazardsOn){const camLocal=globe.worldToLocal(camera.position.clone()).normalize();eventMarkers.forEach(m=>{const local=m.position.clone().normalize();m.visible=hazardsOn&&frontDot(local,camLocal)>0.015;m.scale.setScalar(Math.min(.072,Math.max(.038,.055*2.8/camZ)));});}
   if(window._earthMat&&window._earthMat.userData.shader){
     const sl=sunLight.position.clone().normalize().applyMatrix4(new THREE.Matrix4().extractRotation(globe.matrixWorld).invert());
     window._earthMat.userData.shader.uniforms.sunDir.value.copy(sl);
