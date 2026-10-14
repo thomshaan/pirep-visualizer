@@ -1557,12 +1557,14 @@ function toggleFiledRoute(){
 // GLOBE INIT
 // ═══════════════════════════════════════════════════════
 window.addEventListener('load',async function(){
-  setProgress(5,'LOADING AIRPORT DATABASE…');
+  setProgress(5,'LOADING AIRPORT & FLEET DATABASES…');
+  // Fleet data is independent of airport/PIREP parsing, so fetch it in parallel.
+  const fleetLoadPromise=fetchFleetDB();
   await fetchAirportDB();
   setProgress(10,'FETCHING FLIGHT DATA…');
   await fetchPIREPs();
-  setProgress(13,'LOADING FLEET DATABASE…');
-  await fetchFleetDB();
+  setProgress(13,'FINALIZING FLEET DATABASE…');
+  await fleetLoadPromise;
   setProgress(15,'INITIALIZING 3D ENGINE…');
 
   renderer=new THREE.WebGLRenderer({antialias:true,alpha:false});
