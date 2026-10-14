@@ -1702,19 +1702,33 @@ let hazardsOn=false;
 let eventMarkers=[];
 let _eventRefreshAt=0;
 function toggleHazards(){hazardsOn=!hazardsOn;const b=document.getElementById('hazardBtn');if(b)b.classList.toggle('on',hazardsOn);eventMarkers.forEach(m=>m.visible=hazardsOn);if(hazardsOn&&Date.now()>_eventRefreshAt)loadHazardEvents();}
-function addHazardMarker(lat,lon,kind,title,detail){
+function hazardSeverity(kind,detail){
+ const value=String(detail||'').toLowerCase();
+ if(/\bred\b|high alert|very high|extreme/.test(value))return 'red';
+ if(/\borange\b|moderate alert|medium/.test(value))return 'orange';
+ if(kind==='EQ')return 'orange';
+ return 'yellow';
+}
+function addHazardMarker(lat,lon,kind,title,detail,timeLabel){
  if(!globe||!Number.isFinite(lat)||!Number.isFinite(lon))return;
- const c=document.createElement('canvas');c.width=96;c.height=96;const x=c.getContext('2d');x.beginPath();x.arc(48,48,33,0,Math.PI*2);x.fillStyle=kind==='EQ'?'rgba(255,91,91,.22)':kind==='TC'?'rgba(90,180,255,.22)':'rgba(255,155,65,.22)';x.fill();x.strokeStyle=kind==='EQ'?'#FF6666':kind==='TC'?'#6EC5FF':'#FFAD55';x.lineWidth=5;x.stroke();x.fillStyle='#FFFFFF';x.font='bold 40px sans-serif';x.textAlign='center';x.textBaseline='middle';x.fillText(kind==='EQ'?'✦':kind==='TC'?'🌀':'▲',48,49);
- const tex=new THREE.CanvasTexture(c),sprite=new THREE.Sprite(new THREE.SpriteMaterial({map:tex,transparent:true,depthTest:true,depthWrite:false}));sprite.position.copy(ll2v(lat,lon,1.025));sprite.scale.set(.055,.055,1);sprite.visible=hazardsOn;sprite.userData={kind,title,detail,lat,lon};globe.add(sprite);eventMarkers.push(sprite);
- const ochaName=kind==='EQ'?'Earthquake':kind==='TC'?'Cyclone':'Volcano';
- const ochaUrl='https://raw.githubusercontent.com/rodekruis/OCHA-Humanitarian-Icons/main/svg/'+ochaName+'.svg';
- const loader=new THREE.TextureLoader();loader.setCrossOrigin('anonymous');loader.load(ochaUrl,loaded=>{if(!sprite.parent){loaded.dispose();return;}const old=sprite.material.map;sprite.material.map=loaded;sprite.material.needsUpdate=true;if(old)old.dispose();},undefined,()=>{/* keep the built-in fallback icon if CDN is unavailable */});
+ const severity=hazardSeverity(kind,detail),palette={red:'#F04444',orange:'#FF8A24',yellow:'#F5C842'},fill=palette[severity]||palette.orange;
+ const c=document.createElement('canvas');c.width=128;c.height=128;const x=c.getContext('2d');
+ x.save();x.shadowColor='rgba(0,0,0,.95)';x.shadowBlur=12;x.shadowOffsetX=2;x.shadowOffsetY=5;
+ x.beginPath();x.arc(64,64,43,0,Math.PI*2);x.fillStyle=fill;x.fill();x.restore();
+ x.beginPath();x.arc(64,64,43,0,Math.PI*2);x.strokeStyle='#000000';x.lineWidth=9;x.stroke();
+ x.beginPath();x.arc(64,64,37,0,Math.PI*2);x.strokeStyle='#FFFFFF';x.lineWidth=2.5;x.stroke();
+ x.fillStyle='#FFFFFF';x.strokeStyle='#111111';x.lineWidth=1.5;x.font='bold 49px sans-serif';x.textAlign='center';x.textBaseline='middle';
+ x.strokeText(kind==='EQ'?'✦':kind==='TC'?'🌀':'▲',64,66);x.fillText(kind==='EQ'?'✦':kind==='TC'?'🌀':'▲',64,66);
+ const tex=new THREE.CanvasTexture(c),sprite=new THREE.Sprite(new THREE.SpriteMaterial({map:tex,transparent:true,depthTest:true,depthWrite:false}));
+ sprite.position.copy(ll2v(lat,lon,1.025));sprite.scale.set(.043,.043,1);sprite.visible=hazardsOn;
+ sprite.userData={kind,title,detail,lat,lon,severity,timeLabel:timeLabel||'Time not provided',baseScale:.043};
+ globe.add(sprite);eventMarkers.push(sprite);
 }
 async function loadHazardEvents(){
  if(!globe)return;_eventRefreshAt=Date.now()+15*60*1000;
  eventMarkers.forEach(m=>{globe.remove(m);if(m.material.map)m.material.map.dispose();m.material.dispose();});eventMarkers=[];
- try{const r=await fetch('https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/4.5_day.geojson',{cache:'no-store'});if(r.ok){const data=await r.json();(data.features||[]).slice(0,80).forEach(f=>{const c=f.geometry&&f.geometry.coordinates;if(!c)return;const p=f.properties||{};addHazardMarker(c[1],c[0],'EQ',p.title||'Earthquake','M'+(p.mag==null?'?':Number(p.mag).toFixed(1))+' · '+new Date(p.time||Date.now()).toISOString().replace('T',' ').slice(0,16)+' UTC');});}}catch(e){console.warn('[Hazards] USGS feed unavailable:',e.message);}
- try{const r=await fetch('https://www.gdacs.org/gdacsapi/api/events/geteventlist/SEARCH?eventlist=TC,VO,EQ&alertlevel=Orange;Red',{headers:{Accept:'application/json'},cache:'no-store'});if(r.ok){const data=await r.json(),features=Array.isArray(data.features)?data.features:Array.isArray(data)?data:[];features.slice(0,100).forEach(f=>{const props=f.properties||f,coords=f.geometry&&f.geometry.coordinates;if(!coords||!Number.isFinite(Number(coords[0]))||!Number.isFinite(Number(coords[1])))return;const raw=String(props.eventtype||props.eventType||props.type||'').toUpperCase(),kind=raw.includes('TC')||raw.includes('TROP')?'TC':raw.includes('VO')||raw.includes('VOLC')?'VO':raw.includes('EQ')?'EQ':'';if(kind)addHazardMarker(Number(coords[1]),Number(coords[0]),kind,props.name||props.eventname||props.title||kind+' event',String(props.alertlevel||props.alertLevel||'Active hazard'));});}}catch(e){console.info('[Hazards] GDACS feed unavailable; USGS earthquake layer remains available:',e.message);}
+ try{const r=await fetch('https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/4.5_day.geojson',{cache:'no-store'});if(r.ok){const data=await r.json();(data.features||[]).slice(0,80).forEach(f=>{const c=f.geometry&&f.geometry.coordinates;if(!c)return;const p=f.properties||{};addHazardMarker(c[1],c[0],'EQ',p.title||'Earthquake','Magnitude '+(p.mag==null?'?':Number(p.mag).toFixed(1)),new Date(p.time||Date.now()).toISOString().replace('T',' ').slice(0,16)+' UTC');});}}catch(e){console.warn('[Hazards] USGS feed unavailable:',e.message);}
+ try{const r=await fetch('https://www.gdacs.org/gdacsapi/api/events/geteventlist/SEARCH?eventlist=TC,VO,EQ&alertlevel=Orange;Red',{headers:{Accept:'application/json'},cache:'no-store'});if(r.ok){const data=await r.json(),features=Array.isArray(data.features)?data.features:Array.isArray(data)?data:[];features.slice(0,100).forEach(f=>{const props=f.properties||f,coords=f.geometry&&f.geometry.coordinates;if(!coords||!Number.isFinite(Number(coords[0]))||!Number.isFinite(Number(coords[1])))return;const raw=String(props.eventtype||props.eventType||props.type||'').toUpperCase(),kind=raw.includes('TC')||raw.includes('TROP')?'TC':raw.includes('VO')||raw.includes('VOLC')?'VO':raw.includes('EQ')?'EQ':'';if(kind){const rawTime=props.fromdate||props.fromDate||props.eventdate||props.eventDate||props.pubDate||props.lastupdate||props.lastUpdate||props.toDate;let timeLabel='Time not provided';if(rawTime){const parsed=new Date(rawTime);if(!Number.isNaN(parsed.getTime()))timeLabel=parsed.toISOString().replace('T',' ').slice(0,16)+' UTC';}addHazardMarker(Number(coords[1]),Number(coords[0]),kind,props.name||props.eventname||props.title||kind+' event',String(props.alertlevel||props.alertLevel||'Active hazard'),timeLabel);});}}catch(e){console.info('[Hazards] GDACS feed unavailable; USGS earthquake layer remains available:',e.message);}
  eventMarkers.forEach(m=>m.visible=hazardsOn);
 }
 
@@ -1743,11 +1757,11 @@ function buildAirports(){
     const apMeta=AIRPORT_COORDS[ap.icao]||{};
     const apType=apMeta.type||'medium_airport';
     const apTier=apType==='large_airport'?'large':apType==='small_airport'?'small':'medium';
-    const dotRadius=apTier==='large'?0.014:apTier==='small'?0.007:0.010;
-    const dot=new THREE.Mesh(new THREE.SphereGeometry(dotRadius,10,10),new THREE.MeshBasicMaterial({color:c,blending:THREE.AdditiveBlending,depthWrite:false}));
+    const dotRadius=apTier==='large'?0.010:apTier==='small'?0.005:0.007;
+    const dot=new THREE.Mesh(new THREE.SphereGeometry(dotRadius,10,10),new THREE.MeshBasicMaterial({color:'#F5A623',depthWrite:true}));
     dot.position.copy(v);globe.add(dot);
 
-    const halo=new THREE.Mesh(new THREE.SphereGeometry(apTier==='large'?0.029:apTier==='small'?0.016:0.022,10,10),new THREE.MeshBasicMaterial({color:c,transparent:true,opacity:0.2,blending:THREE.AdditiveBlending,depthWrite:false}));
+    const halo=new THREE.Mesh(new THREE.SphereGeometry(apTier==='large'?0.022:apTier==='small'?0.012:0.016,10,10),new THREE.MeshBasicMaterial({color:'#F5A623',transparent:true,opacity:0.12,depthWrite:false}));
     halo.position.copy(v);globe.add(halo);
 
     const rmat=new THREE.MeshBasicMaterial({color:c,transparent:true,opacity:0.6,side:THREE.DoubleSide,blending:THREE.AdditiveBlending,depthWrite:false});
@@ -1766,11 +1780,11 @@ function buildAirports(){
     const iconCanvas=document.createElement('canvas');iconCanvas.width=64;iconCanvas.height=64;
     const ictx=iconCanvas.getContext('2d');
     // Aircraft/location pin icon supplied by the project owner, drawn locally for reliable rendering.
-    const airportPinSvg='<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24"><path d="M0 0h24v24H0z" fill="none"/><path fill="#FFE45C" stroke="#24130A" stroke-width=".45" d="m10 14 1.375.4q.15.05.263-.05t.112-.25v-.2q0-.025-.125-.25L10.75 13v-2.5l2.7.825q.2.05.375-.075t.175-.325v-.175q0-.05-.2-.375L10.75 8.5V6.3q0-.3-.225-.55T10 5.5q-.325 0-.537.25t-.213.55v2.2l-3.025 1.85q-.075.025-.225.425v.075q0 .25.2.388t.425.062l2.625-.8V13l-.85.65q-.05.025-.15.275v.1q0 .2.138.3t.312.05zm5.15 8q-.375 0-.65-.262t-.275-.638q0-.2.075-.4t.225-.35q2.15-2.3 3.813-4.9T20 10.2q0-1.975-.6-3.675T17.75 3.65q-.125-.125-.187-.3t-.063-.375q0-.425.275-.7t.7-.275q.2 0 .387.075t.313.225q1.4 1.5 2.112 3.55T22 10.2q0 3.025-1.862 6.05T15.85 21.7q-.125.15-.312.225T15.15 22m-5.85-.8q-.35-.125-.625-.375Q7.05 19.325 5.8 17.9t-2.087-2.762t-1.275-2.575T2 10.2q0-3.75 2.413-5.975T10 2t5.588 2.225T18 10.2q0 2.3-1.662 4.95t-5.013 5.675q-.275.25-.625.375t-.7.125t-.7-.125"/></svg>';
+    const airportPinSvg='<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24"><path d="M0 0h24v24H0z" fill="none"/><path fill="#FFB52E" stroke="#000000" stroke-width="1.15" d="m10 14 1.375.4q.15.05.263-.05t.112-.25v-.2q0-.025-.125-.25L10.75 13v-2.5l2.7.825q.2.05.375-.075t.175-.325v-.175q0-.05-.2-.375L10.75 8.5V6.3q0-.3-.225-.55T10 5.5q-.325 0-.537.25t-.213.55v2.2l-3.025 1.85q-.075.025-.225.425v.075q0 .25.2.388t.425.062l2.625-.8V13l-.85.65q-.05.025-.15.275v.1q0 .2.138.3t.312.05zm5.15 8q-.375 0-.65-.262t-.275-.638q0-.2.075-.4t.225-.35q2.15-2.3 3.813-4.9T20 10.2q0-1.975-.6-3.675T17.75 3.65q-.125-.125-.187-.3t-.063-.375q0-.425.275-.7t.7-.275q.2 0 .387.075t.313.225q1.4 1.5 2.112 3.55T22 10.2q0 3.025-1.862 6.05T15.85 21.7q-.125.15-.312.225T15.15 22m-5.85-.8q-.35-.125-.625-.375Q7.05 19.325 5.8 17.9t-2.087-2.762t-1.275-2.575T2 10.2q0-3.75 2.413-5.975T10 2t5.588 2.225T18 10.2q0 2.3-1.662 4.95t-5.013 5.675q-.275.25-.625.375t-.7.125t-.7-.125"/></svg>';
     const airportPinImg=new Image();airportPinImg.onload=()=>{ictx.clearRect(0,0,64,64);ictx.drawImage(airportPinImg,0,0,64,64);iconTex.needsUpdate=true;};
-    const iconTex=new THREE.CanvasTexture(iconCanvas);airportPinImg.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(airportPinSvg);
+    const iconTex=new THREE.CanvasTexture(iconCanvas);ictx.shadowColor='rgba(0,0,0,.95)';ictx.shadowBlur=7;ictx.shadowOffsetX=2;ictx.shadowOffsetY=3;airportPinImg.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(airportPinSvg);
     const icon=new THREE.Sprite(new THREE.SpriteMaterial({map:iconTex,transparent:true,depthWrite:false,depthTest:true}));
-    icon.scale.set(apTier==='large'?0.035:apTier==='small'?0.021:0.028,apTier==='large'?0.035:apTier==='small'?0.021:0.028,1);
+    icon.scale.set(apTier==='large'?0.026:apTier==='small'?0.016:0.021,apTier==='large'?0.026:apTier==='small'?0.016:0.021,1);
     icon.position.copy(ll2v(ap.lat,ap.lon,1.012));globe.add(icon);
     const lbl=document.createElement('div');
     lbl.className='albl';
@@ -2039,7 +2053,7 @@ function updateHazardHover(x,y){
  hazardPointer.x=x/innerWidth*2-1;hazardPointer.y=-(y/innerHeight)*2+1;hazardRaycaster.setFromCamera(hazardPointer,camera);
  const hits=hazardRaycaster.intersectObjects(eventMarkers.filter(m=>m.visible),false);const obj=hits.length?hits[0].object:null;
  if(!obj){tip.classList.remove('vis');_hoveredHazard=null;return false;}
- const d=obj.userData||{};if(_hoveredHazard!==obj){tip.innerHTML='<div class="ht-kind">OCHA hazard icon · '+escapeOps(d.kind==='EQ'?'Earthquake':d.kind==='TC'?'Tropical cyclone':d.kind==='VO'?'Volcanic activity':'Hazard')+'</div><div class="ht-title">'+escapeOps(d.title||'Reported hazard')+'</div><div>'+escapeOps(d.detail||'Details unavailable')+'</div><div style="margin-top:7px;color:var(--dim)">Approx. '+Number(d.lat).toFixed(2)+'°, '+Number(d.lon).toFixed(2)+'°</div><div style="margin-top:5px"><a href="https://github.com/rodekruis/OCHA-Humanitarian-Icons" target="_blank" rel="noopener noreferrer">OCHA Humanitarian Icons ↗</a></div>';_hoveredHazard=obj;}
+ const d=obj.userData||{};if(_hoveredHazard!==obj){tip.innerHTML='<div class="ht-kind">OCHA hazard icon · '+escapeOps(d.kind==='EQ'?'Earthquake':d.kind==='TC'?'Tropical cyclone':d.kind==='VO'?'Volcanic activity':'Hazard')+'</div><div class="ht-title">'+escapeOps(d.title||'Reported hazard')+'</div><div>'+escapeOps(d.detail||'Details unavailable')+'</div><div style="margin-top:7px;color:var(--dim)">Severity: <strong style="color:'+(d.severity==='red'?'#F04444':d.severity==='orange'?'#FF8A24':'#F5C842')+'">'+escapeOps((d.severity||'orange').toUpperCase())+'</strong></div><div style="margin-top:5px;color:var(--dim)">Reported time: '+escapeOps(d.timeLabel||'Time not provided')+'</div><div style="margin-top:5px;color:var(--dim)">Approx. '+Number(d.lat).toFixed(2)+'°, '+Number(d.lon).toFixed(2)+'°</div><div style="margin-top:5px"><a href="https://github.com/rodekruis/OCHA-Humanitarian-Icons" target="_blank" rel="noopener noreferrer">OCHA Humanitarian Icons ↗</a></div>';_hoveredHazard=obj;}
  tip.style.left=Math.min(innerWidth-310,Math.max(8,x+14))+'px';tip.style.top=Math.min(innerHeight-175,Math.max(8,y+14))+'px';tip.classList.add('vis');return true;
 }
 window.addEventListener('mousemove',e=>{if(isDrag)return;_planePointerX=e.clientX;_planePointerY=e.clientY;hoveredPlane=findPlaneAt(e.clientX,e.clientY);const overHazard=updateHazardHover(e.clientX,e.clientY);if(renderer&&renderer.domElement)renderer.domElement.style.cursor=(hoveredPlane||overHazard)?'pointer':'grab';if(!hoveredPlane){const t=document.getElementById('planeTooltip');if(t)t.classList.remove('vis');}});
@@ -2166,6 +2180,7 @@ function animate(){
     const base=(1-pt)*Math.min(1,zS)*ringFade;
     r.userData.mat.opacity=base*(r.userData.selectedOnly?0.72:(isSelected?0.72:0.34));
   });
+  eventMarkers.forEach(m=>{if(m.visible){const scale=m.userData.baseScale*Math.min(1.35,Math.max(.68,3.0/camZ));m.scale.set(scale,scale,1);}});
   airportMarkers.forEach((mk,i)=>{
     if(!mk.hemisphereVisible||mk.filterVisible===false)return;
     const selected=!!(selectedAirport&&selectedAirport.icao===mk.icao);
@@ -2181,7 +2196,7 @@ function animate(){
     mk.dot.visible=mk.halo.visible=mk.ring.visible=markerVisible;
     if(mk.icon)mk.icon.visible=markerVisible;
     if(!markerVisible)mk.lbl.classList.remove('show');
-    if(mk.icon)mk.icon.scale.setScalar((mk.type==='large'?0.034:mk.type==='small'?0.020:0.027)*Math.min(1.2,Math.max(.72,3.2/camZ)));
+    if(mk.icon)mk.icon.scale.setScalar((mk.type==='large'?0.026:mk.type==='small'?0.015:0.020)*Math.min(1.25,Math.max(.68,3.0/camZ)));
   });
   // Declutter: fade the line web and shrink planes when zoomed in (unless isolating one flight)
   const zoomFade=Math.min(Math.max((camZ-1.0)/1.8,0.32),1);
