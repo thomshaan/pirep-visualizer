@@ -301,6 +301,16 @@ body.panel-collapsed #panelToggle{right:0;}
   transition:opacity .2s,border-color .2s;font-weight:700;
   cursor:pointer;pointer-events:none;}
 .albl.show{opacity:1;pointer-events:auto;}
+/* Rainbow sweep on airport-code hover: a moving left-to-right HUD sheen */
+.albl{isolation:isolate;overflow:visible;}
+.albl::before{content:"";position:absolute;inset:0;border-radius:inherit;z-index:-1;pointer-events:none;opacity:0;
+  background:linear-gradient(105deg,transparent 0%,rgba(255,55,150,.28) 20%,rgba(255,190,55,.30) 34%,rgba(90,255,175,.28) 48%,rgba(65,210,255,.32) 62%,rgba(165,105,255,.30) 76%,transparent 100%);
+  background-size:240% 100%;background-position:100% 0;transition:opacity .18s ease;}
+.albl:hover::before,.albl:focus-visible::before{opacity:1;animation:airport-rainbow-sweep 1.15s linear infinite;}
+.albl:hover,.albl:focus-visible{border-color:rgba(180,240,255,.95);color:#fff;box-shadow:0 0 7px rgba(80,220,255,.24),0 0 15px rgba(150,95,255,.15);}
+@keyframes airport-rainbow-sweep{from{background-position:100% 0;}to{background-position:-100% 0;}}
+@media(prefers-reduced-motion:reduce){.albl:hover::before,.albl:focus-visible::before{animation:none;background-position:50% 0;}}
+
 .albl:hover,.albl:focus-visible{border-color:var(--border-hi);background:rgba(62,21,48,.98);outline:none;}
 .albl-tip{position:absolute;left:50%;bottom:calc(100% + 8px);transform:translate(-50%,4px);display:block;min-width:190px;max-width:270px;padding:9px 11px;border:1px solid rgba(249,148,32,.48);border-radius:7px;background:rgba(20,7,17,.98);box-shadow:0 8px 28px #0009;opacity:0;visibility:hidden;pointer-events:none;transition:opacity .16s,transform .16s;white-space:normal;text-align:left;letter-spacing:normal;z-index:30;}
 .albl:hover .albl-tip,.albl:focus-visible .albl-tip{opacity:1;visibility:visible;transform:translate(-50%,0);}
