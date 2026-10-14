@@ -1785,7 +1785,6 @@ function buildAirports(){
     const lbl=document.createElement('div');
     lbl.className='albl';
     lbl.id='lbl-'+ap.icao;
-    const apMeta=AIRPORT_COORDS[ap.icao]||{};
     const city=apMeta.muni||ap.city||'City unavailable';
     const fullName=apMeta.name||ap.name||ap.icao;
     const country=apMeta.country||ap.country||'';
