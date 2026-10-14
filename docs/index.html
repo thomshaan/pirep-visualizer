@@ -1779,7 +1779,7 @@ function buildAirports(){
     lbl.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();handleLabelClick(ap.icao,lbl);}});
     document.body.appendChild(lbl);
 
-    airportMarkers.push({icao:ap.icao,lat:Number(ap.lat),lon:Number(ap.lon),name:ap.name||ap.icao,type:apTier,dot,halo,ring,selectedRing,icon,pos:v.clone(),lbl,wxBadge,wxData:null,wxBad:false,filterVisible:true,hemisphereVisible:true});
+    airportMarkers.push({icao:ap.icao,lat:Number(ap.lat),lon:Number(ap.lon),name:ap.name||ap.icao,type:apTier,dot,halo,ring,selectedRing,icon,pos:v.clone(),lbl,filterVisible:true,hemisphereVisible:true});
   });
 
   buildNationLabels(seen);
