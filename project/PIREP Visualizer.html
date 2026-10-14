@@ -1518,6 +1518,7 @@ async function resolveAllRoutes(){
   await Promise.all(Array.from({length:4},worker));
   _dbgRoutesResolved=PIREPS.filter(p=>p._routePts).length;
   if(changed&&globe&&!densityMode){ buildFlights(); applyFlightVisibility(); }
+  if(changed&&selectedPIREP)showWaypointLabels(selectedPIREP);
   if(document.getElementById('dbgPanel').classList.contains('vis')) refreshDebug();
 }
 // Build a flat ground-track curve (FlightRadar-style) through {lat,lon} points,
@@ -1661,7 +1662,6 @@ window.addEventListener('load',async function(){
       updateStats();
       animate();
       resolveAllRoutes();   // upgrade arcs to filed routes in the background
-      loadHazardEvents();
     },600);
   }
 });
