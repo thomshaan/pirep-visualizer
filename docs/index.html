@@ -1596,62 +1596,16 @@ window.addEventListener('load',async function(){
     clouds:'https://raw.githubusercontent.com/turban/webgl-earth/master/images/fair_clouds_4k.png',
     night:'https://unpkg.com/three-globe@2.24.13/example/img/earth-night.jpg'
   };
-  const tex={};let pending=0,ready=0,globeFinished=false;
-  const settledTextures=new Set();
-  function settleTexture(k){
-    if(settledTextures.has(k))return;
-    settledTextures.add(k);ready++;
-    setProgress(25+(ready/5)*50,'LOADING EARTH TEXTURES · '+ready+'/5');
-    check();
-  }
-  function loadTex(k,url){
+  const tex={};let pending=0,ready=0;
+  function loadTex(k,url,opt){
     pending++;
-    let settled=false;
-    const timer=setTimeout(()=>{
-      if(settled)return;
-      settled=true;tex[k]=null;
-      if(k==='day')setLdTxt('EARTH TEXTURE TIMED OUT · USING FALLBACK GLOBE…');
-      settleTexture(k);
-    },12000);
-    const texture=loader.load(url,()=>{
-      if(settled)return;
-      settled=true;clearTimeout(timer);settleTexture(k);
-    },undefined,()=>{
-      if(settled)return;
-      settled=true;clearTimeout(timer);tex[k]=null;settleTexture(k);
-    });
-    tex[k]=texture;
+    tex[k]=loader.load(url,()=>{ready++;setProgress(25+(ready/pending)*50,'LOADED '+k.toUpperCase()+'…');check();},undefined,()=>{tex[k]=null;ready++;check();});
   }
-  function check(){if(ready>=5&&!globeFinished)finishGlobe();}
-  loadTex('day',SRC.day);loadTex('bump',SRC.bump);loadTex('spec',SRC.spec);
-  loadTex('clouds',SRC.clouds);loadTex('night',SRC.night);
+  function check(){if(ready>=pending)finishGlobe();}
+  loadTex('day',SRC.day);loadTex('bump',SRC.bump,true);loadTex('spec',SRC.spec,true);
+  loadTex('clouds',SRC.clouds,true);loadTex('night',SRC.night,true);
 
-  function makeFallbackEarthTexture(){
-    const c=document.createElement('canvas');c.width=1024;c.height=512;
-    const x=c.getContext('2d');
-    const ocean=x.createLinearGradient(0,0,0,512);ocean.addColorStop(0,'#16354b');ocean.addColorStop(.5,'#24617a');ocean.addColorStop(1,'#102b43');
-    x.fillStyle=ocean;x.fillRect(0,0,c.width,c.height);
-    x.strokeStyle='rgba(150,205,220,.12)';x.lineWidth=1;
-    for(let lon=0;lon<=1024;lon+=64){x.beginPath();x.moveTo(lon,0);x.lineTo(lon,512);x.stroke()}
-    for(let lat=0;lat<=512;lat+=32){x.beginPath();x.moveTo(0,lat);x.lineTo(1024,lat);x.stroke()}
-    const land='#75936b',coast='#b1b982';
-    const shapes=[
-      [[65,70],[120,45],[190,55],[245,95],[225,135],[190,160],[170,215],[135,240],[115,195],[85,155]],
-      [[210,245],[250,260],[275,315],[260,370],[230,430],[205,385],[195,325]],
-      [[420,80],[465,65],[500,85],[520,125],[490,150],[460,135],[440,110]],
-      [[455,155],[510,160],[540,205],[520,270],[490,330],[465,290],[450,225]],
-      [[520,80],[600,50],[700,65],[765,105],[730,150],[670,140],[630,170],[575,135]],
-      [[650,180],[720,165],[770,200],[750,250],[710,275],[680,235]],
-      [[770,300],[830,280],[880,315],[865,360],[820,370],[785,340]],
-      [[900,120],[950,105],[985,140],[965,185],[925,170]]
-    ];
-    shapes.forEach(function(points){x.beginPath();points.forEach(function(p,i){if(i===0)x.moveTo(p[0],p[1]);else x.lineTo(p[0],p[1])});x.closePath();x.fillStyle=land;x.fill();x.strokeStyle=coast;x.lineWidth=3;x.stroke()});
-    const t=new THREE.CanvasTexture(c);t.encoding=THREE.sRGBEncoding;return t;
-  }
   function finishGlobe(){
-    if(globeFinished)return;
-    globeFinished=true;
-    if(!tex.day)tex.day=makeFallbackEarthTexture();
     setProgress(80,'BUILDING GLOBE…');
     const earthMat=new THREE.MeshStandardMaterial({
       map:tex.day,bumpMap:tex.bump||null,bumpScale:0.05,
@@ -2030,7 +1984,7 @@ class Trail{
 
 
 const planeRaycaster=new THREE.Raycaster(),planePointer=new THREE.Vector2();
-let hoveredPlane=null,_planePointerX=0,_planePointerY=0;
+let hoveredPlane=null,_planeTooltipP=null,_planePointerX=0,_planePointerY=0;
 function findPlaneAt(clientX,clientY){
  if(!renderer||!camera)return null;planePointer.x=clientX/innerWidth*2-1;planePointer.y=-(clientY/innerHeight)*2+1;planeRaycaster.setFromCamera(planePointer,camera);
  const sprites=flights.filter(fl=>fl.plane&&fl.plane.visible&&fl.filterVisible!==false).map(fl=>fl.plane);
@@ -2039,7 +1993,7 @@ function findPlaneAt(clientX,clientY){
 function updatePlaneHover(){
  const tip=document.getElementById('planeTooltip');if(!tip||!hoveredPlane||isDrag||!hoveredPlane.visible){if(tip)tip.classList.remove('vis');return;}
  const p=hoveredPlane.userData.pirep;if(!p){tip.classList.remove('vis');return;}
- tip.innerHTML='<div class="ptt-flight">'+escapeOps(p.flight||'UNKNOWN FLIGHT')+'</div><div class="ptt-route">'+escapeOps(p.origin.icao)+' → '+escapeOps(p.dest.icao)+'</div><div class="ptt-meta">'+escapeOps(p.pilot||'Unknown pilot')+'</div><div class="ptt-meta">'+escapeOps(p.aircraft||'Aircraft unknown')+' · '+escapeOps(p.airtime||'—')+'</div><div class="ptt-meta">'+escapeOps(p.date||'Date unavailable')+'</div>';
+ if(_planeTooltipP!==p){tip.innerHTML='<div class="ptt-flight">'+escapeOps(p.flight||'UNKNOWN FLIGHT')+'</div><div class="ptt-route">'+escapeOps(p.origin.icao)+' → '+escapeOps(p.dest.icao)+'</div><div class="ptt-meta">'+escapeOps(p.pilot||'Unknown pilot')+'</div><div class="ptt-meta">'+escapeOps(p.aircraft||'Aircraft unknown')+' · '+escapeOps(p.airtime||'—')+'</div><div class="ptt-meta">'+escapeOps(p.date||'Date unavailable')+'</div>';_planeTooltipP=p;}
  tip.style.left=Math.min(innerWidth-285,Math.max(8,_planePointerX+14))+'px';tip.style.top=Math.min(innerHeight-135,Math.max(8,_planePointerY+14))+'px';tip.classList.add('vis');
 }
 window.addEventListener('mousemove',e=>{if(isDrag)return;_planePointerX=e.clientX;_planePointerY=e.clientY;hoveredPlane=findPlaneAt(e.clientX,e.clientY);if(renderer&&renderer.domElement)renderer.domElement.style.cursor=hoveredPlane?'pointer':'grab';if(!hoveredPlane){const t=document.getElementById('planeTooltip');if(t)t.classList.remove('vis');}});
@@ -2195,7 +2149,7 @@ function animate(){
     fl.t=(fl.t+dt*fl.speed)%1;
     if(!fl.plane) return;
     fl.plane.scale.setScalar(planeScale*0.065);
-    const pos=fl.curve.getPoint(fl.t),tan=fl.curve.getTangent(fl.t).normalize();
+    const pos=fl.curve.getPoint(fl.t);
     fl.plane.position.copy(pos);
     if(!fl.plane.visible){if(fl.trail&&fl.trail.line)fl.trail.line.visible=false;return;}
     // Route curves are in the globe's local space. Transform both samples into
