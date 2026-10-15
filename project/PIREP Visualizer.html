@@ -1988,9 +1988,16 @@ function buildFlights(){
   });
   flights=[];
   if(densityMode){buildDensityFlights();return;}
-  const seenRoutes=new Set();
-  const visualPireps=PIREPS.slice(0,MAX_GLOBE_FLIGHTS);
-  if(selectedPIREP&&!visualPireps.includes(selectedPIREP))visualPireps.push(selectedPIREP);
+  // Keep normal mode aligned with density mode: one route per airport pair,
+  // using the same busiest-first group limit. Missing/unresolved filed routes
+  // still use curveForPirep()'s direct origin-to-destination great-circle arc.
+  const routeGroupsForGlobe=routeGroups().sort((a,b)=>b.pireps.length-a.pireps.length);
+  const visibleRouteGroups=routeGroupsForGlobe.slice(0,MAX_DENSITY_ROUTES);
+  if(selectedPIREP){
+    const selectedGroup=routeGroupsForGlobe.find(g=>g.pireps.includes(selectedPIREP));
+    if(selectedGroup&&!visibleRouteGroups.includes(selectedGroup))visibleRouteGroups.push(selectedGroup);
+  }
+  const visualPireps=visibleRouteGroups.map(g=>g.pireps.includes(selectedPIREP)?selectedPIREP:g.pireps[0]).filter(Boolean);
   visualPireps.forEach((p,i)=>{
     const curve=curveForPirep(p);
     const isFiled=filedRoute&&p._routePts&&p._routePts.length>=3;
