@@ -1645,8 +1645,9 @@ window.addEventListener('load',async function(){
   await fleetLoadPromise;
   setProgress(15,'INITIALIZING 3D ENGINE…');
 
-  renderer=new THREE.WebGLRenderer({antialias:true,alpha:false});
-  renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+  renderer=new THREE.WebGLRenderer({antialias:!MOBILE_RENDER_MODE,alpha:false});
+  // High-DPI mobile screens can make WebGL render several times more pixels than needed.
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,MOBILE_RENDER_MODE?1.25:2));
   renderer.setSize(innerWidth,innerHeight);
   renderer.setClearColor(0x060108,1);
   renderer.toneMapping=THREE.ACESFilmicToneMapping;
@@ -2005,11 +2006,10 @@ function buildFlights(){
     const mat=new THREE.LineBasicMaterial({color:new THREE.Color(p.color),transparent:true,opacity:0.85,blending:THREE.AdditiveBlending,depthWrite:false});
     const arcMesh=new THREE.Line(new THREE.BufferGeometry().setFromPoints(curve.getPoints(isFiled?220:120)),mat);
     globe.add(arcMesh);
-    const routeKey=p.origin.icao+'-'+p.dest.icao;
-    const isNew=!seenRoutes.has(routeKey);
-    if(isNew) seenRoutes.add(routeKey);
-    const plane=isNew?makePlane(p.color,p.aircraft):null; if(plane){plane.userData.pirep=p;globe.add(plane);}
-    const trail=isNew?new Trail(p.color,60):null; if(trail) globe.add(trail.line);
+    // routeGroups() already supplies one representative per airport pair.
+    // Always create its aircraft and trail; no extra seenRoutes registry is needed.
+    const plane=makePlane(p.color,p.aircraft); plane.userData.pirep=p; globe.add(plane);
+    const trail=new Trail(p.color,60); globe.add(trail.line);
     flights.push({curve,cullSamples:curve.getPoints(isFiled?44:28),routeVisible:true,filterVisible:true,arcMesh,plane,trail,t:Math.random(),speed:0.007+Math.random()*0.004,color:p.color,mat,pireps:[p],baseOpacity:0.85});
   });
 }
@@ -2215,8 +2215,15 @@ function updateHemisphereCulling(){
   });
 }
 const AIRPORT_TIER_RANK={large:0,medium:1,small:2};
-function animate(){
+const MOBILE_RENDER_MODE=window.matchMedia('(max-width: 760px), (pointer: coarse)').matches;
+let lastRenderFrame=0;
+function animate(timestamp=0){
   requestAnimationFrame(animate);
+  // Keep timers/animation deltas sane while the tab is backgrounded.
+  if(document.hidden){clock.getDelta();return;}
+  // Cap full scene updates to ~30 FPS on touch/mobile devices to reduce GPU/CPU load.
+  if(MOBILE_RENDER_MODE&&timestamp-lastRenderFrame<32)return;
+  lastRenderFrame=timestamp;
   const dt=clock.getDelta(),t=clock.getElapsedTime();
   // Camera rotation — lock to selected flight midpoint (spherical) or normal auto-rotate
   if(selectedPIREP&&!isDrag){
