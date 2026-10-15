@@ -1828,7 +1828,7 @@ function buildAirports(){
     dotCtx.beginPath();dotCtx.arc(32,32,21,0,Math.PI*2);dotCtx.fillStyle='#FFE45C';dotCtx.fill();
     const dotTexture=new THREE.CanvasTexture(dotCanvas);
     const dot=new THREE.Sprite(new THREE.SpriteMaterial({map:dotTexture,transparent:true,depthWrite:false,depthTest:true}));
-    dot.position.copy(v);dot.scale.set(dotRadius*2*0.6,dotRadius*2*0.6,1);globe.add(dot);
+    dot.position.copy(v);dot.scale.set(dotRadius*2*0.6,dotRadius*2*0.6,1);dot.userData.baseScaleX=dot.scale.x;dot.userData.baseScaleY=dot.scale.y;globe.add(dot);
 
     const halo=new THREE.Mesh(new THREE.SphereGeometry(apTier==='large'?0.022:apTier==='small'?0.012:0.016,10,10),new THREE.MeshBasicMaterial({color:'#F5A623',transparent:true,opacity:0,depthWrite:false}));
     halo.position.copy(v);halo.visible=false;globe.add(halo);
@@ -2094,6 +2094,14 @@ class Trail{
 }
 
 
+const airportRaycaster=new THREE.Raycaster(),airportPointer=new THREE.Vector2();let hoveredAirport=null;
+function findAirportAt(clientX,clientY){
+ if(!renderer||!camera||!globe||isDrag)return null;
+ airportPointer.x=clientX/innerWidth*2-1;airportPointer.y=-(clientY/innerHeight)*2+1;airportRaycaster.setFromCamera(airportPointer,camera);
+ const dots=airportMarkers.filter(m=>m.dot&&m.dot.visible&&m.filterVisible!==false).map(m=>m.dot);
+ const hits=airportRaycaster.intersectObjects(dots,false);if(!hits.length)return null;
+ return airportMarkers.find(m=>m.dot===hits[0].object)||null;
+}
 const planeRaycaster=new THREE.Raycaster(),planePointer=new THREE.Vector2();
 let hoveredPlane=null,_planeTooltipP=null,_planePointerX=0,_planePointerY=0;
 function findPlaneAt(clientX,clientY){
@@ -2116,13 +2124,14 @@ function updateHazardHover(x,y){
  const d=obj.userData||{};if(_hoveredHazard!==obj){tip.innerHTML='<div class="ht-kind">OCHA hazard icon · '+escapeOps(d.kind==='EQ'?'Earthquake':d.kind==='TC'?'Tropical cyclone':d.kind==='VO'?'Volcanic activity':'Hazard')+'</div><div class="ht-title">'+escapeOps(d.title||'Reported hazard')+'</div><div>'+escapeOps(d.detail||'Details unavailable')+'</div><div style="margin-top:7px;color:var(--dim)">Severity: <strong style="color:'+(d.severity==='red'?'#F04444':d.severity==='orange'?'#FF8A24':'#F5C842')+'">'+escapeOps((d.severity||'orange').toUpperCase())+'</strong></div><div style="margin-top:5px;color:var(--dim)">Reported time: '+escapeOps(d.timeLabel||'Time not provided')+'</div><div style="margin-top:5px;color:var(--dim)">Approx. '+Number(d.lat).toFixed(2)+'°, '+Number(d.lon).toFixed(2)+'°</div><div style="margin-top:5px"><a href="https://github.com/rodekruis/OCHA-Humanitarian-Icons" target="_blank" rel="noopener noreferrer">OCHA Humanitarian Icons ↗</a></div>';_hoveredHazard=obj;}
  tip.style.left=Math.min(innerWidth-310,Math.max(8,x+14))+'px';tip.style.top=Math.min(innerHeight-175,Math.max(8,y+14))+'px';tip.classList.add('vis');return true;
 }
-window.addEventListener('mousemove',e=>{if(isDrag)return;_planePointerX=e.clientX;_planePointerY=e.clientY;hoveredPlane=findPlaneAt(e.clientX,e.clientY);const overHazard=updateHazardHover(e.clientX,e.clientY);if(renderer&&renderer.domElement)renderer.domElement.style.cursor=(hoveredPlane||overHazard)?'pointer':'grab';if(!hoveredPlane){const t=document.getElementById('planeTooltip');if(t)t.classList.remove('vis');}});
-window.addEventListener('click',e=>{if(isDrag||!e.target||e.target.tagName!=='CANVAS')return;const hit=findPlaneAt(e.clientX,e.clientY),p=hit&&hit.userData.pirep;if(p){const i=PIREPS.indexOf(p);if(i>=0)openDetail(i);}});
+window.addEventListener('mousemove',e=>{if(isDrag)return;_planePointerX=e.clientX;_planePointerY=e.clientY;hoveredPlane=findPlaneAt(e.clientX,e.clientY);const overHazard=updateHazardHover(e.clientX,e.clientY);hoveredAirport=findAirportAt(e.clientX,e.clientY);if(renderer&&renderer.domElement)renderer.domElement.style.cursor=(hoveredPlane||overHazard||hoveredAirport)?'pointer':'grab';if(!hoveredPlane){const t=document.getElementById('planeTooltip');if(t)t.classList.remove('vis');}});
+window.addEventListener('click',e=>{if(isDrag||_dragMoved||Date.now()<_suppressPlaneClickUntil||!e.target||e.target.tagName!=='CANVAS')return;const hit=findPlaneAt(e.clientX,e.clientY),p=hit&&hit.userData.pirep;if(p){const i=PIREPS.indexOf(p);if(i>=0)openDetail(i);}});
 
 // ═══════════════════════════════════════════════════════
 // DRAG / ORBIT
 // ═══════════════════════════════════════════════════════
 let _globeInteractionHidden=false;
+let _dragMoved=false,_dragStartX=0,_dragStartY=0,_suppressPlaneClickUntil=0;
 function setGlobeInteractionVisibility(hidden){
   _globeInteractionHidden=hidden;
   flights.forEach(fl=>{
@@ -2133,12 +2142,14 @@ function setGlobeInteractionVisibility(hidden){
   if(hidden)document.querySelectorAll('.albl').forEach(el=>el.classList.remove('show'));
   else updateLabels();
 }
-window.addEventListener('mousedown',e=>{if(e.target.tagName==='CANVAS'){isDrag=true;px=e.clientX;py=e.clientY;setGlobeInteractionVisibility(true);}});
-window.addEventListener('mouseup',()=>{if(isDrag){isDrag=false;setGlobeInteractionVisibility(false);}});
+window.addEventListener('mousedown',e=>{if(e.target.tagName==='CANVAS'){isDrag=true;_dragMoved=false;_dragStartX=px=e.clientX;_dragStartY=py=e.clientY;setGlobeInteractionVisibility(true);}});
+window.addEventListener('mouseup',()=>{if(isDrag){isDrag=false;if(_dragMoved)_suppressPlaneClickUntil=Date.now()+450;setGlobeInteractionVisibility(false);}});
 window.addEventListener('mousemove',e=>{
   if(!isDrag)return;
-  rotX+=(e.clientY-py)*0.006;rotY+=(e.clientX-px)*0.006;
-  rotX=Math.max(-1.4,Math.min(1.4,rotX));trgX=rotX;trgY=rotY;px=e.clientX;py=e.clientY;
+  const dx=e.clientX-px,dy=e.clientY-py;
+  if(!_dragMoved&&Math.hypot(e.clientX-_dragStartX,e.clientY-_dragStartY)>6){_dragMoved=true;}
+  if(_dragMoved){rotX+=dy*0.006;rotY+=dx*0.006;rotX=Math.max(-1.4,Math.min(1.4,rotX));trgX=rotX;trgY=rotY;}
+  px=e.clientX;py=e.clientY;
 });
 
 // Scroll-wheel zoom (skip if over panel UI)
@@ -2240,7 +2251,7 @@ function animate(){
     const base=(1-pt)*Math.min(1,zS)*ringFade;
     r.userData.mat.opacity=base*(r.userData.selectedOnly?0.72:(isSelected?0.72:0.34));
   });
-  eventMarkers.forEach(m=>{if(m.visible){const scale=m.userData.baseScale*Math.min(1.35,Math.max(.34,1.5/camZ));m.scale.set(scale,scale,1);}});
+  eventMarkers.forEach(m=>{if(m.visible){const scale=m.userData.baseScale*Math.min(1.35,Math.max(.34,1.5/camZ))*(m===_hoveredHazard&&!isDrag?1.32:1);m.scale.set(scale,scale,1);if(m.material&&m.material.color)m.material.color.set(m===_hoveredHazard&&!isDrag?'#8DF5FF':'#FFFFFF');}});
   airportMarkers.forEach((mk,i)=>{
     if(!mk.hemisphereVisible||mk.filterVisible===false)return;
     const selected=!!(selectedAirport&&selectedAirport.icao===mk.icao);
@@ -2248,7 +2259,7 @@ function animate(){
     const endpoint=selectedPIREP&&(selectedPIREP.origin.icao===mk.icao||selectedPIREP.dest.icao===mk.icao);
     const tierVisible=AIRPORT_TIER_RANK[mk.type]<=AIRPORT_TIER_RANK[zoomTier]||endpoint||selectedAirport&&selectedAirport.icao===mk.icao;
     const markerVisible=mk.filterVisible!==false&&mk.hemisphereVisible&&tierVisible;
-    mk.dot.visible=markerVisible; mk.halo.visible=false; mk.ring.visible=false; if(mk.selectedRing)mk.selectedRing.visible=false;
+    mk.dot.visible=markerVisible; const dotHover=hoveredAirport===mk&&!isDrag;const dotFactor=dotHover?1.42:1;mk.dot.scale.set((mk.dot.userData.baseScaleX||mk.dot.scale.x)*dotFactor,(mk.dot.userData.baseScaleY||mk.dot.scale.y)*dotFactor,1);mk.halo.visible=dotHover;mk.halo.material.opacity=dotHover?0.85:0;mk.ring.visible=false; if(mk.selectedRing)mk.selectedRing.visible=false;
     if(mk.icon)mk.icon.visible=markerVisible;
     if(!markerVisible)mk.lbl.classList.remove('show');
     if(mk.icon)mk.icon.scale.setScalar((mk.type==='large'?0.026:mk.type==='small'?0.015:0.020)*Math.min(1.25,Math.max(.68,3.0/camZ)));
@@ -2264,7 +2275,9 @@ function animate(){
   flights.forEach((fl,i)=>{
     fl.t=(fl.t+dt*fl.speed)%1;
     if(!fl.plane) return;
-    fl.plane.scale.setScalar(planeScale*0.04875);
+    const planeHoverFactor=hoveredPlane===fl.plane&&!isDrag?1.38:1;
+    fl.plane.scale.setScalar(planeScale*0.04875*planeHoverFactor);
+    if(fl.plane.material&&fl.plane.material.color)fl.plane.material.color.set(hoveredPlane===fl.plane&&!isDrag?'#55EAFF':'#FFFFFF');
     const pos=fl.curve.getPoint(fl.t);
     fl.plane.position.copy(pos);
     if(!fl.plane.visible){if(fl.trail&&fl.trail.line)fl.trail.line.visible=false;return;}
