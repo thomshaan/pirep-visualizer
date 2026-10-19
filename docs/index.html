@@ -1851,10 +1851,10 @@ function addSigmetRing(coords,props,index){
  const high=sigmetProperty(props,['altitudeHi1','altitudeHigh','top','upperLimit','flightLevelHigh'],'');
  const detail={title,kind:style.name,raw,from,to,severity,altitude:[low,high].filter(Boolean).join('–'),index,source:'Aviation Weather Center'};
 
- const underGeo=new THREE.TubeGeometry(curve,Math.max(24,points.length*3),0.0045,6,false);
- const underMat=new THREE.MeshBasicMaterial({color:style.outline,transparent:true,opacity:.98,depthTest:true,depthWrite:false,toneMapped:false});
+ const underGeo=new THREE.TubeGeometry(curve,Math.max(24,points.length*3),0.0042,6,false);
+ const underMat=new THREE.MeshBasicMaterial({color:'#FFFFFF',transparent:true,opacity:1,depthTest:true,depthWrite:false,toneMapped:false});
  const under=new THREE.Mesh(underGeo,underMat);under.userData={...detail,outlineOnly:true};under.visible=sigmetsOn;globe.add(under);sigmetLines.push(under);
- const geometry=new THREE.TubeGeometry(curve,Math.max(24,points.length*3),0.0031,6,false);
+ const geometry=new THREE.TubeGeometry(curve,Math.max(24,points.length*3),0.0032,6,false);
  const material=new THREE.MeshBasicMaterial({color:style.color,transparent:true,opacity:1,depthTest:true,depthWrite:false,toneMapped:false});
  const line=new THREE.Mesh(geometry,material);line.userData=detail;line.visible=sigmetsOn;globe.add(line);sigmetLines.push(line);
 }
@@ -1881,8 +1881,8 @@ async function loadSigmets(){
     const to=sigmetTimestamp(props.validTimeTo||props.valid_to||props.validTo||props.expireTime||props.expire_time||'');
    if(Number.isFinite(from)&&from>now+5*60*1000)return;
    if(Number.isFinite(to)&&to<now)return;
-   if(geom.type==='Polygon'){sigmetPolygonFill(geom.coordinates,sigmetHazardStyle(props).color,index);geom.coordinates.forEach((ring,i)=>addSigmetRing(ring,props,index+'-'+i));}
-   else if(geom.type==='MultiPolygon')geom.coordinates.forEach((poly,p)=>{sigmetPolygonFill(poly,sigmetHazardStyle(props).color,index+'-'+p);poly.forEach((ring,r)=>addSigmetRing(ring,props,index+'-'+p+'-'+r));});
+   if(geom.type==='Polygon'){geom.coordinates.forEach((ring,i)=>addSigmetRing(ring,props,index+'-'+i));}
+   else if(geom.type==='MultiPolygon')geom.coordinates.forEach((poly,p)=>{poly.forEach((ring,r)=>addSigmetRing(ring,props,index+'-'+p+'-'+r));});
    else if(geom.type==='LineString')addSigmetRing(geom.coordinates,props,index+'-line');
    else if(geom.type==='MultiLineString')geom.coordinates.forEach((ring,i)=>addSigmetRing(ring,props,index+'-line-'+i));
   });
