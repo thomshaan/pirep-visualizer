@@ -1779,22 +1779,39 @@ function clearSigmetLines(){
  sigmetLines.forEach(line=>{globe.remove(line);if(line.geometry)line.geometry.dispose();if(line.material)line.material.dispose();});
  sigmetLines=[];
 }
+function sigmetHazardStyle(props){
+ const info=JSON.stringify(props||{});
+ if(/volcanic ash|\bVA\b|VOLCANIC/i.test(info))return {name:'VOLCANIC ASH',color:'#050505',outline:'#FFFFFF'};
+ if(/thunderstorm|convective|\bTS\b|thunder storms/i.test(info))return {name:'THUNDERSTORM',color:'#FF1717',outline:'#FFFFFF'};
+ if(/turbulence|\bTURB\b|\bTB\b/i.test(info))return {name:'TURBULENCE',color:'#FFE600',outline:'#171717'};
+ if(/icing|\bICE\b|\bIC\b/i.test(info))return {name:'ICING',color:'#00D9FF',outline:'#06212C'};
+ return {name:'OTHER SIGMET',color:'#FF6A00',outline:'#FFFFFF'};
+}
+function sigmetTimestamp(value){
+ if(value===undefined||value===null||value==='')return NaN;
+ if(typeof value==='number'||(/^\d+(?:\.\d+)?$/.test(String(value).trim()))){const n=Number(value);return n<1e12?n*1000:n;}
+ return Date.parse(value);
+}
 function addSigmetRing(coords,props,index){
  if(!globe||!Array.isArray(coords)||coords.length<2)return;
  const points=[];
- coords.forEach(pair=>{const lon=Number(pair&&pair[0]),lat=Number(pair&&pair[1]);if(Number.isFinite(lat)&&Number.isFinite(lon)&&Math.abs(lat)<=90&&Math.abs(lon)<=180)points.push(ll2v(lat,lon,1.018));});
+ coords.forEach(pair=>{const lon=Number(pair&&pair[0]),lat=Number(pair&&pair[1]);if(Number.isFinite(lat)&&Number.isFinite(lon)&&Math.abs(lat)<=90&&Math.abs(lon)<=180)points.push(ll2v(lat,lon,1.021));});
  if(points.length<2)return;
- const info=JSON.stringify(props||{});
- const color=/volcanic ash|\bVA\b/i.test(info)?'#C084FC':/turbulence|\bTURB\b/i.test(info)?'#FBBF24':/icing|\bICE\b/i.test(info)?'#60A5FA':/thunderstorm|convective|\bTS\b/i.test(info)?'#FB7185':'#FF8A24';
- const geometry=new THREE.BufferGeometry().setFromPoints(points);
- const material=new THREE.LineBasicMaterial({color,transparent:true,opacity:.94,depthTest:true,depthWrite:false});
- const line=new THREE.Line(geometry,material);
- const title=sigmetProperty(props,['hazard','phenomenon','airSigmetType','type','firName','fir_id'],'SIGMET');
- const raw=sigmetProperty(props,['rawAirSigmet','raw_text','rawText','message','sigmetText','firName'],'Active aviation weather warning');
+ const style=sigmetHazardStyle(props),curve=new THREE.CatmullRomCurve3(points,false,'centripetal');
+ const title=sigmetProperty(props,['hazard','phenomenon','airSigmetType','type','firName','fir_id'],style.name);
+ const raw=sigmetProperty(props,['rawAirSigmet','raw_text','rawText','message','sigmetText','remarks','description','firName'],'Active aviation weather warning; detailed text was not supplied by the feed.');
  const from=sigmetProperty(props,['validTimeFrom','valid_from','validFrom','issueTime','issue_time'],'');
  const to=sigmetProperty(props,['validTimeTo','valid_to','validTo','expireTime','expire_time'],'');
- line.userData={title,raw,from,to,index,source:'Aviation Weather Center'};
- line.visible=sigmetsOn;globe.add(line);sigmetLines.push(line);
+ const severity=sigmetProperty(props,['severity','intensity','probability'],'');
+ const low=sigmetProperty(props,['altitudeLow1','altitudeLow','base','lowerLimit','flightLevelLow'],'');
+ const high=sigmetProperty(props,['altitudeHi1','altitudeHigh','top','upperLimit','flightLevelHigh'],'');
+ const detail={title,kind:style.name,raw,from,to,severity,altitude:[low,high].filter(Boolean).join('–'),index,source:'Aviation Weather Center'};
+ const underGeo=new THREE.TubeGeometry(curve,Math.max(24,points.length*3),0.0038,5,false);
+ const underMat=new THREE.MeshBasicMaterial({color:style.outline,transparent:true,opacity:.98,depthTest:true,depthWrite:false,toneMapped:false});
+ const under=new THREE.Mesh(underGeo,underMat);under.userData={...detail,outlineOnly:true};under.visible=sigmetsOn;globe.add(under);sigmetLines.push(under);
+ const geometry=new THREE.TubeGeometry(curve,Math.max(24,points.length*3),0.0022,5,false);
+ const material=new THREE.MeshBasicMaterial({color:style.color,transparent:true,opacity:1,depthTest:true,depthWrite:false,toneMapped:false});
+ const line=new THREE.Mesh(geometry,material);line.userData=detail;line.visible=sigmetsOn;globe.add(line);sigmetLines.push(line);
 }
 function showSigmetNotice(message){
  const el=document.getElementById('sigmetNotice');if(!el)return;
@@ -1815,8 +1832,8 @@ async function loadSigmets(){
   features.forEach((feature,index)=>{
    const props=feature&&feature.properties||{};
    const geom=feature&&feature.geometry;if(!geom||!geom.coordinates)return;
-   const from=Date.parse(props.validTimeFrom||props.valid_from||props.validFrom||props.issueTime||props.issue_time||'');
-   const to=Date.parse(props.validTimeTo||props.valid_to||props.validTo||props.expireTime||props.expire_time||'');
+   const from=sigmetTimestamp(props.validTimeFrom||props.valid_from||props.validFrom||props.issueTime||props.issue_time||'');
+    const to=sigmetTimestamp(props.validTimeTo||props.valid_to||props.validTo||props.expireTime||props.expire_time||'');
    if(Number.isFinite(from)&&from>now+5*60*1000)return;
    if(Number.isFinite(to)&&to<now)return;
    if(geom.type==='Polygon')geom.coordinates.forEach((ring,i)=>addSigmetRing(ring,props,index+'-'+i));
@@ -1844,7 +1861,9 @@ function updateSigmetHover(x,y){
  const d=line.userData||{};
  if(tip.dataset.key!==String(d.index)){
   const period=[d.from?'FROM '+d.from:'',d.to?'UNTIL '+d.to:''].filter(Boolean).join(' · ');
-  tip.innerHTML='<div class="ht-kind">AVIATION WEATHER CENTER · SIGMET</div><div class="ht-title">'+escapeOps(d.title||'Active SIGMET')+'</div><div>'+escapeOps(d.raw||'Warning geometry available; text details not supplied by feed.')+'</div>'+(period?'<div style="margin-top:7px;color:var(--dim)">'+escapeOps(period)+'</div>':'')+'<div style="margin-top:7px;color:var(--dim)">Worldwide aviation weather warning · verify official briefing before operational use</div>';
+   const extra=[d.severity?'Severity: '+d.severity:'',d.altitude?'Altitude: '+d.altitude:''].filter(Boolean).join(' · ');
+   const labelColor=/VOLCANIC ASH/i.test(d.kind||'')?'#111111':/THUNDERSTORM/i.test(d.kind||'')?'#FF4545':/TURBULENCE/i.test(d.kind||'')?'#FFE600':/ICING/i.test(d.kind||'')?'#00D9FF':'#FF6A00';
+   tip.innerHTML='<div class="ht-kind">AVIATION WEATHER CENTER · SIGMET</div><div class="ht-title" style="color:'+labelColor+'">'+escapeOps(d.kind||'SIGMET')+' · '+escapeOps(d.title||'Active SIGMET')+'</div><div>'+escapeOps(d.raw||'Warning geometry available; text details not supplied by feed.')+'</div>'+(extra?'<div style="margin-top:7px;color:var(--dim)">'+escapeOps(extra)+'</div>':'')+(period?'<div style="margin-top:7px;color:var(--dim)">'+escapeOps(period)+'</div>':'')+'<div style="margin-top:7px;color:var(--dim)">Worldwide aviation weather warning · verify official briefing before operational use</div>';
   tip.dataset.key=String(d.index);
  }
  tip.style.left=Math.min(innerWidth-315,Math.max(8,x+14))+'px';tip.style.top=Math.min(innerHeight-185,Math.max(8,y+14))+'px';tip.classList.add('vis');return true;
