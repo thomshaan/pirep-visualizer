@@ -322,7 +322,7 @@ body.panel-collapsed #panelToggle{right:0;}
 @media(prefers-reduced-motion:reduce){
  .albl:hover::before,.albl:focus-visible::before{animation:none;background-position:50% 0;}
  .albl:hover,.albl:focus-visible{animation:none;}
- #loading.hide{animation:none;opacity:0;clip-path:none;}
+ #loading.hide{animation:none;opacity:0;transform:translateY(-100%);}
 }
 
 .albl:hover,.albl:focus-visible{border-color:var(--border-hi);background:rgba(62,21,48,.98);outline:none;}
@@ -354,15 +354,14 @@ body.panel-collapsed #panelToggle{right:0;}
 .ap-pop-meta strong{font-weight:600;color:#d7c5d1}
 
 /* LOADING */
-#loading{position:fixed;inset:0;z-index:50;display:flex;align-items:center;justify-content:center;
-  background:linear-gradient(180deg,#1A0A15 0%,#3E1530 100%);flex-direction:column;gap:18px;transition:opacity .8s;}
-#loading.hide{opacity:1;pointer-events:none;animation:liquid-screen-release 1.15s cubic-bezier(.7,0,.2,1) forwards;}
+#loading{position:fixed;inset:0;z-index:200;display:flex;align-items:center;justify-content:center;isolation:isolate;will-change:transform,opacity;backface-visibility:hidden;
+  background:linear-gradient(180deg,#1A0A15 0%,#3E1530 100%);flex-direction:column;gap:18px;transition:none;}
+#loading.hide{opacity:1;pointer-events:none;animation:liquid-screen-release .62s cubic-bezier(.22,.72,.2,1) forwards;}
 /* The boot screen retreats like a sheet of liquid, leaving a rippling edge. */
 @keyframes liquid-screen-release{
-  0%{opacity:1;clip-path:polygon(0 0,100% 0,100% 100%,0 100%);filter:blur(0);transform:scale(1);}
-  58%{opacity:1;clip-path:polygon(0 0,100% 0,100% 78%,92% 82%,82% 77%,70% 83%,58% 78%,46% 84%,34% 78%,22% 83%,10% 78%,0 82%);filter:blur(.4px);transform:scale(1.015);}
-  82%{opacity:.94;clip-path:polygon(0 0,100% 0,100% 12%,88% 17%,75% 10%,61% 16%,49% 9%,35% 15%,22% 9%,10% 15%,0 11%);filter:blur(1px);transform:scale(1.025);}
-  100%{opacity:0;clip-path:polygon(0 0,100% 0,100% 0,0 0);filter:blur(2px);transform:scale(1.035);}
+  0%{opacity:1;transform:translate3d(0,0,0) scale(1);}
+  70%{opacity:1;transform:translate3d(0,-2%,0) scale(1.008);}
+  100%{opacity:0;transform:translate3d(0,-105%,0) scale(1.008);}
 }
 #loading img{width:80px;height:80px;filter:drop-shadow(0 0 24px rgba(249,148,32,.6));animation:pulse 2.2s ease-in-out infinite;}
 @keyframes pulse{0%,100%{opacity:.85;transform:scale(1);}50%{opacity:1;transform:scale(1.04);}}
@@ -443,6 +442,8 @@ body.panel-collapsed #panelToggle{right:0;}
 /* MOBILE + LIVE WEATHER POLISH */
 .zulu-clock{z-index:80!important;top:10px!important;background:rgba(13,7,16,.96)!important;border:1px solid rgba(245,198,36,.62)!important;box-shadow:0 8px 28px rgba(0,0,0,.48),0 0 18px rgba(245,198,36,.12)!important;backdrop-filter:none!important;color:#ffe36b!important;text-shadow:0 0 12px rgba(245,198,36,.38)!important;padding:9px 16px!important}
 .zulu-clock #zuluDate{color:#f5e6da!important}
+body:not(.map-ready) .wx-toggle,body:not(.map-ready) .fi-quick-toggle,body:not(.map-ready) .wx-panel{visibility:hidden!important;opacity:0!important;pointer-events:none!important}
+body.map-ready .wx-toggle,body.map-ready .fi-quick-toggle{visibility:visible;opacity:1;transition:opacity .22s ease,transform .22s ease}
 .wx-toggle{position:fixed;left:18px;top:92px;z-index:75;display:flex;align-items:center;gap:8px;padding:10px 13px;border:1px solid rgba(92,218,193,.45);border-radius:9px;background:rgba(9,17,22,.94);color:#c4fff2;font:700 10px var(--fm);letter-spacing:.12em;cursor:pointer;box-shadow:0 8px 24px rgba(0,0,0,.35);transition:background .2s,border-color .2s}
 .wx-toggle:hover,.wx-toggle[aria-expanded="true"]{background:rgba(13,42,43,.98);border-color:#65e5ca}
 .wx-led{width:7px;height:7px;border-radius:50%;background:#55e3c1;box-shadow:0 0 9px rgba(85,227,193,.8)}
@@ -683,7 +684,7 @@ body:not(.panel-collapsed) .rpanel{border-left-color:rgba(85,234,255,.15);box-sh
 .fi-overlay{position:fixed;inset:0;z-index:80;display:none;align-items:center;justify-content:center;padding:14px;background:rgba(8,3,8,.78);backdrop-filter:blur(8px)}
 .fi-overlay.vis{display:flex}.fi-modal{width:min(980px,96vw);max-height:90vh;display:flex;flex-direction:column;overflow:hidden;border:1px solid rgba(249,148,32,.42);border-radius:14px;background:linear-gradient(145deg,rgba(26,10,21,.99),rgba(32,12,27,.98));box-shadow:0 22px 80px #000a}
 .fi-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px 18px;border-bottom:1px solid var(--border)}.fi-kicker{font:8px var(--fm);letter-spacing:.22em;color:var(--orange)}.fi-title{font:700 16px var(--fd);letter-spacing:.08em;color:var(--gold);margin-top:5px}.fi-close{border:1px solid var(--border);background:transparent;color:var(--dim);border-radius:6px;padding:6px 10px;cursor:pointer}
-.fi-body{padding:16px;overflow:auto}.fi-intro{font-size:11px;line-height:1.6;color:var(--dim);margin-bottom:13px}.fi-form{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px;padding:12px;background:rgba(249,148,32,.035);border:1px solid var(--border);border-radius:10px}.fi-field{display:flex;flex-direction:column;gap:5px;min-width:0}.fi-field.wide{grid-column:span 2}.fi-field label{font:8px var(--fm);letter-spacing:.12em;color:var(--dim)}.fi-field input,.fi-field select{width:100%;min-width:0;background:#24101f;border:1px solid rgba(249,148,32,.25);border-radius:6px;color:var(--text);font:11px var(--fb);padding:9px;outline:none}.fi-field input:focus,.fi-field select:focus{border-color:var(--orange)}.fi-check{display:flex;align-items:center;gap:7px;font-size:10px;color:var(--dim);grid-column:span 2}.fi-check input{accent-color:var(--orange)}.fi-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:12px 0}.fi-primary,.fi-secondary{border-radius:6px;padding:9px 13px;cursor:pointer;font:9px var(--fm);letter-spacing:.1em}.fi-primary{background:rgba(249,148,32,.16);border:1px solid var(--orange);color:var(--gold)}.fi-secondary{background:transparent;border:1px solid var(--border);color:var(--dim)}.fi-status{font:9px var(--fm);color:var(--dim);line-height:1.5}.fi-results{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.fi-card{border:1px solid var(--border);border-radius:10px;background:rgba(42,15,34,.55);padding:13px;min-width:0}.fi-card-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}.fi-code{font:700 19px var(--fd);color:var(--gold)}.fi-name{font-size:10px;color:var(--dim);margin-top:4px;line-height:1.45}.fi-score{font:700 10px var(--fm);color:var(--orange);white-space:nowrap}.fi-tags{display:flex;flex-wrap:wrap;gap:5px;margin:10px 0}.fi-tag{font:8px var(--fm);padding:4px 6px;border:1px solid rgba(249,148,32,.22);border-radius:4px;color:var(--dim)}.fi-reason{font-size:10px;line-height:1.65;color:rgba(245,230,218,.8)}.fi-weather{font:9px var(--fm);line-height:1.6;color:var(--dim);margin-top:8px;padding-top:8px;border-top:1px solid rgba(249,148,32,.1)}.fi-card-actions{display:flex;gap:7px;margin-top:10px}.fi-card-actions button{flex:1}.fi-empty{grid-column:1/-1;padding:25px;text-align:center;border:1px dashed var(--border);border-radius:8px;color:var(--dim);font-size:11px;line-height:1.7}.fi-caveat{font:8px var(--fm);color:rgba(245,230,218,.38);line-height:1.6;margin-top:12px}
+.fi-body{padding:16px;overflow:auto}.fi-intro{font-size:11px;line-height:1.6;color:var(--dim);margin-bottom:13px}.fi-form{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px;padding:12px;background:rgba(249,148,32,.035);border:1px solid var(--border);border-radius:10px}.fi-field{display:flex;flex-direction:column;gap:5px;min-width:0}.fi-field.wide{grid-column:span 2}.fi-field label{font:8px var(--fm);letter-spacing:.12em;color:var(--dim)}.fi-field input,.fi-field select{width:100%;min-width:0;background:#24101f;border:1px solid rgba(249,148,32,.25);border-radius:6px;color:var(--text);font:11px var(--fb);padding:9px;outline:none}.fi-field input:focus,.fi-field select:focus{border-color:var(--orange)}.fi-hint{font:9px/1.4 var(--fm);color:var(--dim);opacity:.85}.fi-check{display:flex;align-items:center;gap:7px;font-size:10px;color:var(--dim);grid-column:span 2}.fi-check input{accent-color:var(--orange)}.fi-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:12px 0}.fi-primary,.fi-secondary{border-radius:6px;padding:9px 13px;cursor:pointer;font:9px var(--fm);letter-spacing:.1em}.fi-primary{background:rgba(249,148,32,.16);border:1px solid var(--orange);color:var(--gold)}.fi-secondary{background:transparent;border:1px solid var(--border);color:var(--dim)}.fi-status{font:9px var(--fm);color:var(--dim);line-height:1.5}.fi-results{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.fi-card{border:1px solid var(--border);border-radius:10px;background:rgba(42,15,34,.55);padding:13px;min-width:0}.fi-card-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}.fi-code{font:700 19px var(--fd);color:var(--gold)}.fi-name{font-size:10px;color:var(--dim);margin-top:4px;line-height:1.45}.fi-score{font:700 10px var(--fm);color:var(--orange);white-space:nowrap}.fi-tags{display:flex;flex-wrap:wrap;gap:5px;margin:10px 0}.fi-tag{font:8px var(--fm);padding:4px 6px;border:1px solid rgba(249,148,32,.22);border-radius:4px;color:var(--dim)}.fi-reason{font-size:10px;line-height:1.65;color:rgba(245,230,218,.8)}.fi-weather{font:9px var(--fm);line-height:1.6;color:var(--dim);margin-top:8px;padding-top:8px;border-top:1px solid rgba(249,148,32,.1)}.fi-card-actions{display:flex;gap:7px;margin-top:10px}.fi-card-actions button{flex:1}.fi-empty{grid-column:1/-1;padding:25px;text-align:center;border:1px dashed var(--border);border-radius:8px;color:var(--dim);font-size:11px;line-height:1.7}.fi-caveat{font:8px var(--fm);color:rgba(245,230,218,.38);line-height:1.6;margin-top:12px}
 @media(max-width:650px){.fi-overlay{padding:6px}.fi-modal{width:100%;max-height:94vh}.fi-head{padding:12px}.fi-body{padding:10px}.fi-form{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;padding:9px}.fi-field.wide{grid-column:span 2}.fi-results{grid-template-columns:1fr}.fi-title{font-size:13px}.fi-intro{font-size:10px}}
 
 </style>
@@ -884,7 +885,7 @@ body:not(.panel-collapsed) .rpanel{border-left-color:rgba(85,234,255,.15);box-sh
    <div class="fi-form">
     <div class="fi-field wide"><label for="fiPrompt">YOUR FLIGHT IDEA / NATURAL-LANGUAGE REQUEST</label><input id="fiPrompt" placeholder="e.g. challenging 90-minute flight, mountains, avoid bad weather"></div>
     <div class="fi-field"><label for="fiAircraft">AIRCRAFT / TYPE</label><input id="fiAircraft" placeholder="e.g. A320, B738" value=""></div>
-    <div class="fi-field"><label for="fiOrigin">DEPARTURE ICAO (OPTIONAL)</label><input id="fiOrigin" maxlength="4" placeholder="e.g. WIII"></div>
+    <div class="fi-field"><label for="fiOrigin">DEPARTURE AIRPORT</label><input id="fiOrigin" list="fiAirportOptions" maxlength="4" autocomplete="off" placeholder="Search name or ICAO · e.g. WIII"><datalist id="fiAirportOptions"></datalist><div class="fi-hint">Search airport name or enter its four-letter ICAO code.</div></div>
     <div class="fi-field"><label for="fiDuration">FLIGHT DURATION</label><select id="fiDuration"><option value="any">Any duration</option><option value="short">Under 1 hour</option><option value="medium" selected>1–2 hours</option><option value="long">2–4 hours</option><option value="ultra">Over 4 hours</option></select></div>
     <div class="fi-field"><label for="fiDifficulty">CHALLENGE LEVEL</label><select id="fiDifficulty"><option value="any">Any challenge</option><option value="moderate">Moderate</option><option value="high" selected>High challenge</option><option value="extreme">Extreme / specialist</option></select></div>
     <label class="fi-check"><input type="checkbox" id="fiAbelOnly" checked> Prefer airports in Abel Jets flight history</label>
@@ -1780,7 +1781,7 @@ window.addEventListener('load',async function(){
     setProgress(100,'READY');
     setTimeout(()=>{
       document.getElementById('loading').classList.add('hide');
-      document.body.classList.add('map-ready');
+      setTimeout(()=>document.body.classList.add('map-ready'),650);
       renderFlightList();
       renderBottomBar();
       updateStats();
@@ -1884,6 +1885,7 @@ async function loadSigmets(){
     const to=sigmetTimestamp(props.validTimeTo||props.valid_to||props.validTo||props.expireTime||props.expire_time||'');
    if(Number.isFinite(from)&&from>now+5*60*1000)return;
    if(Number.isFinite(to)&&to<now)return;
+   const style=sigmetHazardStyle(props);
    if(geom.type==='Polygon'){sigmetPolygonFill(geom.coordinates,style.color,index);geom.coordinates.forEach((ring,i)=>addSigmetRing(ring,props,index+'-'+i));}
    else if(geom.type==='MultiPolygon')geom.coordinates.forEach((poly,p)=>{sigmetPolygonFill(poly,style.color,index+'-'+p);poly.forEach((ring,r)=>addSigmetRing(ring,props,index+'-'+p+'-'+r));});
    else if(geom.type==='LineString')addSigmetRing(geom.coordinates,props,index+'-line');
@@ -2551,8 +2553,10 @@ setInterval(()=>{updateZulu();renderBottomBar();},1000);
 
 /* Manual METAR checker via the Cloudflare Worker proxy. No background polling. */
  function toggleWeatherPanel(force){
-  const panel=document.getElementById('wxPanel'),button=document.getElementById('wxToggle');
+  const panel=document.getElementById('wxPanel'),button=document.getElementById('wxToggle'),ideas=document.getElementById('flightIdeasOverlay');
+  if(!panel||!button)return;
   const open=typeof force==='boolean'?force:panel.hidden;
+  if(open&&ideas)ideas.classList.remove('vis');
   panel.hidden=!open;button.setAttribute('aria-expanded',String(open));
  }
  function wxEsc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
@@ -3246,14 +3250,32 @@ const FI_CHALLENGES={
  VHHH:{level:2,tags:['Terrain nearby','Busy airspace'],note:'Busy hub with nearby terrain and complex regional airspace.'},
  RJTT:{level:1,tags:['Major hub','Busy airspace'],note:'Major hub suited to a structured airline operation.'},
 };
-function openFlightIdeas(){const el=document.getElementById('flightIdeasOverlay');if(el)el.classList.add('vis');const aircraft=document.getElementById('fiAircraft');if(aircraft&&!aircraft.value){const p=PIREPS.find(x=>x.aircraft);if(p)aircraft.value=p.aircraft;} }
-function closeFlightIdeas(){document.getElementById('flightIdeasOverlay').classList.remove('vis')}
+function fiApplyPromptDeparture(){
+ const input=document.getElementById('fiOrigin'),prompt=document.getElementById('fiPrompt');if(!input||input.value.trim()||!prompt)return;
+ const q=prompt.value.trim();if(!q)return;
+ const codeMatch=q.match(/\bfrom\s+(?:airport\s+)?([A-Z0-9]{4})\b/i);
+ if(codeMatch&&fiAirport(codeMatch[1])){input.value=codeMatch[1].toUpperCase();return;}
+ const cityMatch=q.match(/\bfrom\s+(.+?)(?=\s+(?:to|for|with|under|over|in|avoiding|avoid|and)\b|[,.;]|$)/i);
+ if(!cityMatch)return;
+ const place=cityMatch[1].trim().replace(/\s+(?:airport|international airport)$/i,'').toLowerCase();
+ if(place.length<3)return;
+ const found=Object.entries(AIRPORT_COORDS||{}).find(([code,ap])=>/^[A-Z0-9]{4}$/.test(code)&&ap&&((String(ap.muni||'').toLowerCase()===place)||(String(ap.name||'').toLowerCase()===place)));
+ if(found)input.value=found[0];
+}
+function fiPopulateDepartureOptions(){
+ const list=document.getElementById('fiAirportOptions');if(!list)return;
+ const airports=Object.entries(AIRPORT_COORDS||{}).filter(([code,ap])=>/^[A-Z0-9]{4}$/.test(code)&&ap&&Number.isFinite(Number(ap.lat))&&Number.isFinite(Number(ap.lon)));
+ const unique=new Map();airports.forEach(([code,ap])=>{if(!unique.has(code))unique.set(code,ap)});
+ list.innerHTML=[...unique.entries()].sort((a,b)=>a[0].localeCompare(b[0])).map(([code,ap])=>'<option value="'+code+'">'+String(ap.name||code).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))+(ap.muni?' · '+String(ap.muni).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])):'')+'</option>').join('');
+}
+function openFlightIdeas(){const el=document.getElementById('flightIdeasOverlay');const wx=document.getElementById('wxPanel');if(wx){wx.hidden=true;const b=document.getElementById('wxToggle');if(b)b.setAttribute('aria-expanded','false');}if(el)el.classList.add('vis');fiPopulateDepartureOptions();const aircraft=document.getElementById('fiAircraft');if(aircraft&&!aircraft.value){const p=PIREPS.find(x=>x.aircraft);if(p)aircraft.value=p.aircraft;}const origin=document.getElementById('fiOrigin');if(origin&&!origin.value){const last=Array.isArray(PIREPS)?PIREPS.find(p=>p&&p.origin&&p.origin.icao):null;if(last&&last.origin&&last.origin.icao)origin.value=String(last.origin.icao).toUpperCase();} }
+function closeFlightIdeas(){const el=document.getElementById('flightIdeasOverlay');if(el)el.classList.remove('vis')}
 function surpriseFlightIdea(){const prompts=['Find a scenic, high-challenge flight','Find a mountain approach suitable for my aircraft','Find a challenging island destination with reasonable weather','Surprise me with an interesting regional airport'];document.getElementById('fiPrompt').value=prompts[Math.floor(Math.random()*prompts.length)];document.getElementById('fiDifficulty').value='high';generateFlightIdeas()}
 function fiAircraftClass(text){const a=String(text||'').toUpperCase();if(/A38|B74|B77|B78|A33|A34|A35|A32|B73|B72|B75|B76|B77|B78|B79|B7M|E75|E90|CRJ|A20|A21/.test(a))return'jet';if(/C172|C182|DA40|DA42|PA28|SR22|TBM|PC12|BE58|B350|AT76|ATR|DH8|DHC|Q400|E120/.test(a))return'regional';return'unknown'}
 function fiSpeed(text){const cls=fiAircraftClass(text);return cls==='jet'?430:cls==='regional'?230:320}
 function fiAirport(code){return AIRPORT_COORDS[String(code||'').toUpperCase()]||null}
 function fiDistance(a,b){if(!a||!b)return 0;const rad=n=>n*Math.PI/180,lat1=Number(a.lat),lat2=Number(b.lat),dlat=rad(lat2-lat1),dlon=rad(Number(b.lon)-Number(a.lon)),h=Math.sin(dlat/2)**2+Math.cos(rad(lat1))*Math.cos(rad(lat2))*Math.sin(dlon/2)**2;return 6371*2*Math.atan2(Math.sqrt(h),Math.sqrt(Math.max(0,1-h)))}
-function fiParsePrompt(){const q=(document.getElementById('fiPrompt').value||'').toLowerCase();let dur=document.getElementById('fiDuration').value,level=document.getElementById('fiDifficulty').value;if(/under an hour|under 1 hour|short flight|30 minute|45 minute/.test(q))dur='short';else if(/90 ?min|1.5 hour|one and a half|1.?2 hour|two hour/.test(q))dur='medium';else if(/2.?4 hour|three hour|long flight/.test(q))dur='long';else if(/over 4|long haul|long-haul/.test(q))dur='ultra';if(/extreme|specialist|very difficult/.test(q))level='extreme';else if(/moderate|easy|relaxed|easy flight/.test(q))level='moderate';else if(/challeng|difficult|hard|technical|mountain|alpine|short runway/.test(q))level='high';return{q:q,dur:dur,level:level}}
+function fiParsePrompt(){const q=(document.getElementById('fiPrompt').value||'').toLowerCase().replace(/[–—]/g,'-');let dur=document.getElementById('fiDuration').value,level=document.getElementById('fiDifficulty').value;const patterns=[['short',/under\s*(?:an?\s*)?hour|under\s*60\s*min|\b(?:30|45)\s*(?:min|minute)|short\s*(?:hop|flight)|quick\s*flight|less than an hour/],['medium',/90\s*(?:min|minute)|1\s*(?:to|-|–)\s*2\s*hours?|1\.5\s*hours?|one and a half|two hours?|medium[- ]haul/],['long',/2\s*(?:to|-|–)\s*4\s*hours?|three hours?|long flight|long[- ]haul/],['ultra',/over\s*4\s*hours?|more than\s*4\s*hours?|ultra[- ]long|long haul|long-haul/]];for(const [v,re] of patterns)if(re.test(q)){dur=v;break;}if(/extreme|specialist|expert[- ]level|very difficult|maximum challenge|technical approach/.test(q))level='extreme';else if(/moderate|easy|relaxed|beginner|low[- ]stress|casual/.test(q))level='moderate';else if(/challeng|difficult|hard|technical|mountain|alpine|short runway|high[- ]challenge|tricky|demanding/.test(q))level='high';return{q,dur,level,avoidWeather:/avoid(?:ing)?\s+(?:bad|poor|hazardous)?\s*weather|good weather|clear skies|benign weather|weather permitting|avoid turbulence/.test(q),scenic:/scenic|beautiful|view|photograph|sightseeing|mountain|alpine|coast|island|waterfront/.test(q),remote:/remote|isolated|outback|bush flying/.test(q),night:/night|after dark|darkness/.test(q),shortRunway:/short runway|challenging runway|tight runway|steep approach/.test(q)}}
 function fiWeatherLabel(r){const raw=String(r.rawOb||r.raw_text||r.metar||r.raw||'').toUpperCase(),cat=String(r.fltCat||r.flightCategory||r.flight_category||'').toUpperCase();if(cat)return cat;if(/\b(TS|VCTS|\+RA|SQ)\b/.test(raw))return'CONVECTIVE / HEAVY WX';if(/\b(FG|BR|FZRA|FZDZ|SN|GR|GS)\b/.test(raw))return'REDUCED VIS / FROZEN WX';if(/\b(BKN|OVC|VV)00[0-5]\b/.test(raw))return'LOW CEILING';if(/\b(9999|CAVOK)\b/.test(raw))return'GOOD VISIBILITY REPORTED';return'METAR RECEIVED · CHECK RAW REPORT'}
 async function fiGetMetar(code){const res=await fetch(FI_METAR_URL+encodeURIComponent(code),{headers:{Accept:'application/json'}});let d={};try{d=await res.json()}catch(e){}if(!res.ok)throw new Error(d.error||('HTTP '+res.status));const a=Array.isArray(d.reports)?d.reports:[];if(!a.length)throw new Error('No METAR available');return a[0]}
 function fiBuildCandidates(prefs){
@@ -3268,8 +3290,10 @@ function fiBuildCandidates(prefs){
   const meta=FI_CHALLENGES[x.code]||{level:0,tags:['Airport candidate'],note:'No curated challenge profile yet; check airport data and procedures.'};
   const km=origin?fiDistance(origin,x.ap):0,hrs=origin?km/fiSpeed(aircraft)+0.35:0;
   let score=meta.level*25+Math.min(20,Math.log2(x.history+1)*5)+(x.source==='abel'?14:0);
-  const q=prefs.q;if(/scenic|mountain|alpine|island|coast|waterfront/.test(q)&&meta.tags.some(t=>/scenic|mountain|alpine|island|waterfront/i.test(t)))score+=18;
-  if(/remote|regional/.test(q)&&meta.tags.some(t=>/remote|regional/i.test(t)))score+=10;
+  const q=prefs.q;if(prefs.scenic&&meta.tags.some(t=>/scenic|mountain|alpine|island|waterfront|coast|view/i.test(t)))score+=18;
+  if(prefs.remote&&meta.tags.some(t=>/remote|regional|isolated|bush/i.test(t)))score+=12;
+  if(prefs.shortRunway&&/short runway|challeng|technical|specialist/i.test((meta.tags||[]).join(' ')+' '+meta.note))score+=16;
+  if(prefs.night&&/lighting|night|remote|limited/i.test((meta.tags||[]).join(' ')+' '+meta.note))score+=5;
   if(prefs.dur!=='any'&&origin){const ok=prefs.dur==='short'?hrs<1:prefs.dur==='medium'?hrs>=1&&hrs<=2:prefs.dur==='long'?hrs>2&&hrs<=4:hrs>4;if(ok)score+=12;else score-=18}
   if(prefs.level==='moderate'&&meta.level>1)score-=30;if(prefs.level==='high'&&meta.level<2)score-=20;if(prefs.level==='extreme'&&meta.level<3)score-=30;
   return{...x,meta:meta,km:km,hrs:hrs,score:score};
@@ -3279,10 +3303,11 @@ async function generateFlightIdeas(){
  const btn=document.getElementById('fiGenerate'),results=document.getElementById('fiResults'),status=document.getElementById('fiStatus');
  btn.disabled=true;btn.textContent='SCORING AIRPORTS…';status.textContent='Building candidates from Abel Jets flight history and curated challenge airports…';
  try{
+  fiApplyPromptDeparture();
   const prefs=fiParsePrompt(),all=fiBuildCandidates({...prefs,abelOnly:document.getElementById('fiAbelOnly').checked});
   let list=all.slice(0,8);if(!list.length){results.innerHTML='<div class="fi-empty">No airports match this filter. Disable “Prefer airports in Abel Jets flight history” to include curated alternatives.</div>';status.textContent='No candidates matched.';return}
   const doWx=document.getElementById('fiCheckWeather').checked;
-  if(doWx){status.textContent='Checking METAR for shortlisted airports…';await Promise.all(list.slice(0,5).map(async x=>{try{x.wx=await fiGetMetar(x.code);x.wxLabel=fiWeatherLabel(x.wx)}catch(e){x.wxLabel='METAR unavailable';}}))}
+  if(doWx){status.textContent='Checking METAR for shortlisted airports…';await Promise.all(list.slice(0,5).map(async x=>{try{x.wx=await fiGetMetar(x.code);x.wxLabel=fiWeatherLabel(x.wx);const cat=String(x.wx.fltCat||x.wx.flightCategory||x.wx.flight_category||'').toUpperCase();if(prefs.avoidWeather){if(/LIFR|IFR|CONVECTIVE|THUNDER|HEAVY WX|REDUCED VIS|FROZEN WX|LOW CEILING/.test(x.wxLabel+' '+cat))x.score-=35;else if(/VFR|GOOD VISIBILITY/.test(x.wxLabel+' '+cat))x.score+=8;}}catch(e){x.wxLabel='METAR unavailable';}}));if(prefs.avoidWeather)list.sort((a,b)=>b.score-a.score)}
   results.innerHTML=list.map((x,i)=>{
    const name=x.ap.name||x.code,dist=x.km?Math.round(x.km).toLocaleString()+' km · ~'+Math.round(x.hrs*60)+' min':'Distance depends on departure airport';
    const challenge=x.meta.level===3?'EXTREME / SPECIALIST':x.meta.level===2?'HIGH CHALLENGE':x.meta.level===1?'MODERATE':'UNRATED';
