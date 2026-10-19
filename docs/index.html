@@ -145,6 +145,7 @@ body.panel-collapsed #panelToggle{right:0;}
 .detail-view::-webkit-scrollbar{width:3px;}
 .detail-view::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px;}
 .detail-view.vis{display:flex;}
+ .sigmet-notice{position:fixed;z-index:9998;left:50%;top:72px;transform:translateX(-50%) translateY(-8px);opacity:0;pointer-events:none;max-width:calc(100vw - 24px);padding:10px 14px;border:1px solid rgba(255,138,36,.6);border-radius:9px;background:rgba(12,18,28,.94);box-shadow:0 8px 28px rgba(0,0,0,.38);font-family:var(--fm);font-size:10px;letter-spacing:.08em;color:var(--text);transition:opacity .2s,transform .2s;text-align:center}.sigmet-notice.vis{opacity:1;transform:translateX(-50%) translateY(0)}.sigmet-tooltip{border-color:rgba(255,138,36,.7)}
  .hazard-tooltip{position:fixed;z-index:9999;display:none;pointer-events:none;min-width:220px;max-width:300px;padding:12px 14px;background:rgba(19,10,17,.96);border:1px solid rgba(249,148,32,.65);border-radius:10px;box-shadow:0 12px 36px rgba(0,0,0,.45);backdrop-filter:blur(14px);font-family:var(--fm);color:var(--text);font-size:10px;line-height:1.6}.hazard-tooltip.vis{display:block}.hazard-tooltip .ht-title{font-size:11px;font-weight:700;color:var(--orange);letter-spacing:.06em;margin-bottom:4px}.hazard-tooltip .ht-kind{font-size:9px;color:var(--dim);text-transform:uppercase;letter-spacing:.12em;margin-bottom:5px}.hazard-tooltip a{color:var(--orange);text-decoration:underline;pointer-events:auto}
 .dv-back{display:flex;align-items:center;gap:7px;padding:0 6px 10px;
   color:var(--dim);font-size:10px;letter-spacing:.12em;cursor:pointer;
@@ -859,6 +860,7 @@ body:not(.panel-collapsed) .rpanel{border-left-color:rgba(85,234,255,.15);box-sh
   <button class="blbtn on" id="routeBtn" onclick="toggleFiledRoute()" title="Draw filed flight-plan routes (airac.net) vs direct arcs">⤳ FILED ROUTE</button>
   <button class="blbtn" id="opsBtn" onclick="openOps()">▤ OPS REPORT</button>
   <button class="blbtn" id="hazardBtn" onclick="toggleHazards()">⚠ HAZARDS</button>
+  <button class="blbtn" id="sigmetBtn" onclick="toggleSigmets()" title="Show worldwide active SIGMET boundaries">✦ SIGMET <span id="sigmetCount"></span></button>
 </div>
 
 <!-- DENSITY LEGEND -->
@@ -1758,6 +1760,95 @@ window.addEventListener('load',async function(){
 let hazardsOn=false;
 let eventMarkers=[];
 let _eventRefreshAt=0;
+
+// Worldwide SIGMET boundary overlay. The Cloudflare Worker proxies AWC to avoid browser CORS.
+let sigmetsOn=false,sigmetLines=[],_sigmetRefreshAt=0,_sigmetLastCount=0;
+const sigmetRaycaster=new THREE.Raycaster(),sigmetPointer=new THREE.Vector2();
+sigmetRaycaster.params.Line.threshold=0.018;
+function toggleSigmets(){
+ sigmetsOn=!sigmetsOn;
+ const b=document.getElementById('sigmetBtn');if(b)b.classList.toggle('on',sigmetsOn);
+ sigmetLines.forEach(line=>line.visible=sigmetsOn);
+ if(sigmetsOn&&Date.now()>_sigmetRefreshAt)loadSigmets();
+}
+function sigmetProperty(props,keys,fallback){
+ for(const key of keys){const v=props&&props[key];if(v!==undefined&&v!==null&&String(v).trim())return String(v);}
+ return fallback;
+}
+function clearSigmetLines(){
+ sigmetLines.forEach(line=>{globe.remove(line);if(line.geometry)line.geometry.dispose();if(line.material)line.material.dispose();});
+ sigmetLines=[];
+}
+function addSigmetRing(coords,props,index){
+ if(!globe||!Array.isArray(coords)||coords.length<2)return;
+ const points=[];
+ coords.forEach(pair=>{const lon=Number(pair&&pair[0]),lat=Number(pair&&pair[1]);if(Number.isFinite(lat)&&Number.isFinite(lon)&&Math.abs(lat)<=90&&Math.abs(lon)<=180)points.push(ll2v(lat,lon,1.018));});
+ if(points.length<2)return;
+ const info=JSON.stringify(props||{});
+ const color=/volcanic ash|\bVA\b/i.test(info)?'#C084FC':/turbulence|\bTURB\b/i.test(info)?'#FBBF24':/icing|\bICE\b/i.test(info)?'#60A5FA':/thunderstorm|convective|\bTS\b/i.test(info)?'#FB7185':'#FF8A24';
+ const geometry=new THREE.BufferGeometry().setFromPoints(points);
+ const material=new THREE.LineBasicMaterial({color,transparent:true,opacity:.94,depthTest:true,depthWrite:false});
+ const line=new THREE.Line(geometry,material);
+ const title=sigmetProperty(props,['hazard','phenomenon','airSigmetType','type','firName','fir_id'],'SIGMET');
+ const raw=sigmetProperty(props,['rawAirSigmet','raw_text','rawText','message','sigmetText','firName'],'Active aviation weather warning');
+ const from=sigmetProperty(props,['validTimeFrom','valid_from','validFrom','issueTime','issue_time'],'');
+ const to=sigmetProperty(props,['validTimeTo','valid_to','validTo','expireTime','expire_time'],'');
+ line.userData={title,raw,from,to,index,source:'Aviation Weather Center'};
+ line.visible=sigmetsOn;globe.add(line);sigmetLines.push(line);
+}
+function showSigmetNotice(message){
+ const el=document.getElementById('sigmetNotice');if(!el)return;
+ el.textContent=message;el.classList.add('vis');
+ if(window._sigmetNoticeTimeout)clearTimeout(window._sigmetNoticeTimeout);
+ window._sigmetNoticeTimeout=setTimeout(()=>el.classList.remove('vis'),8000);
+}
+async function loadSigmets(){
+ if(!globe)return;
+ _sigmetRefreshAt=Date.now()+5*60*1000;
+ try{
+  const response=await fetch('https://pirep-metar-api.thomassiahaan31.workers.dev/sigmet',{headers:{Accept:'application/geo+json, application/json'},cache:'no-store'});
+  if(!response.ok)throw new Error('SIGMET proxy returned HTTP '+response.status);
+  const data=await response.json();
+  const features=Array.isArray(data.features)?data.features:Array.isArray(data)?data:[];
+  clearSigmetLines();
+  const now=Date.now();
+  features.forEach((feature,index)=>{
+   const props=feature&&feature.properties||{};
+   const geom=feature&&feature.geometry;if(!geom||!geom.coordinates)return;
+   const from=Date.parse(props.validTimeFrom||props.valid_from||props.validFrom||props.issueTime||props.issue_time||'');
+   const to=Date.parse(props.validTimeTo||props.valid_to||props.validTo||props.expireTime||props.expire_time||'');
+   if(Number.isFinite(from)&&from>now+5*60*1000)return;
+   if(Number.isFinite(to)&&to<now)return;
+   if(geom.type==='Polygon')geom.coordinates.forEach((ring,i)=>addSigmetRing(ring,props,index+'-'+i));
+   else if(geom.type==='MultiPolygon')geom.coordinates.forEach((poly,p)=>poly.forEach((ring,r)=>addSigmetRing(ring,props,index+'-'+p+'-'+r)));
+   else if(geom.type==='LineString')addSigmetRing(geom.coordinates,props,index+'-line');
+   else if(geom.type==='MultiLineString')geom.coordinates.forEach((ring,i)=>addSigmetRing(ring,props,index+'-line-'+i));
+  });
+  _sigmetLastCount=features.length;
+  const count=document.getElementById('sigmetCount');if(count)count.textContent=features.length?'· '+features.length:'';
+  sigmetLines.forEach(line=>line.visible=sigmetsOn);
+  showSigmetNotice('WORLDWIDE SIGMET FEED · '+sigmetLines.length+' boundary segment(s) loaded');
+  console.info('[SIGMET] Loaded '+features.length+' features / '+sigmetLines.length+' boundary segments from Aviation Weather Center.');
+ }catch(error){
+  console.warn('[SIGMET] Could not load worldwide boundaries:',error.message);
+  showSigmetNotice('SIGMET unavailable · check the Cloudflare Worker /sigmet route');
+ }
+}
+function updateSigmetHover(x,y){
+ const tip=document.getElementById('sigmetTooltip');
+ if(!tip||!renderer||!camera||!globe||!sigmetsOn||isDrag){if(tip)tip.classList.remove('vis');return false;}
+ sigmetPointer.x=x/innerWidth*2-1;sigmetPointer.y=-(y/innerHeight)*2+1;sigmetRaycaster.setFromCamera(sigmetPointer,camera);
+ const hits=sigmetRaycaster.intersectObjects(sigmetLines.filter(line=>line.visible),false);
+ const line=hits.length?hits[0].object:null;
+ if(!line){tip.classList.remove('vis');return false;}
+ const d=line.userData||{};
+ if(tip.dataset.key!==String(d.index)){
+  const period=[d.from?'FROM '+d.from:'',d.to?'UNTIL '+d.to:''].filter(Boolean).join(' · ');
+  tip.innerHTML='<div class="ht-kind">AVIATION WEATHER CENTER · SIGMET</div><div class="ht-title">'+escapeOps(d.title||'Active SIGMET')+'</div><div>'+escapeOps(d.raw||'Warning geometry available; text details not supplied by feed.')+'</div>'+(period?'<div style="margin-top:7px;color:var(--dim)">'+escapeOps(period)+'</div>':'')+'<div style="margin-top:7px;color:var(--dim)">Worldwide aviation weather warning · verify official briefing before operational use</div>';
+  tip.dataset.key=String(d.index);
+ }
+ tip.style.left=Math.min(innerWidth-315,Math.max(8,x+14))+'px';tip.style.top=Math.min(innerHeight-185,Math.max(8,y+14))+'px';tip.classList.add('vis');return true;
+}
 function toggleHazards(){hazardsOn=!hazardsOn;const b=document.getElementById('hazardBtn');if(b)b.classList.toggle('on',hazardsOn);eventMarkers.forEach(m=>m.visible=hazardsOn);if(hazardsOn&&Date.now()>_eventRefreshAt)loadHazardEvents();}
 function hazardSeverity(kind,detail){
  const value=String(detail||'').toLowerCase();
@@ -2137,7 +2228,7 @@ function updateHazardHover(x,y){
  const d=obj.userData||{};if(_hoveredHazard!==obj){tip.innerHTML='<div class="ht-kind">OCHA hazard icon · '+escapeOps(d.kind==='EQ'?'Earthquake':d.kind==='TC'?'Tropical cyclone':d.kind==='VO'?'Volcanic activity':'Hazard')+'</div><div class="ht-title">'+escapeOps(d.title||'Reported hazard')+'</div><div>'+escapeOps(d.detail||'Details unavailable')+'</div><div style="margin-top:7px;color:var(--dim)">Severity: <strong style="color:'+(d.severity==='red'?'#F04444':d.severity==='orange'?'#FF8A24':'#F5C842')+'">'+escapeOps((d.severity||'orange').toUpperCase())+'</strong></div><div style="margin-top:5px;color:var(--dim)">Reported time: '+escapeOps(d.timeLabel||'Time not provided')+'</div><div style="margin-top:5px;color:var(--dim)">Approx. '+Number(d.lat).toFixed(2)+'°, '+Number(d.lon).toFixed(2)+'°</div><div style="margin-top:5px"><a href="https://github.com/rodekruis/OCHA-Humanitarian-Icons" target="_blank" rel="noopener noreferrer">OCHA Humanitarian Icons ↗</a></div>';_hoveredHazard=obj;}
  tip.style.left=Math.min(innerWidth-310,Math.max(8,x+14))+'px';tip.style.top=Math.min(innerHeight-175,Math.max(8,y+14))+'px';tip.classList.add('vis');return true;
 }
-window.addEventListener('mousemove',e=>{if(isDrag)return;_planePointerX=e.clientX;_planePointerY=e.clientY;hoveredPlane=findPlaneAt(e.clientX,e.clientY);const overHazard=updateHazardHover(e.clientX,e.clientY);hoveredAirport=findAirportAt(e.clientX,e.clientY);if(renderer&&renderer.domElement)renderer.domElement.style.cursor=(hoveredPlane||overHazard||hoveredAirport)?'pointer':'grab';if(!hoveredPlane){const t=document.getElementById('planeTooltip');if(t)t.classList.remove('vis');}});
+window.addEventListener('mousemove',e=>{if(isDrag)return;_planePointerX=e.clientX;_planePointerY=e.clientY;hoveredPlane=findPlaneAt(e.clientX,e.clientY);const overHazard=updateHazardHover(e.clientX,e.clientY);const overSigmet=updateSigmetHover(e.clientX,e.clientY);hoveredAirport=findAirportAt(e.clientX,e.clientY);if(renderer&&renderer.domElement)renderer.domElement.style.cursor=(hoveredPlane||overHazard||overSigmet||hoveredAirport)?'pointer':'grab';if(!hoveredPlane){const t=document.getElementById('planeTooltip');if(t)t.classList.remove('vis');}});
 window.addEventListener('click',e=>{if(isDrag||_dragMoved||Date.now()<_suppressPlaneClickUntil||!e.target||e.target.tagName!=='CANVAS')return;const hit=findPlaneAt(e.clientX,e.clientY),p=hit&&hit.userData.pirep;if(p){const i=PIREPS.indexOf(p);if(i>=0)openDetail(i);}});
 
 // ═══════════════════════════════════════════════════════
@@ -3068,6 +3159,8 @@ document.addEventListener('keydown',function(e){if(e.key==='Escape')closePilotHa
 
 <div id="planeTooltip" class="plane-tooltip" role="status" aria-live="polite"></div>
 <div id="hazardTooltip" class="hazard-tooltip" role="status" aria-live="polite"></div>
+<div id="sigmetTooltip" class="hazard-tooltip sigmet-tooltip" role="status" aria-live="polite"></div>
+<div id="sigmetNotice" class="sigmet-notice" role="status" aria-live="polite"></div>
 
 </body>
 </html>
