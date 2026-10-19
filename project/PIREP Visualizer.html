@@ -1869,7 +1869,13 @@ function updateSigmetHover(x,y){
  if(!tip||!renderer||!camera||!globe||!sigmetsOn||isDrag){if(tip)tip.classList.remove('vis');return false;}
  sigmetPointer.x=x/innerWidth*2-1;sigmetPointer.y=-(y/innerHeight)*2+1;sigmetRaycaster.setFromCamera(sigmetPointer,camera);
  const hits=sigmetRaycaster.intersectObjects(sigmetLines.filter(line=>line.visible),false);
- const line=hits.length?hits[0].object:null;
+ // Ignore overlay hits on the far side of the globe so labels never appear through the planet.
+ const visibleHit=hits.find(hit=>{
+  const surfaceNormal=hit.point.clone().normalize();
+  const toCamera=camera.position.clone().sub(hit.point).normalize();
+  return surfaceNormal.dot(toCamera)>0;
+ });
+ const line=visibleHit?visibleHit.object:null;
  if(!line){tip.classList.remove('vis');return false;}
  const d=line.userData||{};
  if(tip.dataset.key!==String(d.index)){
