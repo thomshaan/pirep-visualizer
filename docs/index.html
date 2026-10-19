@@ -1781,7 +1781,7 @@ window.addEventListener('load',async function(){
     setProgress(100,'READY');
     setTimeout(()=>{
       document.getElementById('loading').classList.add('hide');
-      document.body.classList.add('map-ready');
+      setTimeout(()=>document.body.classList.add('map-ready'),650);
       renderFlightList();
       renderBottomBar();
       updateStats();
@@ -3250,6 +3250,18 @@ const FI_CHALLENGES={
  VHHH:{level:2,tags:['Terrain nearby','Busy airspace'],note:'Busy hub with nearby terrain and complex regional airspace.'},
  RJTT:{level:1,tags:['Major hub','Busy airspace'],note:'Major hub suited to a structured airline operation.'},
 };
+function fiApplyPromptDeparture(){
+ const input=document.getElementById('fiOrigin'),prompt=document.getElementById('fiPrompt');if(!input||input.value.trim()||!prompt)return;
+ const q=prompt.value.trim();if(!q)return;
+ const codeMatch=q.match(/\bfrom\s+(?:airport\s+)?([A-Z0-9]{4})\b/i);
+ if(codeMatch&&fiAirport(codeMatch[1])){input.value=codeMatch[1].toUpperCase();return;}
+ const cityMatch=q.match(/\bfrom\s+(.+?)(?=\s+(?:to|for|with|under|over|in|avoiding|avoid|and)\b|[,.;]|$)/i);
+ if(!cityMatch)return;
+ const place=cityMatch[1].trim().replace(/\s+(?:airport|international airport)$/i,'').toLowerCase();
+ if(place.length<3)return;
+ const found=Object.entries(AIRPORT_COORDS||{}).find(([code,ap])=>/^[A-Z0-9]{4}$/.test(code)&&ap&&((String(ap.muni||'').toLowerCase()===place)||(String(ap.name||'').toLowerCase()===place)));
+ if(found)input.value=found[0];
+}
 function fiPopulateDepartureOptions(){
  const list=document.getElementById('fiAirportOptions');if(!list)return;
  const airports=Object.entries(AIRPORT_COORDS||{}).filter(([code,ap])=>/^[A-Z0-9]{4}$/.test(code)&&ap&&Number.isFinite(Number(ap.lat))&&Number.isFinite(Number(ap.lon)));
@@ -3291,6 +3303,7 @@ async function generateFlightIdeas(){
  const btn=document.getElementById('fiGenerate'),results=document.getElementById('fiResults'),status=document.getElementById('fiStatus');
  btn.disabled=true;btn.textContent='SCORING AIRPORTS…';status.textContent='Building candidates from Abel Jets flight history and curated challenge airports…';
  try{
+  fiApplyPromptDeparture();
   const prefs=fiParsePrompt(),all=fiBuildCandidates({...prefs,abelOnly:document.getElementById('fiAbelOnly').checked});
   let list=all.slice(0,8);if(!list.length){results.innerHTML='<div class="fi-empty">No airports match this filter. Disable “Prefer airports in Abel Jets flight history” to include curated alternatives.</div>';status.textContent='No candidates matched.';return}
   const doWx=document.getElementById('fiCheckWeather').checked;
