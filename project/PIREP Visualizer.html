@@ -676,6 +676,14 @@ body:not(.panel-collapsed) .rpanel{border-left-color:rgba(85,234,255,.15);box-sh
 .panel-footer .pf-dot{color:var(--hud-cyan);background:var(--hud-cyan)}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;scroll-behavior:auto!important;transition-duration:.01ms!important}}
 
+
+/* FLIGHT IDEAS — destination discovery */
+.fi-overlay{position:fixed;inset:0;z-index:80;display:none;align-items:center;justify-content:center;padding:14px;background:rgba(8,3,8,.78);backdrop-filter:blur(8px)}
+.fi-overlay.vis{display:flex}.fi-modal{width:min(980px,96vw);max-height:90vh;display:flex;flex-direction:column;overflow:hidden;border:1px solid rgba(249,148,32,.42);border-radius:14px;background:linear-gradient(145deg,rgba(26,10,21,.99),rgba(32,12,27,.98));box-shadow:0 22px 80px #000a}
+.fi-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px 18px;border-bottom:1px solid var(--border)}.fi-kicker{font:8px var(--fm);letter-spacing:.22em;color:var(--orange)}.fi-title{font:700 16px var(--fd);letter-spacing:.08em;color:var(--gold);margin-top:5px}.fi-close{border:1px solid var(--border);background:transparent;color:var(--dim);border-radius:6px;padding:6px 10px;cursor:pointer}
+.fi-body{padding:16px;overflow:auto}.fi-intro{font-size:11px;line-height:1.6;color:var(--dim);margin-bottom:13px}.fi-form{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px;padding:12px;background:rgba(249,148,32,.035);border:1px solid var(--border);border-radius:10px}.fi-field{display:flex;flex-direction:column;gap:5px;min-width:0}.fi-field.wide{grid-column:span 2}.fi-field label{font:8px var(--fm);letter-spacing:.12em;color:var(--dim)}.fi-field input,.fi-field select{width:100%;min-width:0;background:#24101f;border:1px solid rgba(249,148,32,.25);border-radius:6px;color:var(--text);font:11px var(--fb);padding:9px;outline:none}.fi-field input:focus,.fi-field select:focus{border-color:var(--orange)}.fi-check{display:flex;align-items:center;gap:7px;font-size:10px;color:var(--dim);grid-column:span 2}.fi-check input{accent-color:var(--orange)}.fi-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:12px 0}.fi-primary,.fi-secondary{border-radius:6px;padding:9px 13px;cursor:pointer;font:9px var(--fm);letter-spacing:.1em}.fi-primary{background:rgba(249,148,32,.16);border:1px solid var(--orange);color:var(--gold)}.fi-secondary{background:transparent;border:1px solid var(--border);color:var(--dim)}.fi-status{font:9px var(--fm);color:var(--dim);line-height:1.5}.fi-results{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.fi-card{border:1px solid var(--border);border-radius:10px;background:rgba(42,15,34,.55);padding:13px;min-width:0}.fi-card-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}.fi-code{font:700 19px var(--fd);color:var(--gold)}.fi-name{font-size:10px;color:var(--dim);margin-top:4px;line-height:1.45}.fi-score{font:700 10px var(--fm);color:var(--orange);white-space:nowrap}.fi-tags{display:flex;flex-wrap:wrap;gap:5px;margin:10px 0}.fi-tag{font:8px var(--fm);padding:4px 6px;border:1px solid rgba(249,148,32,.22);border-radius:4px;color:var(--dim)}.fi-reason{font-size:10px;line-height:1.65;color:rgba(245,230,218,.8)}.fi-weather{font:9px var(--fm);line-height:1.6;color:var(--dim);margin-top:8px;padding-top:8px;border-top:1px solid rgba(249,148,32,.1)}.fi-card-actions{display:flex;gap:7px;margin-top:10px}.fi-card-actions button{flex:1}.fi-empty{grid-column:1/-1;padding:25px;text-align:center;border:1px dashed var(--border);border-radius:8px;color:var(--dim);font-size:11px;line-height:1.7}.fi-caveat{font:8px var(--fm);color:rgba(245,230,218,.38);line-height:1.6;margin-top:12px}
+@media(max-width:650px){.fi-overlay{padding:6px}.fi-modal{width:100%;max-height:94vh}.fi-head{padding:12px}.fi-body{padding:10px}.fi-form{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;padding:9px}.fi-field.wide{grid-column:span 2}.fi-results{grid-template-columns:1fr}.fi-title{font-size:13px}.fi-intro{font-size:10px}}
+
 </style>
 </head>
 <body>
@@ -861,6 +869,30 @@ body:not(.panel-collapsed) .rpanel{border-left-color:rgba(85,234,255,.15);box-sh
   <button class="blbtn" id="opsBtn" onclick="openOps()">▤ OPS REPORT</button>
   <button class="blbtn" id="hazardBtn" onclick="toggleHazards()">⚠ HAZARDS</button>
   <button class="blbtn" id="sigmetBtn" onclick="toggleSigmets()" title="Show worldwide active SIGMET boundaries">✦ SIGMET <span id="sigmetCount"></span></button>
+  <button class="blbtn" id="flightIdeasBtn" onclick="openFlightIdeas()" title="Find an interesting next flight">✈ FLIGHT IDEAS</button>
+</div>
+
+
+<!-- FLIGHT IDEAS: hybrid destination discovery -->
+<div class="fi-overlay" id="flightIdeasOverlay" role="dialog" aria-modal="true" aria-labelledby="fiTitle" onclick="if(event.target===this)closeFlightIdeas()">
+ <div class="fi-modal">
+  <div class="fi-head"><div><div class="fi-kicker">DESTINATION DISCOVERY / ABEL JETS</div><div class="fi-title" id="fiTitle">WHERE SHOULD YOU FLY?</div></div><button class="fi-close" onclick="closeFlightIdeas()" aria-label="Close Flight Ideas">✕</button></div>
+  <div class="fi-body">
+   <div class="fi-intro">Find a destination worth flying to. Recommendations favor challenging airports, using the Abel Jets flight-log airport pool first, with curated alternatives when needed. Add a plain-language request or use the quick filters.</div>
+   <div class="fi-form">
+    <div class="fi-field wide"><label for="fiPrompt">YOUR FLIGHT IDEA / NATURAL-LANGUAGE REQUEST</label><input id="fiPrompt" placeholder="e.g. challenging 90-minute flight, mountains, avoid bad weather"></div>
+    <div class="fi-field"><label for="fiAircraft">AIRCRAFT / TYPE</label><input id="fiAircraft" placeholder="e.g. A320, B738" value=""></div>
+    <div class="fi-field"><label for="fiOrigin">DEPARTURE ICAO (OPTIONAL)</label><input id="fiOrigin" maxlength="4" placeholder="e.g. WIII"></div>
+    <div class="fi-field"><label for="fiDuration">FLIGHT DURATION</label><select id="fiDuration"><option value="any">Any duration</option><option value="short">Under 1 hour</option><option value="medium" selected>1–2 hours</option><option value="long">2–4 hours</option><option value="ultra">Over 4 hours</option></select></div>
+    <div class="fi-field"><label for="fiDifficulty">CHALLENGE LEVEL</label><select id="fiDifficulty"><option value="any">Any challenge</option><option value="moderate">Moderate</option><option value="high" selected>High challenge</option><option value="extreme">Extreme / specialist</option></select></div>
+    <label class="fi-check"><input type="checkbox" id="fiAbelOnly" checked> Prefer airports in Abel Jets flight history</label>
+    <label class="fi-check"><input type="checkbox" id="fiCheckWeather" checked> Check live METAR for shortlisted airports</label>
+   </div>
+   <div class="fi-actions"><button class="fi-primary" id="fiGenerate" onclick="generateFlightIdeas()">✦ GENERATE DESTINATIONS</button><button class="fi-secondary" onclick="surpriseFlightIdea()">🎲 SURPRISE ME</button><span class="fi-status" id="fiStatus" aria-live="polite">Ready · recommendations are generated on demand</span></div>
+   <div class="fi-results" id="fiResults"><div class="fi-empty">Choose your aircraft and preferences, then generate a shortlist. Airport difficulty is based on curated challenge notes—not an official operational risk rating.</div></div>
+   <div class="fi-caveat">Weather is informational, based on the latest available METAR; it is not a forecast or dispatch clearance. Airport suitability, runway limits, NOTAMs, procedures and current weather must be checked independently. Estimated flight time is approximate.</div>
+  </div>
+ </div>
 </div>
 
 <!-- DENSITY LEGEND -->
@@ -3192,6 +3224,75 @@ function clearNotepad(){if(!confirm('Reset the ATC scratchpad and delete its loc
 document.addEventListener('input',function(e){if(e.target&&e.target.matches('#phSectionNotepad [data-note]'))saveNotepad(false)});
 document.getElementById('pilotHandbook').addEventListener('wheel',function(e){if(e.target&&e.target.closest('.ph-shell'))e.stopPropagation()},{passive:true});
 document.addEventListener('keydown',function(e){if(e.key==='Escape')closePilotHandbook()});
+
+
+/* FLIGHT IDEAS: deterministic scoring with on-demand METAR checks; no AI API required. */
+const FI_METAR_URL='https://pirep-metar-api.thomassiahaan31.workers.dev/metar?icao=';
+const FI_CHALLENGES={
+ NZQN:{level:3,tags:['Mountain terrain','Terrain awareness','Scenic'],note:'Mountain terrain and terrain-sensitive approach planning.'},
+ LOWI:{level:3,tags:['Alpine approach','Mountain terrain','Scenic'],note:'Alpine terrain makes approach and missed-approach planning especially important.'},
+ LFLJ:{level:3,tags:['Alpine','Short runway','Specialist'],note:'High-elevation alpine airport with a short runway; specialist aircraft/procedure suitability required.'},
+ VNLK:{level:3,tags:['High elevation','Mountain','Specialist'],note:'High-altitude Himalayan environment; only suitable for aircraft and procedures specifically supported in the simulator.'},
+ SBRJ:{level:2,tags:['Urban terrain','Waterfront','Approach'],note:'Urban setting and terrain/waterfront approach context make for an engaging arrival.'},
+ LPMA:{level:2,tags:['Island','Terrain','Approach'],note:'Island terrain and approach planning can add interest; check current procedures and wind.'},
+ WATO:{level:2,tags:['Island','Regional','Scenic'],note:'Island destination with regional-airport planning considerations.'},
+ WABB:{level:2,tags:['Remote region','Regional'],note:'Remote regional operations and limited nearby diversion choices can add planning interest.'},
+ WIII:{level:1,tags:['Major hub','Busy airspace'],note:'Major hub; a useful option for busy-airspace and standard airline procedures.'},
+ WMKK:{level:1,tags:['Major hub','Tropical weather'],note:'Large hub with tropical weather considerations.'},
+ VTBS:{level:1,tags:['Major hub','Tropical weather'],note:'Large hub; consider convective weather and traffic flow.'},
+ VHHH:{level:2,tags:['Terrain nearby','Busy airspace'],note:'Busy hub with nearby terrain and complex regional airspace.'},
+ RJTT:{level:1,tags:['Major hub','Busy airspace'],note:'Major hub suited to a structured airline operation.'},
+};
+function openFlightIdeas(){const el=document.getElementById('flightIdeasOverlay');if(el)el.classList.add('vis');const aircraft=document.getElementById('fiAircraft');if(aircraft&&!aircraft.value){const p=PIREPS.find(x=>x.aircraft);if(p)aircraft.value=p.aircraft;} }
+function closeFlightIdeas(){document.getElementById('flightIdeasOverlay').classList.remove('vis')}
+function surpriseFlightIdea(){const prompts=['Find a scenic, high-challenge flight','Find a mountain approach suitable for my aircraft','Find a challenging island destination with reasonable weather','Surprise me with an interesting regional airport'];document.getElementById('fiPrompt').value=prompts[Math.floor(Math.random()*prompts.length)];document.getElementById('fiDifficulty').value='high';generateFlightIdeas()}
+function fiAircraftClass(text){const a=String(text||'').toUpperCase();if(/A38|B74|B77|B78|A33|A34|A35|A32|B73|B72|B75|B76|B77|B78|B79|B7M|E75|E90|CRJ|A20|A21/.test(a))return'jet';if(/C172|C182|DA40|DA42|PA28|SR22|TBM|PC12|BE58|B350|AT76|ATR|DH8|DHC|Q400|E120/.test(a))return'regional';return'unknown'}
+function fiSpeed(text){const cls=fiAircraftClass(text);return cls==='jet'?430:cls==='regional'?230:320}
+function fiAirport(code){return AIRPORT_COORDS[String(code||'').toUpperCase()]||null}
+function fiDistance(a,b){if(!a||!b)return 0;const rad=n=>n*Math.PI/180,lat1=Number(a.lat),lat2=Number(b.lat),dlat=rad(lat2-lat1),dlon=rad(Number(b.lon)-Number(a.lon)),h=Math.sin(dlat/2)**2+Math.cos(rad(lat1))*Math.cos(rad(lat2))*Math.sin(dlon/2)**2;return 6371*2*Math.atan2(Math.sqrt(h),Math.sqrt(Math.max(0,1-h)))}
+function fiParsePrompt(){const q=(document.getElementById('fiPrompt').value||'').toLowerCase();let dur=document.getElementById('fiDuration').value,level=document.getElementById('fiDifficulty').value;if(/under an hour|under 1 hour|short flight|30 minute|45 minute/.test(q))dur='short';else if(/90 ?min|1.5 hour|one and a half|1.?2 hour|two hour/.test(q))dur='medium';else if(/2.?4 hour|three hour|long flight/.test(q))dur='long';else if(/over 4|long haul|long-haul/.test(q))dur='ultra';if(/extreme|specialist|very difficult/.test(q))level='extreme';else if(/moderate|easy|relaxed|easy flight/.test(q))level='moderate';else if(/challeng|difficult|hard|technical|mountain|alpine|short runway/.test(q))level='high';return{q:q,dur:dur,level:level}}
+function fiWeatherLabel(r){const raw=String(r.rawOb||r.raw_text||r.metar||r.raw||'').toUpperCase(),cat=String(r.fltCat||r.flightCategory||r.flight_category||'').toUpperCase();if(cat)return cat;if(/\b(TS|VCTS|\+RA|SQ)\b/.test(raw))return'CONVECTIVE / HEAVY WX';if(/\b(FG|BR|FZRA|FZDZ|SN|GR|GS)\b/.test(raw))return'REDUCED VIS / FROZEN WX';if(/\b(BKN|OVC|VV)00[0-5]\b/.test(raw))return'LOW CEILING';if(/\b(9999|CAVOK)\b/.test(raw))return'GOOD VISIBILITY REPORTED';return'METAR RECEIVED · CHECK RAW REPORT'}
+async function fiGetMetar(code){const res=await fetch(FI_METAR_URL+encodeURIComponent(code),{headers:{Accept:'application/json'}});let d={};try{d=await res.json()}catch(e){}if(!res.ok)throw new Error(d.error||('HTTP '+res.status));const a=Array.isArray(d.reports)?d.reports:[];if(!a.length)throw new Error('No METAR available');return a[0]}
+function fiBuildCandidates(prefs){
+ const pool=new Map(),history=Array.isArray(PIREPS)?PIREPS:[];
+ function add(code,source){code=String(code||'').toUpperCase();const ap=fiAirport(code);if(!/^[A-Z0-9]{4}$/.test(code)||!ap)return;let x=pool.get(code);if(!x){x={code:code,ap:ap,history:0,source:source};pool.set(code,x)}if(source==='abel')x.source='abel';}
+ history.forEach(p=>{const sub=String(p.subsidiary||p.flight||'').toUpperCase();const abel=!!(p.subsidiary&&/ABEL|AJV|AJB|AJA/.test(sub))||/^AJ[A-Z0-9]/.test(sub);if(p.dest&&p.dest.icao)add(p.dest.icao,abel?'abel':'history');if(p.origin&&p.origin.icao)add(p.origin.icao,abel?'abel':'history');});
+ pool.forEach(x=>{x.history=history.reduce((n,p)=>n+((p.dest&&p.dest.icao===x.code)||(p.origin&&p.origin.icao===x.code)?1:0),0)});
+ Object.keys(FI_CHALLENGES).forEach(c=>add(c,'curated'));
+ const origin=fiAirport(document.getElementById('fiOrigin').value.trim().toUpperCase());
+ const aircraft=document.getElementById('fiAircraft').value;
+ return [...pool.values()].filter(x=>!origin||x.code!==document.getElementById('fiOrigin').value.trim().toUpperCase()).map(x=>{
+  const meta=FI_CHALLENGES[x.code]||{level:0,tags:['Airport candidate'],note:'No curated challenge profile yet; check airport data and procedures.'};
+  const km=origin?fiDistance(origin,x.ap):0,hrs=origin?km/fiSpeed(aircraft)+0.35:0;
+  let score=meta.level*25+Math.min(20,Math.log2(x.history+1)*5)+(x.source==='abel'?14:0);
+  const q=prefs.q;if(/scenic|mountain|alpine|island|coast|waterfront/.test(q)&&meta.tags.some(t=>/scenic|mountain|alpine|island|waterfront/i.test(t)))score+=18;
+  if(/remote|regional/.test(q)&&meta.tags.some(t=>/remote|regional/i.test(t)))score+=10;
+  if(prefs.dur!=='any'&&origin){const ok=prefs.dur==='short'?hrs<1:prefs.dur==='medium'?hrs>=1&&hrs<=2:prefs.dur==='long'?hrs>2&&hrs<=4:hrs>4;if(ok)score+=12;else score-=18}
+  if(prefs.level==='moderate'&&meta.level>1)score-=30;if(prefs.level==='high'&&meta.level<2)score-=20;if(prefs.level==='extreme'&&meta.level<3)score-=30;
+  return{...x,meta:meta,km:km,hrs:hrs,score:score};
+ }).filter(x=>!prefs.abelOnly||x.source==='abel'||x.history>0).sort((a,b)=>b.score-a.score)
+}
+async function generateFlightIdeas(){
+ const btn=document.getElementById('fiGenerate'),results=document.getElementById('fiResults'),status=document.getElementById('fiStatus');
+ btn.disabled=true;btn.textContent='SCORING AIRPORTS…';status.textContent='Building candidates from Abel Jets flight history and curated challenge airports…';
+ try{
+  const prefs=fiParsePrompt(),all=fiBuildCandidates({...prefs,abelOnly:document.getElementById('fiAbelOnly').checked});
+  let list=all.slice(0,8);if(!list.length){results.innerHTML='<div class="fi-empty">No airports match this filter. Disable “Prefer airports in Abel Jets flight history” to include curated alternatives.</div>';status.textContent='No candidates matched.';return}
+  const doWx=document.getElementById('fiCheckWeather').checked;
+  if(doWx){status.textContent='Checking METAR for shortlisted airports…';await Promise.all(list.slice(0,5).map(async x=>{try{x.wx=await fiGetMetar(x.code);x.wxLabel=fiWeatherLabel(x.wx)}catch(e){x.wxLabel='METAR unavailable';}}))}
+  results.innerHTML=list.map((x,i)=>{
+   const name=x.ap.name||x.code,dist=x.km?Math.round(x.km).toLocaleString()+' km · ~'+Math.round(x.hrs*60)+' min':'Distance depends on departure airport';
+   const challenge=x.meta.level===3?'EXTREME / SPECIALIST':x.meta.level===2?'HIGH CHALLENGE':x.meta.level===1?'MODERATE':'UNRATED';
+   const tags=[challenge].concat(x.meta.tags||[]).concat(x.source==='abel'?['Abel Jets history']:[]);
+   const wx=x.wxLabel?'<div class="fi-weather">LIVE METAR · '+x.code+': '+escapeOps(x.wxLabel)+(x.wx&&x.wx.rawOb?' · '+escapeOps(x.wx.rawOb):x.wx&&x.wx.raw_text?' · '+escapeOps(x.wx.raw_text):'')+'</div>':'';
+   return '<article class="fi-card"><div class="fi-card-top"><div><div class="fi-code">'+escapeOps(x.code)+'</div><div class="fi-name">'+escapeOps(name)+(x.ap.muni?' · '+escapeOps(x.ap.muni):'')+' · '+escapeOps(countryLabel(x.ap.country||''))+'</div></div><div class="fi-score">#'+(i+1)+' · '+Math.round(x.score)+'</div></div><div class="fi-tags">'+tags.map(t=>'<span class="fi-tag">'+escapeOps(t)+'</span>').join('')+'</div><div class="fi-reason"><b>Why it is interesting:</b> '+escapeOps(x.meta.note)+'<br><b>Planning estimate:</b> '+escapeOps(dist)+'<br><b>History:</b> '+x.history+' logged airport appearances.</div>'+wx+'<div class="fi-card-actions"><button class="fi-secondary" onclick="fiInspectAirport(\''+x.code+'\')">INSPECT AIRPORT</button><button class="fi-secondary" onclick="fiUseRoute(\''+x.code+'\')">USE DESTINATION</button></div></article>'
+  }).join('');
+  status.textContent='Ranked '+list.length+' destinations · '+(doWx?'METAR checked where available':'weather checks skipped')+'.';
+ }catch(e){results.innerHTML='<div class="fi-empty">Could not generate recommendations: '+escapeOps(e.message||e)+'</div>';status.textContent='Recommendation generation failed.'}
+ finally{btn.disabled=false;btn.textContent='✦ GENERATE DESTINATIONS'}
+}
+function fiInspectAirport(code){closeFlightIdeas();const ap=fiAirport(code);if(!ap)return;try{if(typeof focusAirport==='function')focusAirport(code);else if(typeof selectAirport==='function')selectAirport(code);else{const input=document.getElementById('metarIcaoInput');if(input)input.value=code;const wx=document.getElementById('wxPanel');if(wx&&!wx.hidden)checkMetarByCode();}}catch(e){console.warn('[Flight Ideas] Could not focus airport',e)}}
+function fiUseRoute(code){const origin=document.getElementById('fiOrigin').value.trim().toUpperCase();closeFlightIdeas();const panel=document.getElementById('pilotHandbook');if(panel){panel.classList.add('vis');showHandbookSection('deck');loadFlightWorkspace();}const dep=document.getElementById('phDepCode'),dest=document.getElementById('phDestCode');if(dep&&dest){if(origin)dep.textContent=origin;dest.textContent=code;const npd=document.getElementById('npDepIcao'),npa=document.getElementById('npArrIcao');if(npd&&origin)npd.value=origin;if(npa)npa.value=code;phSetStatus('phFlightStatus','Destination selected from Flight Ideas. Review route, aircraft performance, METAR/TAF and procedures before flight.');}else{const input=document.getElementById('metarIcaoInput');if(input)input.value=code;const wx=document.getElementById('wxPanel');if(wx){wx.hidden=false;document.getElementById('wxToggle').setAttribute('aria-expanded','true')}}}
 
 </script>
 
