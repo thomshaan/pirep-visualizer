@@ -1862,7 +1862,7 @@ function updateSigmetHover(x,y){
  if(tip.dataset.key!==String(d.index)){
   const period=[d.from?'FROM '+d.from:'',d.to?'UNTIL '+d.to:''].filter(Boolean).join(' · ');
    const extra=[d.severity?'Severity: '+d.severity:'',d.altitude?'Altitude: '+d.altitude:''].filter(Boolean).join(' · ');
-   const labelColor=/VOLCANIC ASH/i.test(d.kind||'')?'#111111':/THUNDERSTORM/i.test(d.kind||'')?'#FF4545':/TURBULENCE/i.test(d.kind||'')?'#FFE600':/ICING/i.test(d.kind||'')?'#00D9FF':'#FF6A00';
+   const labelColor=/VOLCANIC ASH/i.test(d.kind||'')?'#FFFFFF':/THUNDERSTORM/i.test(d.kind||'')?'#FF4545':/TURBULENCE/i.test(d.kind||'')?'#FFE600':/ICING/i.test(d.kind||'')?'#00D9FF':'#FF6A00';
    tip.innerHTML='<div class="ht-kind">AVIATION WEATHER CENTER · SIGMET</div><div class="ht-title" style="color:'+labelColor+'">'+escapeOps(d.kind||'SIGMET')+' · '+escapeOps(d.title||'Active SIGMET')+'</div><div>'+escapeOps(d.raw||'Warning geometry available; text details not supplied by feed.')+'</div>'+(extra?'<div style="margin-top:7px;color:var(--dim)">'+escapeOps(extra)+'</div>':'')+(period?'<div style="margin-top:7px;color:var(--dim)">'+escapeOps(period)+'</div>':'')+'<div style="margin-top:7px;color:var(--dim)">Worldwide aviation weather warning · verify official briefing before operational use</div>';
   tip.dataset.key=String(d.index);
  }
